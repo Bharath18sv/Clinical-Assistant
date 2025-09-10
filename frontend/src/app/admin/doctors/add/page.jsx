@@ -5,7 +5,7 @@ import Link from "next/link";
 import { SPECIALIZATION, QUALIFICATIONS } from "@/data/constant";
 import Select, { MultiValue } from "react-select";
 import { AuthContext } from "@/context/AuthContext";
-import { set } from "mongoose";
+import API from "@/utils/api";
 
 export default function AddDoctorPage() {
   const { user } = useContext(AuthContext);
@@ -136,7 +136,7 @@ export default function AddDoctorPage() {
     }
 
     try {
-      const response = await adminApi.addDoctor(formData);
+      const response = await API.post("/doctors", formData);
 
       setSuccess("Doctor added successfully!");
       setFormData({

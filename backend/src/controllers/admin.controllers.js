@@ -87,7 +87,7 @@ const loginAdmin = asyncHandler(async (req, res) => {
       new ApiResponse(
         200,
         {
-          admin: loggedInAdmin,
+          user: loggedInAdmin,
           accessToken,
           refreshToken,
           role: "admin",

@@ -39,7 +39,6 @@ import patientRouter from "./routes/patient.routes.js";
 import doctorRouter from "./routes/doctor.routes.js";
 import adminRouter from "./routes/admin.routes.js";
 import authRouter from "./routes/auth.routes.js";
-import meRouter from "./routes/me.routes.js";
 
 //routes
 app.use("/api/healthcheck", healthCheck);
@@ -47,6 +46,5 @@ app.use("/api/patients", patientRouter); //routes should always start with /
 app.use("/api/doctors", doctorRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/auth", authRouter);
-app.use("/api/me", meRouter);
 
 export default app;
