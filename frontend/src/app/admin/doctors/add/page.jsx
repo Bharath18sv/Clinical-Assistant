@@ -6,9 +6,10 @@ import { SPECIALIZATION, QUALIFICATIONS } from "@/data/constant";
 import Select, { MultiValue } from "react-select";
 import { AuthContext } from "@/context/AuthContext";
 import API from "@/utils/api";
+import toast from "react-hot-toast";
 
 export default function AddDoctorPage() {
-  const { user } = useContext(AuthContext);
+  const { user, authLoading } = useContext(AuthContext);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -27,7 +28,17 @@ export default function AddDoctorPage() {
   const router = useRouter();
 
   useEffect(() => {
+    console.log("loading page.....");
     setLoading(true);
+    const user = JSON.parse(localStorage.getItem("user"));
+    console.log("user data from local storage", user);
+    if (!user) {
+      console.log("no user found, redirecting to login...");
+      router.push("/admin/login");
+      setLoading(false);
+      return;
+    }
+    console.log("user role", user.role);
     if (user && user.role !== "admin") {
       console.log(
         "non-admin user detected, redirecting them to landing page..."
@@ -35,7 +46,8 @@ export default function AddDoctorPage() {
       router.push("/");
       setLoading(false);
     }
-  }, [user]);
+    setLoading(false);
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -136,9 +148,18 @@ export default function AddDoctorPage() {
     }
 
     try {
-      const response = await API.post("/doctors", formData);
+      console.log("form data being submitted", formData);
+      //send form data along with profile picture
+      const response = await API.post("admin/doctors", {
+        ...formData,
+        profilePicture,
+      });
 
       setSuccess("Doctor added successfully!");
+      toast.success("Doctor added successfully!");
+      console.log("Add doctor response:", response.data);
+
+      // Reset form
       setFormData({
         email: "",
         password: "",
@@ -177,7 +198,7 @@ export default function AddDoctorPage() {
     }
   };
 
-  if (authLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
@@ -185,7 +206,7 @@ export default function AddDoctorPage() {
     );
   }
 
-  if (!authUser) {
+  if (!user) {
     return null;
   }
 
@@ -295,7 +316,7 @@ export default function AddDoctorPage() {
                   value={formData.fullname}
                   onChange={handleInputChange}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200"
-                  placeholder="Dr. John Doe"
+                  placeholder="Enter name without any titles, e.g. John Doe"
                   required
                 />
               </div>
@@ -375,7 +396,7 @@ export default function AddDoctorPage() {
                   value={formData.experience}
                   onChange={handleInputChange}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200"
-                  placeholder="5"
+                  placeholder="0"
                   min="0"
                 />
               </div>

@@ -1,34 +1,253 @@
 "use client";
 
+import { useState, useContext, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import {
+  ChevronDown,
+  ChevronRight,
+  Menu,
+  LayoutDashboard,
+  Users,
+  Calendar,
+  User,
+  UserPlus,
+  CheckCircle,
+  Clock,
+  X,
+} from "lucide-react";
+import { AuthContext } from "@/context/AuthContext";
+import API from "@/utils/api";
 
 export default function DoctorSidebar() {
   const pathname = usePathname();
+  const [isOpen, setIsOpen] = useState(true);
+  const [expandedMenus, setExpandedMenus] = useState({
+    patients: false,
+    appointments: false,
+  });
+  const { user } = useContext(AuthContext);
+  const [doctorData, setDoctorData] = useState({
+    fullname: "",
+    email: "",
+    specialty: "",
+    profileImage: "",
+  });
 
-  const links = [
-    { name: "Dashboard", href: "/doctor/dashboard" },
-    { name: "My Patients", href: "/doctor/patients" },
-    { name: "Appointments", href: "/doctor/appointments" },
+  const toggleSidebar = () => {
+    setIsOpen(!isOpen);
+    if (isOpen) {
+      setExpandedMenus({
+        patients: false,
+        appointments: false,
+      });
+    }
+  };
+
+  const toggleMenu = (menu) => {
+    if (!isOpen) return;
+    setExpandedMenus((prev) => ({
+      ...prev,
+      [menu]: !prev[menu],
+    }));
+  };
+
+  const mainLinks = [
+    {
+      name: "Dashboard",
+      href: "/doctor/dashboard",
+      icon: LayoutDashboard,
+    },
   ];
 
+  const expandableMenus = [
+    {
+      id: "patients",
+      name: "Patients",
+      icon: Users,
+      subLinks: [
+        { name: "Add Patient", href: "/doctor/patient/add", icon: UserPlus },
+        {
+          name: "My Patients",
+          href: "/doctor/patient/",
+          icon: Users,
+        },
+      ],
+    },
+    {
+      id: "appointments",
+      name: "Appointments",
+      icon: Calendar,
+      subLinks: [
+        { name: "Active", href: "/doctor/appointments/active", icon: Clock },
+        {
+          name: "Completed",
+          href: "/doctor/appointments/completed",
+          icon: CheckCircle,
+        },
+      ],
+    },
+  ];
+
+  const getCurrentDoctor = async () => {
+    try {
+      const response = await API.get("/doctors/me");
+      console.log("response of current doctor (res.data)", response.data);
+      console.log("data.data : ", response.data.data);
+      setDoctorData(response.data.data);
+      // Handle the response data as needed
+    } catch (error) {
+      console.error("Error fetching current doctor:", error);
+    }
+  };
+
+  useEffect(() => {
+    getCurrentDoctor();
+  }, []);
+
   return (
-    <aside className="w-64 h-screen bg-blue-900 text-white p-4">
-      <h2 className="text-xl font-bold mb-6">Doctor Panel</h2>
-      <ul className="space-y-2">
-        {links.map((link) => (
-          <li key={link.href}>
-            <Link
-              href={link.href}
-              className={`block p-2 rounded hover:bg-blue-700 ${
-                pathname === link.href ? "bg-blue-700 font-semibold" : ""
-              }`}
-            >
-              {link.name}
-            </Link>
-          </li>
-        ))}
-      </ul>
+    <aside
+      className={`${
+        isOpen ? "w-64" : "w-16"
+      } h-screen bg-gradient-to-b from-blue-800 to-indigo-900 text-white shadow-xl transition-all duration-300 ease-in-out flex flex-col`}
+    >
+      {/* Header */}
+      <div className="p-4 border-b border-blue-600 flex items-center justify-between">
+        {isOpen && (
+          <h2 className="text-xl font-bold tracking-wide">Doctor Panel</h2>
+        )}
+        <button
+          onClick={toggleSidebar}
+          className="p-1 rounded hover:bg-blue-700 transition-colors"
+        >
+          {isOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 p-4 overflow-y-auto">
+        <ul className="space-y-2">
+          {/* Main Links */}
+          {mainLinks.map((link) => {
+            const Icon = link.icon;
+            return (
+              <li key={link.href}>
+                <Link
+                  href={link.href}
+                  className={`w-full flex items-center p-2 rounded-lg transition-colors ${
+                    pathname === link.href
+                      ? "bg-blue-600 font-semibold shadow-inner"
+                      : "hover:bg-blue-700"
+                  }`}
+                  title={!isOpen ? link.name : ""}
+                >
+                  <Icon size={20} className="flex-shrink-0" />
+                  {isOpen && (
+                    <span className="ml-3 text-left">{link.name}</span>
+                  )}
+                </Link>
+              </li>
+            );
+          })}
+
+          {/* Expandable Menus */}
+          {expandableMenus.map((menu) => {
+            const Icon = menu.icon;
+            const isExpanded = expandedMenus[menu.id];
+            const hasActiveSubLink = menu.subLinks.some(
+              (subLink) => pathname === subLink.href
+            );
+
+            return (
+              <li key={menu.id} className="space-y-1">
+                <button
+                  onClick={() => toggleMenu(menu.id)}
+                  className={`w-full flex items-center p-2 rounded-lg transition-colors ${
+                    hasActiveSubLink
+                      ? "bg-blue-700 shadow-inner"
+                      : "hover:bg-blue-700"
+                  }`}
+                  title={!isOpen ? menu.name : ""}
+                >
+                  <Icon size={20} className="flex-shrink-0" />
+                  {isOpen && (
+                    <>
+                      <span className="ml-3 flex-1 text-left">{menu.name}</span>
+                      {isExpanded ? (
+                        <ChevronDown size={16} className="flex-shrink-0" />
+                      ) : (
+                        <ChevronRight size={16} className="flex-shrink-0" />
+                      )}
+                    </>
+                  )}
+                </button>
+
+                {/* Sub-menu */}
+                {isOpen && isExpanded && (
+                  <ul className="ml-4 space-y-1 border-l border-blue-600 pl-2">
+                    {menu.subLinks.map((subLink) => {
+                      const SubIcon = subLink.icon;
+                      return (
+                        <li key={subLink.href}>
+                          <Link
+                            href={subLink.href}
+                            className={`w-full flex items-center p-2 rounded-lg transition-colors text-sm ${
+                              pathname === subLink.href
+                                ? "bg-blue-600 font-semibold text-blue-200 shadow-inner"
+                                : "hover:bg-blue-700"
+                            }`}
+                          >
+                            <SubIcon size={16} className="flex-shrink-0" />
+                            <span className="ml-2 text-left">
+                              {subLink.name}
+                            </span>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+
+      {/* Profile Section */}
+      <div className="border-t border-blue-600 p-4">
+        <div
+          className={`flex items-center ${
+            isOpen ? "space-x-3" : "justify-center"
+          }`}
+        >
+          {/* Profile Picture */}
+          <div className="flex-shrink-0">
+            {doctorData?.profileImage ? (
+              <img
+                src={doctorData.profileImage}
+                alt="Doctor Profile"
+                className="w-10 h-10 rounded-full object-cover border-2 border-blue-400"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center border-2 border-blue-400">
+                <User size={20} className="text-white" />
+              </div>
+            )}
+          </div>
+
+          {/* Profile Info */}
+          {isOpen && (
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-white truncate">
+                {doctorData.fullname}
+              </p>
+              <p className="text-xs text-blue-300 truncate">
+                {doctorData.email}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
     </aside>
   );
 }

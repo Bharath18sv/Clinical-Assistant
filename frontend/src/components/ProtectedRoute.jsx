@@ -1,17 +1,17 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useContext } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/contexts/AuthContext";
 import LoadingSpinner from "./LoadingSpinner";
-import { ROUTES } from "@/utils/routes";
+import { AuthContext } from "@/context/AuthContext";
+import API from "@/utils/api";
 
 export default function ProtectedRoute({
   children,
   allowedRoles = ["patient", "doctor", "admin"],
   redirectTo,
 }) {
-  const { user, loading, userRole } = useAuth();
+  const { user, loading } = useContext(AuthContext);
   const router = useRouter();
 
   useEffect(() => {
@@ -21,30 +21,31 @@ export default function ProtectedRoute({
         if (redirectTo) {
           router.push(redirectTo);
         } else {
-          router.push(ROUTES.HOME);
+          router.push("/");
         }
       } else if (
         allowedRoles.length > 0 &&
-        userRole &&
-        !allowedRoles.includes(userRole)
+        user.role &&
+        !allowedRoles.includes(user.role)
       ) {
         // Redirect to appropriate dashboard based on user role
-        switch (userRole) {
+        switch (user.role) {
           case "patient":
-            router.push(ROUTES.PATIENT_DASHBOARD);
+            // router.push(ROUTES.PATIENT_DASHBOARD);
+            router.push("/patient/dashboard");
             break;
           case "doctor":
-            router.push(ROUTES.DOCTOR_DASHBOARD);
+            router.push("/doctor/dashboard");
             break;
           case "admin":
-            router.push(ROUTES.ADMIN_DASHBOARD);
+            router.push("/admin/dashboard");
             break;
           default:
-            router.push(ROUTES.HOME);
+            router.push("/");
         }
       }
     }
-  }, [user, loading, userRole, allowedRoles, router, redirectTo]);
+  }, [user, loading, user.role, allowedRoles, router, redirectTo]);
 
   if (loading) {
     return (
@@ -58,7 +59,7 @@ export default function ProtectedRoute({
     return null;
   }
 
-  if (allowedRoles.length > 0 && userRole && !allowedRoles.includes(userRole)) {
+  if (allowedRoles.length > 0 && user.role && !allowedRoles.includes(user.role)) {
     return null;
   }
 

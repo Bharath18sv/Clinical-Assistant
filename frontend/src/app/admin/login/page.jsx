@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import API from "@/utils/api";
+import toast from "react-hot-toast";
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
@@ -11,25 +13,6 @@ export default function AdminLoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
-
-  // Universal login: redirect if already logged in via localStorage
-  //   useEffect(() => {
-  //     try {
-  //       const stored =
-  //         typeof window !== "undefined" ? localStorage.getItem("authData");
-  //       if (stored) {
-  //         const parsed = JSON.parse(stored);
-  //         const role = parsed?.role;
-  //         if (role === "admin") return router.replace(ROUTES.ADMIN_DASHBOARD);
-  //         if (role === "doctor") return router.replace(ROUTES.DOCTOR_DASHBOARD);
-  //         if (role === "patient") return router.replace(ROUTES.PATIENT_DASHBOARD);
-  //       }
-  //     } catch {}
-  //     const roleHint = getUserRole();
-  //     if (roleHint === "admin") router.replace(ROUTES.ADMIN_DASHBOARD);
-  //     else if (roleHint === "doctor") router.replace(ROUTES.DOCTOR_DASHBOARD);
-  //     else if (roleHint === "patient") router.replace(ROUTES.PATIENT_DASHBOARD);
-  //   }, [router]);
 
   useEffect(() => {
     try {
@@ -40,12 +23,14 @@ export default function AdminLoginPage() {
       if (user.data.role === "admin") {
         console.log("Admin already logged in, redirecting to dashboard...");
         router.replace("/admin/dashboard");
+        toast.success("Welcome back, Admin!");
       }
     } catch (error) {
       console.error("Error loading auth data:", error);
     }
   }, []);
 
+  //login logic
   const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -56,7 +41,9 @@ export default function AdminLoginPage() {
       const response = await API.post("/admin/login", { email, password });
       const data = response.data;
       console.log("Login response data:", data);
-      localStorage.setItem("user", JSON.stringify(data));
+      console.log("user data inside data object", data.data);
+      localStorage.setItem("user", JSON.stringify(data.data));
+      toast.success("Login successful! Redirecting...");
       // Navigate to dashboard on success
       router.replace("/admin/dashboard");
     } catch (err) {

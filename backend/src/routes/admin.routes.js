@@ -18,6 +18,7 @@ import {
   requireAdminRole,
   checkPermission,
 } from "../middlewares/adminAuth.middleware.js";
+import { upload } from "../middlewares/multer.middlewares.js";
 
 const router = Router();
 
@@ -41,7 +42,12 @@ router.get(
 router.get("/me", getCurrentAdmin);
 
 // Doctor Management
-router.post("/doctors", checkPermission("manageDoctors"), addDoctor);
+router.post(
+  "/doctors",
+  upload.single("profilePicture"),
+  checkPermission("manageDoctors"),
+  addDoctor
+);
 router.get("/doctors", checkPermission("manageDoctors"), getAllDoctors);
 router.get(
   "/doctors/:doctorId",

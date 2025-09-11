@@ -1,35 +1,243 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import {
+  ChevronDown,
+  ChevronRight,
+  Menu,
+  LayoutDashboard,
+  Users,
+  UserCheck,
+  Calendar,
+  User,
+  UserPlus,
+  CheckCircle,
+  XCircle,
+  Clock,
+  X,
+} from "lucide-react";
+import { usePathname } from "next/navigation"; // <-- usePathname instead of router
 
 export default function AdminSidebar() {
-  const pathname = usePathname();
+  const pathname = usePathname(); // current route
+  const [isOpen, setIsOpen] = useState(true);
+  const [expandedMenus, setExpandedMenus] = useState({
+    doctors: false,
+    patients: false,
+    appointments: false,
+  });
 
-  const links = [
-    { name: "Dashboard", href: "/admin/dashboard" },
-    { name: "Doctors", href: "/admin/doctors" },
-    { name: "Patients", href: "/admin/patients" },
-    { name: "Appointments", href: "/admin/appointments" },
+  const toggleSidebar = () => {
+    setIsOpen(!isOpen);
+    if (!isOpen) {
+      // When opening sidebar, keep current expanded state
+    } else {
+      // When closing sidebar, collapse all menus
+      setExpandedMenus({
+        doctors: false,
+        patients: false,
+        appointments: false,
+      });
+    }
+  };
+
+  const toggleMenu = (menu) => {
+    if (!isOpen) return;
+    setExpandedMenus((prev) => ({
+      ...prev,
+      [menu]: !prev[menu],
+    }));
+  };
+
+  const mainLinks = [
+    {
+      name: "Dashboard",
+      href: "/admin/dashboard",
+      icon: LayoutDashboard,
+    },
   ];
 
+  const expandableMenus = [
+    {
+      id: "doctors",
+      name: "Doctors",
+      icon: Users,
+      subLinks: [
+        { name: "All Doctors", href: "/admin/doctors", icon: Users },
+        { name: "Add Doctor", href: "/admin/doctors/add", icon: UserPlus },
+        {
+          name: "Approve Doctors",
+          href: "/admin/doctors/approve",
+          icon: CheckCircle,
+        },
+      ],
+    },
+    {
+      id: "patients",
+      name: "Patients",
+      icon: UserCheck,
+      subLinks: [
+        { name: "Active", href: "/admin/patients/active", icon: CheckCircle },
+        { name: "Inactive", href: "/admin/patients/inactive", icon: XCircle },
+      ],
+    },
+    {
+      id: "appointments",
+      name: "Appointments",
+      icon: Calendar,
+      subLinks: [
+        { name: "Active", href: "/admin/appointments/active", icon: Clock },
+        {
+          name: "Completed",
+          href: "/admin/appointments/completed",
+          icon: CheckCircle,
+        },
+      ],
+    },
+  ];
+
+  const adminData = {
+    name: "John Smith",
+    email: "admin@hospital.com",
+    profileImage: null,
+  };
+
   return (
-    <aside className="w-64 h-screen bg-gray-900 text-white p-4">
-      <h2 className="text-xl font-bold mb-6">Admin Panel</h2>
-      <ul className="space-y-2">
-        {links.map((link) => (
-          <li key={link.href}>
-            <Link
-              href={link.href}
-              className={`block p-2 rounded hover:bg-gray-700 ${
-                pathname === link.href ? "bg-gray-700 font-semibold" : ""
-              }`}
-            >
-              {link.name}
-            </Link>
-          </li>
-        ))}
-      </ul>
+    <aside
+      className={`${
+        isOpen ? "w-64" : "w-16"
+      } h-screen bg-gray-900 text-white transition-all duration-300 ease-in-out flex flex-col`}
+    >
+      {/* Header */}
+      <div className="p-4 border-b border-gray-700 flex items-center justify-between">
+        {isOpen && <h2 className="text-xl font-bold">Admin Panel</h2>}
+        <button
+          onClick={toggleSidebar}
+          className="p-1 rounded hover:bg-gray-700 transition-colors"
+        >
+          {isOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 p-4 overflow-y-auto">
+        <ul className="space-y-2">
+          {/* Main Links */}
+          {mainLinks.map((link) => {
+            const Icon = link.icon;
+            return (
+              <li key={link.href}>
+                <Link
+                  href={link.href}
+                  className={`w-full flex items-center p-2 rounded hover:bg-gray-700 transition-colors ${
+                    pathname === link.href ? "bg-gray-700 font-semibold" : ""
+                  }`}
+                  title={!isOpen ? link.name : ""}
+                >
+                  <Icon size={20} className="flex-shrink-0" />
+                  {isOpen && (
+                    <span className="ml-3 text-left">{link.name}</span>
+                  )}
+                </Link>
+              </li>
+            );
+          })}
+
+          {/* Expandable Menus */}
+          {expandableMenus.map((menu) => {
+            const Icon = menu.icon;
+            const isExpanded = expandedMenus[menu.id];
+            const hasActiveSubLink = menu.subLinks.some(
+              (subLink) => pathname === subLink.href
+            );
+
+            return (
+              <li key={menu.id} className="space-y-1">
+                <button
+                  onClick={() => toggleMenu(menu.id)}
+                  className={`w-full flex items-center p-2 rounded hover:bg-gray-700 transition-colors ${
+                    hasActiveSubLink ? "bg-gray-700" : ""
+                  }`}
+                  title={!isOpen ? menu.name : ""}
+                >
+                  <Icon size={20} className="flex-shrink-0" />
+                  {isOpen && (
+                    <>
+                      <span className="ml-3 flex-1 text-left">{menu.name}</span>
+                      {isExpanded ? (
+                        <ChevronDown size={16} className="flex-shrink-0" />
+                      ) : (
+                        <ChevronRight size={16} className="flex-shrink-0" />
+                      )}
+                    </>
+                  )}
+                </button>
+
+                {/* Sub-menu */}
+                {isOpen && isExpanded && (
+                  <ul className="ml-4 space-y-1 border-l border-gray-700 pl-2">
+                    {menu.subLinks.map((subLink) => {
+                      const SubIcon = subLink.icon;
+                      return (
+                        <li key={subLink.href}>
+                          <Link
+                            href={subLink.href}
+                            className={`w-full flex items-center p-2 rounded hover:bg-gray-700 transition-colors text-sm ${
+                              pathname === subLink.href
+                                ? "bg-gray-700 font-semibold text-blue-300"
+                                : ""
+                            }`}
+                          >
+                            <SubIcon size={16} className="flex-shrink-0" />
+                            <span className="ml-2 text-left">
+                              {subLink.name}
+                            </span>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+
+      {/* Profile Section */}
+      <div className="border-t border-gray-700 p-4">
+        <div
+          className={`flex items-center ${
+            isOpen ? "space-x-3" : "justify-center"
+          }`}
+        >
+          <div className="flex-shrink-0">
+            {adminData.profileImage ? (
+              <img
+                src={adminData.profileImage}
+                alt="Admin Profile"
+                className="w-10 h-10 rounded-full object-cover border-2 border-gray-600"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center border-2 border-gray-600">
+                <User size={20} className="text-white" />
+              </div>
+            )}
+          </div>
+
+          {isOpen && (
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-white truncate">
+                {adminData.name}
+              </p>
+              <p className="text-xs text-gray-400 truncate">
+                {adminData.email}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
     </aside>
   );
 }

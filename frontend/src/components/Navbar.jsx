@@ -1,18 +1,17 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useContext } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { User, ChevronDown, UserCircle, LogOut } from "lucide-react";
-import { getUserRole } from "@/utils/roles";
-import { useAuth } from "@/contexts/AuthContext";
+import { AuthContext } from "@/context/AuthContext";
+import API from "@/utils/api";
 
-const Navbar = ({ user }) => {
+const Navbar = ({ Propuser }) => {
   const [open, setOpen] = useState(false);
   const router = useRouter();
-  const role = getUserRole();
-  const { logout } = useAuth();
-  const dropdownRef = useRef < HTMLDivElement > null;
+  const { user, authLoading, logout } = useContext(AuthContext);
+  const dropdownRef = useRef(null);
 
   const handleLogout = () => {
     logout(); // clears tokens + redirects
@@ -20,9 +19,9 @@ const Navbar = ({ user }) => {
 
   // Role-based profile path
   const profilePath =
-    role === "admin"
+    user.role === "admin"
       ? "/admin/profile"
-      : role === "doctor"
+      : user.role === "doctor"
       ? "/doctor/profile"
       : "/patient/profile";
 
@@ -35,7 +34,7 @@ const Navbar = ({ user }) => {
               Smart Care Assistant
             </h1>
           </div>
-          {role && (
+          {Propuser && (
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setOpen(!open)}

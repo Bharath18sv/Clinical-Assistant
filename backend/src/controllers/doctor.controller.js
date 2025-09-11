@@ -169,7 +169,7 @@ const loginDoctor = asyncHandler(async (req, res) => {
     .json(
       new ApiResponse(
         200,
-        { user: loggedInDoctor, accessToken, refreshToken, role : "doctor" },
+        { user: loggedInDoctor, accessToken, refreshToken, role: "doctor" },
         "Doctor logged in successfully"
       )
     );
@@ -461,7 +461,7 @@ const getCurrentDoctor = asyncHandler(async (req, res) => {
   const user = await Doctor.findOne({ email }).select(
     "-password -refreshToken"
   );
-
+  console.log("doctor data from server", user);
   res
     .status(200)
     .json(new ApiResponse(200, user, "User details fetched successfully"));

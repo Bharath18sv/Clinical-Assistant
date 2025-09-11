@@ -5,12 +5,12 @@ import Image from "next/image";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { User, Stethoscope, Shield, ArrowRight } from "lucide-react";
-import { ROUTES } from "@/utils/routes";
 // Landing page is universal; avoid auth gating here
 
 export default function Home() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const router = useRouter();
+  const [activeUsers, setActiveUsers] = useState(10000);
   // No auth usage here to keep page universal
 
   // Check if user is authenticated and redirect accordingly
@@ -36,7 +36,7 @@ export default function Home() {
 
   // Landing page is universal; don't block render on auth loading
 
-  const scrollToSection = (sectionId: string) => {
+  const scrollToSection = (sectionId) => {
     const element = document.getElementById(sectionId);
     if (element) {
       element.scrollIntoView({
@@ -84,20 +84,20 @@ export default function Home() {
               </button>
               <Link
                 prefetch={false}
-                href={ROUTES.PATIENT_LOGIN}
+                href="/patient/login"
                 className="text-gray-700 hover:text-blue-600 transition-colors duration-200 font-medium pt-2 pb-2"
               >
                 Login
               </Link>
               <Link
                 prefetch={false}
-                href={ROUTES.ADMIN_LOGIN}
+                href="/admin/login"
                 className="text-gray-700 hover:text-blue-600 transition-colors duration-200 font-medium pt-2 pb-2"
               >
                 Admin
               </Link>
               <Link
-                href={ROUTES.PATIENT_SIGNUP}
+                href="/patient/signup"
                 className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
               >
                 Get Started
@@ -159,20 +159,20 @@ export default function Home() {
                 </button>
                 <Link
                   prefetch={false}
-                  href={ROUTES.PATIENT_LOGIN}
+                  href="/patient/login"
                   className="block px-3 py-2 text-gray-700 hover:text-blue-600 transition-colors duration-200"
                 >
                   Login
                 </Link>
                 <Link
                   prefetch={false}
-                  href={ROUTES.ADMIN_LOGIN}
+                  href='/admin/login'
                   className="block px-3 py-2 text-gray-700 hover:text-blue-600 transition-colors duration-200"
                 >
                   Admin
                 </Link>
                 <Link
-                  href={ROUTES.PATIENT_SIGNUP}
+                  href="/patient/signup"
                   className="block px-3 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-200"
                 >
                   Get Started
@@ -208,7 +208,7 @@ export default function Home() {
                 health tracking, and intelligent recommendations.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center sm:justify-start  lg:justify-start">
-                <Link href={ROUTES.PATIENT_SIGNUP}>
+                <Link href="/patient/signup">
                   <button className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                     Start Your Journey →
                   </button>
@@ -495,7 +495,9 @@ export default function Home() {
               </div>
               <div className="absolute -bottom-4 -right-4 bg-white p-6 rounded-xl shadow-lg">
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-blue-600">10K+</div>
+                  <div className="text-3xl font-bold text-blue-600">
+                    {activeUsers}
+                  </div>
                   <div className="text-gray-600">Active Users</div>
                 </div>
               </div>
@@ -515,12 +517,12 @@ export default function Home() {
             Care Assistant for their health monitoring needs.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href={ROUTES.PATIENT_SIGNUP}>
+            <Link href="/patient/signup">
               <button className="bg-white text-blue-600 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-gray-100 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-blue-600">
                 Get Started Today
               </button>
             </Link>
-            <Link prefetch={false} href={ROUTES.PATIENT_LOGIN}>
+            <Link prefetch={false} href="/patient/login">
               <button className="border-2 border-white text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-white hover:text-blue-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-blue-600">
                 Sign In
               </button>

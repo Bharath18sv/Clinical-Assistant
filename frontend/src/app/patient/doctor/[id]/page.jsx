@@ -1,0 +1,1 @@
+//view doctor details, availability and book appointment option

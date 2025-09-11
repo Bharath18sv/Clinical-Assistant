@@ -1,0 +1,5 @@
+lucide-react
+react-hot-toast
+jwt-decode
+react-select
+react-hook-form

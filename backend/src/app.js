@@ -7,7 +7,7 @@ const app = e();
 // CORS configuration - simplified and more standard
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || "http://localhost:3000",
+    origin: process.env.CORS_ORIGIN || "http://localhost:3001",
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: [
@@ -39,6 +39,7 @@ import patientRouter from "./routes/patient.routes.js";
 import doctorRouter from "./routes/doctor.routes.js";
 import adminRouter from "./routes/admin.routes.js";
 import authRouter from "./routes/auth.routes.js";
+import appointmentRouter from "./routes/appointment.routes.js"
 
 //routes
 app.use("/api/healthcheck", healthCheck);
@@ -46,5 +47,6 @@ app.use("/api/patients", patientRouter); //routes should always start with /
 app.use("/api/doctors", doctorRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/auth", authRouter);
+app.use("/api/appointments", appointmentRouter);
 
 export default app;

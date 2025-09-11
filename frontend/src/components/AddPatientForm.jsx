@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { doctorApi } from "@/utils/api";
+import { useState, useContext } from "react";
+import { AuthContext } from "@/context/AuthContext";
+import API from "@/utils/api";
+// import { doctorApi } from "@/utils/api";
 import {
   X,
   User,
@@ -15,7 +16,7 @@ import {
 } from "lucide-react";
 
 export default function AddPatientForm({ isOpen, onClose, onSuccess }) {
-  const { user: authUser } = useAuth();
+  const { user } = useContext(AuthContext);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     fullname: "",
@@ -79,7 +80,7 @@ export default function AddPatientForm({ isOpen, onClose, onSuccess }) {
           .filter(Boolean),
       };
 
-      const response = await doctorApi.addPatient(patientData);
+      const response = await API.post("/patients", patientData);
 
       if (response.success) {
         onSuccess();

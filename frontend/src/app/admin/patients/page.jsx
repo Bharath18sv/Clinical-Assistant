@@ -1,0 +1,1 @@
+//view all patients of a doctor, with filter by status (active/inactive), search by name

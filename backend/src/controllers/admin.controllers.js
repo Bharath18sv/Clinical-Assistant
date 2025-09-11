@@ -136,6 +136,8 @@ const getCurrentAdmin = asyncHandler(async (req, res) => {
 
 // Doctor Management
 const addDoctor = asyncHandler(async (req, res) => {
+  console.log("Request body in addDoctor:", req.body);
+  console.log("profilePicture from frontend request):", req.file);
   const {
     email,
     password,
@@ -163,6 +165,17 @@ const addDoctor = asyncHandler(async (req, res) => {
   if (existingDoctor) {
     throw new ApiError(409, "Doctor with this email already exists");
   }
+  //upload image to cloudinary
+  let profilePic;
+  if (req.file) {
+    try {
+      profilePic = await uploadOnCloudinary(req.file.path);
+      console.log("Profile picture uploaded successfully");
+    } catch (error) {
+      console.log("profile pic upload failed", error);
+      throw new ApiError(500, "Failed to upload Profile picture");
+    }
+  }
 
   // Create new doctor
   const doctor = await Doctor.create({
@@ -175,9 +188,11 @@ const addDoctor = asyncHandler(async (req, res) => {
     about,
     phone,
     addedBy: req.admin._id,
+    profilePicture: profilePic ? profilePic.url : undefined,
   });
 
   const createdDoctor = await Doctor.findById(doctor._id).select("-password");
+  console.log("new doctor created", createdDoctor);
 
   if (!createdDoctor) {
     throw new ApiError(500, "Something went wrong while creating the doctor");
