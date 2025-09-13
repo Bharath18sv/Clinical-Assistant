@@ -1,10 +1,11 @@
 //admin login page
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import API from "@/utils/api";
 import toast from "react-hot-toast";
+import { AuthContext } from "@/context/AuthContext";
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
@@ -13,6 +14,7 @@ export default function AdminLoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
+  const { login, user } = useContext(AuthContext);
 
   useEffect(() => {
     try {
@@ -20,7 +22,7 @@ export default function AdminLoginPage() {
       console.log("user data in localStorage:", userExist);
       if (!userExist) return;
       const user = JSON.parse(userExist);
-      if (user.data.role === "admin") {
+      if (user.role === "admin" || user.role === "super_admin") {
         console.log("Admin already logged in, redirecting to dashboard...");
         router.replace("/admin/dashboard");
         toast.success("Welcome back, Admin!");
@@ -37,17 +39,41 @@ export default function AdminLoginPage() {
     setError("");
 
     try {
-      // Perform admin login via AuthContext; this sets tokens and user role
-      const response = await API.post("/admin/login", { email, password });
-      const data = response.data;
-      console.log("Login response data:", data);
-      console.log("user data inside data object", data.data);
-      localStorage.setItem("user", JSON.stringify(data.data));
-      toast.success("Login successful! Redirecting...");
-      // Navigate to dashboard on success
-      router.replace("/admin/dashboard");
+      console.log('Starting login with:', { email, password });
+      
+      const response = await fetch('http://localhost:5002/api/admin/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ email, password })
+      });
+      
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
+      
+      const data = await response.json();
+      console.log('Response data:', data);
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Login failed');
+      }
+      
+      if (data.success && data.data) {
+        console.log('Login successful, calling login function');
+        login(data.data);
+        toast.success("Login successful! Redirecting...");
+        setTimeout(() => {
+          router.replace("/admin/dashboard");
+        }, 100);
+      } else {
+        throw new Error('Invalid response format');
+      }
     } catch (err) {
-      setError(err.message || "Login failed. Please check your credentials.");
+      console.error("Login error:", err);
+      console.error("Error response:", err.response);
+      setError(err.response?.data?.message || err.message || "Login failed. Please check your credentials.");
     } finally {
       setIsLoading(false);
     }
@@ -276,7 +302,7 @@ export default function AdminLoginPage() {
             </h3>
             <div className="text-xs text-blue-700 space-y-1">
               <p>
-                <strong>Email:</strong> admin@smartcare.com
+                <strong>Email:</strong> admin@sca.com
               </p>
               <p>
                 <strong>Password:</strong> admin123

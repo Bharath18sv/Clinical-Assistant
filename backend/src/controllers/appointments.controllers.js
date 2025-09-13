@@ -1,13 +1,8 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
-<<<<<<< HEAD
 import { ApiResponse } from "../utils/ApiResponse.js";
+import { ApiError } from "../utils/ApiError.js";
 import { Appointment } from "../models/appointments.models.js";
 import { Patient } from "../models/patient.models.js";
-=======
-import { Appointment } from "../models/appointments.models.js";
-import { ApiError } from "../utils/ApiError.js";
-import { ApiResponse } from "../utils/ApiResponse.js";
->>>>>>> upstream/main
 
 // Patient self-book or general creation endpoint
 const createAppointment = asyncHandler(async (req, res) => {

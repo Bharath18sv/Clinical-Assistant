@@ -19,7 +19,7 @@ import {
   logSymptoms,
   logMedication,
   getMyLogs,
-} from "../controllers/healthcheck.controllers.js";
+} from "../controllers/medicationLogs.controllers.js";
 import { verifyJwt } from "../middlewares/auth.middleware.js";
 import { upload } from "../middlewares/multer.middlewares.js";
 

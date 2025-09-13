@@ -11,11 +11,11 @@ export default function ProtectedRoute({
   allowedRoles = ["patient", "doctor", "admin"],
   redirectTo,
 }) {
-  const { user, loading } = useContext(AuthContext);
+  const { user, authLoading } = useContext(AuthContext);
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading) {
+    if (!authLoading) {
       if (!user) {
         // Redirect to appropriate login based on current role or default to home
         if (redirectTo) {
@@ -45,9 +45,9 @@ export default function ProtectedRoute({
         }
       }
     }
-  }, [user, loading, user.role, allowedRoles, router, redirectTo]);
+  }, [user, authLoading, allowedRoles, router, redirectTo]);
 
-  if (loading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <LoadingSpinner size="lg" />

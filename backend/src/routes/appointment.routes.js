@@ -1,8 +1,4 @@
 import { Router } from "express";
-<<<<<<< HEAD
-
-=======
->>>>>>> upstream/main
 import { verifyJwt } from "../middlewares/auth.middleware.js";
 import {
   getAppointmentById,
@@ -10,13 +6,10 @@ import {
   activeAppointments,
   completedAppointments,
   getUserAppointments,
-<<<<<<< HEAD
-=======
   createAppointment,
   updateAppointment,
   startAppointment,
   completeAppointment,
->>>>>>> upstream/main
 } from "../controllers/appointments.controllers.js";
 
 const router = Router();
