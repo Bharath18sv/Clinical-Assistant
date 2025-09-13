@@ -4,8 +4,11 @@ import { usePathname } from "next/navigation";
 
 export default function PatientLayout({ children }) {
   const path = usePathname();
-
-  const hideSidebar = path === "/patient/signup" || "/patient/login";
+  let hideSidebar = false;
+  console.log(path);
+  if (path === "/patient/signup" || path === "/patient/login") {
+    hideSidebar = true;
+  }
   return (
     <div className="flex h-screen">
       {!hideSidebar && <PatientSidebar />}

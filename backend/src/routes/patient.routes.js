@@ -4,11 +4,16 @@ import {
   loginPatient,
   refreshAccessToken,
   logoutPatient,
-  updateInfo,
   updatePassword,
+  updateInfo,
   updateProfilePic,
   getCurrentPatient,
   getRecentPatients,
+  getAllDoctorsForPatient,
+  getActiveAppointments,
+  getCompletedAppointments,
+  getMyDoctors,
+  getMyAppointments,
 } from "../controllers/patient.controllers.js";
 import {
   logSymptoms,
@@ -36,6 +41,11 @@ router.route("/me").get(verifyJwt, getCurrentPatient);
 router.route("/logs/symptoms").post(verifyJwt, logSymptoms);
 router.route("/logs/medications").post(verifyJwt, logMedication);
 router.route("/logs").get(verifyJwt, getMyLogs);
+router.route("/doctors").get(verifyJwt, getAllDoctorsForPatient);
+router.route("/myDoctors").get(verifyJwt, getMyDoctors);
+router.route("/appointments").get(verifyJwt, getMyAppointments);
+router.route("/appointments/active").get(verifyJwt, getActiveAppointments);
+router.route("/appointments/completed").get(verifyJwt, getCompletedAppointments);
 
 //admin routes
 router.route("/recent").get(getRecentPatients);

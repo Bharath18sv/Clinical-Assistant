@@ -4,8 +4,23 @@ import { Heart, Calendar, Pill, Activity } from "lucide-react";
 import HealthCard from "@/components/HealthCard";
 import AppointmentCard from "@/components/AppointmentCard";
 import MedicationCard from "@/components/MedicationCard";
+import API from "@/utils/api";
+import { AuthContext } from "@/context/AuthContext";
 
 export default function PatientDashboard() {
+  const { user, authLoading } = useContext(AuthContext);
+  const [appointments, setAppointments] = useState([]);
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      getAppointments();
+    }
+  }, [authLoading, user]);
+
+  if (authLoading || !user) {
+    return <div>Loading...</div>;
+  }
+
   // Mock data - in a real app, this would come from API calls
   const healthStats = [
     {
@@ -81,6 +96,16 @@ export default function PatientDashboard() {
     },
   ];
 
+  const getAppointments = async () => {
+    try {
+      const res = await API.get("/patient/appointments");
+      console.log("Appointments data:", res.data);
+      setAppointments(res.data);
+    } catch (error) {
+      console.error("Error fetching appointments:", error);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -108,7 +133,7 @@ export default function PatientDashboard() {
         {/* Upcoming Appointments */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            Upcoming Appointments
+            Your Appointments
           </h2>
           <div className="space-y-3">
             {upcomingAppointments.map((appointment) => (

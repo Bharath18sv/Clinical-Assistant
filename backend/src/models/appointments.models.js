@@ -1,19 +1,17 @@
 //accept / reject,
 
 import mongoose, { Schema } from "mongoose";
-import { Patient } from "./patient.models.js";
-import { Doctor } from "./doctor.models.js";
 
 const AppointmentSchema = new Schema(
   {
     patientId: {
       type: Schema.Types.ObjectId,
-      ref: Patient,
+      ref: "Patient",
       required: true,
     },
     doctorId: {
       type: Schema.Types.ObjectId,
-      ref: Doctor,
+      ref: "Doctor",
       required: true,
     },
     scheduledAt: {
@@ -23,7 +21,8 @@ const AppointmentSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ["approved", "pending", "completed", "cancelled"],
+      enum: ["pending", "approved", "active", "completed", "cancelled"],
+      default: "pending",
       required: true,
     },
     reason: {

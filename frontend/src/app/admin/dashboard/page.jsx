@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { useRouter } from "next/navigation";
 // import { useAuth } from "@/contexts/AuthContext";
 // import { doctorApi } from "@/utils/api";
@@ -31,7 +31,7 @@ import AddPatientForm from "@/components/AddPatientForm";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
 export default function DoctorDashboardPage() {
-  const { user, authLoading } = useAuth();
+  const { user, authLoading } = useContext(AuthContext);
   const router = useRouter();
   const [doctorData, setDoctorData] = useState(null);
   const [patients, setPatients] = useState([]);
@@ -97,7 +97,7 @@ export default function DoctorDashboardPage() {
   const getDoctorData = async () => {
     setLoading((prev) => ({ ...prev, profile: true }));
     try {
-      const response = await API.get("/doctors/me");
+      const response = await API.get("admin/doctors/");
       if (response.success && response.data) {
         setDoctorData(response.data);
       }
@@ -137,19 +137,19 @@ export default function DoctorDashboardPage() {
   };
 
   useEffect(() => {
-    if (authUser && !authLoading) {
+    if (user && !authLoading) {
       getDoctorData();
       getPatients();
       getAppointments();
     }
-  }, [authUser, authLoading]);
+  }, [user, authLoading]);
 
   // Redirect if not authenticated
   useEffect(() => {
-    if (!authLoading && !authUser) {
+    if (!authLoading && !user) {
       router.push("/doctor/login");
     }
-  }, [authUser, authLoading, router]);
+  }, [user, authLoading, router]);
 
   if (authLoading) {
     return (
@@ -159,7 +159,7 @@ export default function DoctorDashboardPage() {
     );
   }
 
-  if (!authUser) {
+  if (!user) {
     return null;
   }
 
@@ -183,12 +183,12 @@ export default function DoctorDashboardPage() {
   return (
     <ProtectedRoute allowedRoles={["doctor"]}>
       <div className="min-h-screen bg-gray-50">
-        <Navbar user={doctorData || authUser} />
+        <Navbar user={doctorData || user} />
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           {/* Welcome Section */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Welcome back, Dr. {doctorData?.fullname || authUser.fullname}!
+              Welcome back, Dr. {doctorData?.fullname || user.fullname}!
             </h1>
             <p className="text-gray-600">
               Here's your practice overview for today
@@ -251,7 +251,7 @@ export default function DoctorDashboardPage() {
                       </div>
                       <div className="ml-4">
                         <h3 className="font-medium text-gray-900">
-                          Dr. {doctorData?.fullname || authUser.fullname}
+                          Dr. {doctorData?.fullname || user.fullname}
                         </h3>
                         <p className="text-sm text-gray-500">
                           {doctorData?.specialization || "General Medicine"}
@@ -262,7 +262,7 @@ export default function DoctorDashboardPage() {
                       <div className="flex items-center text-sm">
                         <Phone className="h-4 w-4 text-gray-400 mr-2" />
                         <span className="text-gray-600">
-                          {doctorData?.phone || authUser.phone}
+                          {doctorData?.phone || user.phone}
                         </span>
                       </div>
                       <div className="flex items-center text-sm">

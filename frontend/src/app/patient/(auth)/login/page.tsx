@@ -36,7 +36,7 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const res = await API.post("/patient/login", {
+      const res = await API.post("/patients/login", {
         email,
         password,
       });
@@ -207,7 +207,7 @@ export default function LoginPage() {
               </div>
 
               {/* Forgot Password */}
-              <div className="flex items-center justify-between">
+              {/* <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-600">
                   Don't have an account?{" "}
                   <Link
@@ -223,7 +223,7 @@ export default function LoginPage() {
                 >
                   Forgot password?
                 </Link>
-              </div>
+              </div> */}
 
               {/* Error Message */}
               {error && (
