@@ -392,7 +392,7 @@ const createAppointmentForPatient = asyncHandler(async (req, res) => {
     doctorId,
     scheduledAt: scheduledAt ? new Date(scheduledAt) : new Date(),
     reason,
-    status: "pending",
+    status: "active",
   });
   res
     .status(201)
@@ -453,6 +453,7 @@ const getPatientSummary = asyncHandler(async (req, res) => {
 });
 
 const getCurrentDoctor = asyncHandler(async (req, res) => {
+  console.log("req.user data for /me route", req.user);
   const { email } = req.user; // Assuming user details are stored in req.user after authentication
   if (!email) {
     return res.status(400).json({ message: "User not authenticated" });

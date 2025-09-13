@@ -8,7 +8,7 @@ const API = axios.create({
 
 API.interceptors.request.use(
   (req) => {
-    // 🔹 Add Authorization header if token exists and valid
+    //  Add Authorization header if token exists and valid
     const userData = JSON.parse(localStorage.getItem("user"));
     const token = userData?.accessToken;
     if (token) {
@@ -53,3 +53,54 @@ API.interceptors.request.use(
 );
 
 export default API;
+
+// Appointment APIs
+export const fetchMyAppointments = async () => {
+  const { data } = await API.get(`/appointments`);
+  return data?.data || [];
+};
+
+export const fetchDoctorActiveAppointments = async () => {
+  const { data } = await API.get(`/appointments/active`);
+  return data?.data || [];
+};
+
+export const fetchDoctorCompletedAppointments = async () => {
+  const { data } = await API.get(`/appointments/completed`);
+  return data?.data || [];
+};
+
+export const fetchAppointmentById = async (id) => {
+  const { data } = await API.get(`/appointments/${id}`);
+  return data?.data;
+};
+
+export const createAppointment = async ({
+  doctorId,
+  patientId,
+  scheduledAt,
+  reason,
+}) => {
+  const { data } = await API.post(`/appointments`, {
+    doctorId,
+    patientId,
+    scheduledAt,
+    reason,
+  });
+  return data?.data;
+};
+
+export const startAppointment = async (id) => {
+  const { data } = await API.put(`/appointments/${id}/start`);
+  return data?.data;
+};
+
+export const completeAppointment = async (id) => {
+  const { data } = await API.put(`/appointments/${id}/complete`);
+  return data?.data;
+};
+
+export const fetchAllDoctors = async () => {
+  const { data } = await API.get("/doctors/recent");
+  return data?.data || [];
+};

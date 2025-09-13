@@ -6,9 +6,12 @@ import {
   deleteFromCloudinary,
 } from "../utils/cloudinary.js";
 import { Patient } from "../models/patient.models.js";
+import { Doctor } from "../models/doctor.models.js";
+import { Appointment } from "../models/appointments.models.js";
 import jwt from "jsonwebtoken";
 
 const registerPatient = asyncHandler(async (req, res) => {
+  console.log("req.boy data: ", req.body);
   const {
     email,
     password,
@@ -31,6 +34,7 @@ const registerPatient = asyncHandler(async (req, res) => {
     !address ||
     typeof address !== "object"
   ) {
+    console.log("All fields are required");
     throw new ApiError(400, "Validation failed: Missing required fields");
   }
 
@@ -40,10 +44,12 @@ const registerPatient = asyncHandler(async (req, res) => {
   });
 
   if (PatientAlreadyExist) {
+    console.log("Patient already exist with email:", email);
     throw new ApiError(400, `User with email: ${email} already exist`);
   }
 
   if (age < 1 || age > 100) {
+    console.log("Age is invalid");
     throw new ApiError(400, "Age is invalid");
   }
 
@@ -77,6 +83,8 @@ const registerPatient = asyncHandler(async (req, res) => {
       allergies: allergies || [],
       symptoms: symptoms || [],
     });
+
+    console.log("New user created:", newPatient.fullname);
 
     const createdPatient = await Patient.findById(newPatient.id).select(
       "-password -refreshToken"
@@ -387,6 +395,133 @@ const getRecentPatients = asyncHandler(async (req, res) => {
     );
 });
 
+const getAllDoctorsForPatient = asyncHandler(async (req, res) => {
+  const doctors = await Doctor.find().select("-password -refreshToken");
+  return res
+    .status(200)
+    .json(new ApiResponse(200, doctors, "Doctors fetched successfully"));
+});
+
+const getMyDoctors = asyncHandler(async (req, res) => {
+  const patientId = req.user._id;
+
+  const appointments = await Appointment.find({ patientId })
+    .populate("doctorId", "-password -refreshToken") // only get doctorId field
+    .select("doctorId -_id"); // only select doctorId field
+
+  if (!appointments || appointments.length === 0) {
+    return res
+      .status(404)
+      .json(new ApiResponse(404, [], "No appointments found for this patient"));
+  }
+
+  // Extract unique doctors from appointments
+  const doctorSet = new Set();
+  const myDoctors = [];
+
+  appointments.forEach((appt) => {
+    if (appt.doctorId && !doctorSet.has(appt.doctorId._id.toString())) {
+      doctorSet.add(appt.doctorId._id.toString());
+      myDoctors.push(appt.doctorId);
+    }
+  });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, myDoctors, "My doctors fetched successfully"));
+});
+
+const getMyAppointments = asyncHandler(async (req, res) => {
+  const patientId = req.user._id;
+
+  const appointments = await Appointment.find({ patientId })
+    .populate("doctorId", "fullname specialization email phone")
+    .sort({ scheduledAt: -1 });
+
+  if (!appointments || appointments.length === 0) {
+    return res
+      .status(404)
+      .json(
+        new ApiResponse(404, null, "No appointments found for this patient")
+      );
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        appointments,
+        "Patient appointments fetched successfully"
+      )
+    );
+});
+
+const getActiveAppointments = asyncHandler(async (req, res) => {
+  const patientId = req.user._id;
+
+  const appointments = await Appointment.find({
+    patientId,
+    status: "active",
+  })
+    .populate("doctorId", "fullname specialization email phone")
+    .sort({ scheduledAt: -1 });
+
+  if (!appointments || appointments.length === 0) {
+    return res
+      .status(404)
+      .json(
+        new ApiResponse(
+          404,
+          null,
+          "No active appointments found for this patient"
+        )
+      );
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        appointments,
+        "Active patient appointments fetched successfully"
+      )
+    );
+});
+
+const getCompletedAppointments = asyncHandler(async (req, res) => {
+  const patientId = req.user._id;
+
+  const appointments = await Appointment.find({
+    patientId,
+    status: "completed",
+  })
+    .populate("doctorId", "fullname specialization email phone")
+    .sort({ scheduledAt: -1 });
+  if (!appointments || appointments.length === 0) {
+    return res
+      .status(404)
+      .json(
+        new ApiResponse(
+          404,
+          null,
+          "No completed appointments found for this patient"
+        )
+      );
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        appointments,
+        "Completed patient appointments fetched successfully"
+      )
+    );
+});
+
 export {
   registerPatient,
   loginPatient,
@@ -397,4 +532,9 @@ export {
   updateProfilePic,
   getCurrentPatient,
   getRecentPatients,
+  getAllDoctorsForPatient,
+  getActiveAppointments,
+  getCompletedAppointments,
+  getMyDoctors,
+  getMyAppointments,
 };

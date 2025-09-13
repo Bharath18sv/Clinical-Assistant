@@ -16,7 +16,13 @@ const VitalsSchema = new mongoose.Schema({
     systolic: Number,
     diastolic: Number,
   },
-  sugar: Number,
+  sugar: {
+    type: Number,
+  },
+  takenAt: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
 export const Vitals = mongoose.model("Vitals", VitalsSchema);

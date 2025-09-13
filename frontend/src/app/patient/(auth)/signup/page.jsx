@@ -9,25 +9,6 @@ import { AuthContext } from "@/context/AuthContext";
 import { toast } from "react-hot-toast";
 import API from "@/utils/api";
 
-type FormData = {
-  email: string;
-  password: string;
-  fullname: string;
-  phone: string;
-  gender: string;
-  age: number;
-  address: {
-    street: string;
-    city: string;
-    state: string;
-    zip: string;
-    country: string;
-  };
-  chronicConditions: string[];
-  allergies: string[];
-  symptoms: string[];
-};
-
 // Memoized input component for better performance
 const MemoizedInput = memo(({ label, error, errorMessage, ...props }) => (
   <div>
@@ -130,9 +111,17 @@ export default function PatientSignupPage() {
       return;
     }
 
+    const formattedData = {
+      ...data,
+      chronicConditions:
+        data.chronicConditions?.map((item) => item.value) || [],
+      allergies: data.allergies?.map((item) => item.value) || [],
+      symptoms: data.symptoms?.map((item) => item.value) || [],
+    };
+
     setLoading(true);
     try {
-      const res = await API.post("/patient/signup", data);
+      const res = await API.post("/patients/register", formattedData);
       setMessage("Patient registered successfully!");
       const userData = res.data;
       localStorage.setItem("user", JSON.stringify(userData));
@@ -354,7 +343,7 @@ export default function PatientSignupPage() {
                   {...register("address.zip", {
                     required: "ZIP code is required",
                     pattern: {
-                      value: /^[0-9]{5}(-[0-9]{4})?$/,
+                      value: /^[0-9]{6}(-[0-9]{4})?$/,
                       message: "Please enter a valid ZIP code",
                     },
                   })}
@@ -454,6 +443,7 @@ export default function PatientSignupPage() {
                     control={control}
                     render={({ field }) => (
                       <Select
+                      instanceId="symptoms-select"
                         {...field}
                         isMulti
                         options={createOptions(SYMPTOMS)}

@@ -7,6 +7,10 @@ const SymptomLogSchema = new mongoose.Schema({
     ref: "Patient",
     required: true,
   },
+  doctorId: {
+    type: Schema.Types.ObjectId,
+    ref: "Doctor",
+  },
   date: {
     type: Date,
     default: Date.now, // auto-set when not provided
