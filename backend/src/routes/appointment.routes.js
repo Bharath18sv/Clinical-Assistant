@@ -1,12 +1,13 @@
-import { Router } from "react-router-dom";
-import { verifyJwt } from "../middlewares/auth.middleware";
+import { Router } from "express";
+
+import { verifyJwt } from "../middlewares/auth.middleware.js";
 import {
   getAppointmentById,
   getAllAppointments,
   activeAppointments,
   completedAppointments,
   getUserAppointments,
-} from "../controllers/appointments.controllers";
+} from "../controllers/appointments.controllers.js";
 
 const router = Router();
 

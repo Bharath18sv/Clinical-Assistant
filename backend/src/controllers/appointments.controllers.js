@@ -1,6 +1,7 @@
-import { asyncHandler } from "../utils/asyncHandler";
-import { Appointment } from "../models/appointments.models";
-import { Patient } from "../models/patient.models";
+import { asyncHandler } from "../utils/asyncHandler.js";
+import { ApiResponse } from "../utils/ApiResponse.js";
+import { Appointment } from "../models/appointments.models.js";
+import { Patient } from "../models/patient.models.js";
 
 const createAppointment = asyncHandler(async (req, res) => {
   const { doctor, patient, scheduledAt, status, reason } = req.body;
