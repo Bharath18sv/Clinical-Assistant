@@ -1,5 +1,6 @@
 import axios from "axios";
 import { isTokenExpired } from "@/utils/auth";
+import { getGlobalClearUser } from "@/context/AuthContext";
 
 const API = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
@@ -14,7 +15,14 @@ API.interceptors.request.use(
     if (token) {
       if (isTokenExpired(token)) {
         // Token expired → clear storage + redirect
-        localStorage.removeItem("user");
+        const clearUser = getGlobalClearUser();
+        if (clearUser) {
+          clearUser(); // This will clear both localStorage and AuthContext state
+        } else {
+          // Fallback if AuthContext is not available
+          localStorage.removeItem("user");
+          localStorage.removeItem("token");
+        }
         window.location.href = "/";
         return Promise.reject("Token expired");
       } else {
@@ -122,4 +130,10 @@ export const fetchDPAppointment = async (id) => {
   const appt = await API.get(`/appointments/dp/${id}`);
   // console.log("appointment complete response:", appt);
   return appt.data.data;
+};
+
+//doctor apis
+export const getDoctorAppointments = async () => {
+  const appts = await API.get("/appointments");
+  // console.log("/appointments:", appts);
 };

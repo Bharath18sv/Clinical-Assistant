@@ -15,24 +15,27 @@ import {
   CheckCircle,
   Clock,
   X,
+  LogOut,
 } from "lucide-react";
 import { AuthContext } from "@/context/AuthContext";
-import API from "@/utils/api";
+import toast from "react-hot-toast";
 
 export default function DoctorSidebar() {
+  const { user, authLoading, logout: contextLogout } = useContext(AuthContext);
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(true);
+  const [currentPath, setCurrentPath] = useState("/doctor/dashboard");
+
   const [expandedMenus, setExpandedMenus] = useState({
     patients: false,
     appointments: false,
   });
-  const { user } = useContext(AuthContext);
-  const [doctorData, setDoctorData] = useState({
-    fullname: "",
-    email: "",
-    specialty: "",
-    profileImage: "",
-  });
+  const [doctorData, setDoctorData] = useState(null);
+  // console.log("user", user);
+
+  useEffect(() => {
+    setDoctorData(user?.user);
+  }, []);
 
   const toggleSidebar = () => {
     setIsOpen(!isOpen);
@@ -89,21 +92,16 @@ export default function DoctorSidebar() {
     },
   ];
 
-  const getCurrentDoctor = async () => {
+  const handleLogout = async () => {
     try {
-      const response = await API.get("/doctors/me");
-      console.log("response of current doctor (res.data)", response.data);
-      console.log("data.data : ", response.data.data);
-      setDoctorData(response.data.data);
-      // Handle the response data as needed
+      contextLogout(); // Use context logout method
+      toast.success("Logged out successfully");
+      window.location.href = "/doctor/login";
     } catch (error) {
-      console.error("Error fetching current doctor:", error);
+      console.error("Error logging out:", error);
+      toast.error("Error logging out. Please try again.");
     }
   };
-
-  useEffect(() => {
-    getCurrentDoctor();
-  }, []);
 
   return (
     <aside
@@ -113,9 +111,7 @@ export default function DoctorSidebar() {
     >
       {/* Header */}
       <div className="p-4 border-b border-slate-700 flex items-center justify-between">
-        {isOpen && (
-          <h2 className="text-xl font-bold">Doctor Panel</h2>
-        )}
+        {isOpen && <h2 className="text-xl font-bold">Doctor Panel</h2>}
         <button
           onClick={toggleSidebar}
           className="p-1 rounded-lg hover:bg-slate-700 transition-colors"
@@ -163,9 +159,7 @@ export default function DoctorSidebar() {
                 <button
                   onClick={() => toggleMenu(menu.id)}
                   className={`w-full flex items-center p-2 rounded-lg transition-colors ${
-                    hasActiveSubLink
-                      ? "bg-slate-700"
-                      : "hover:bg-slate-700"
+                    hasActiveSubLink ? "bg-slate-700" : "hover:bg-slate-700"
                   }`}
                   title={!isOpen ? menu.name : ""}
                 >
@@ -215,38 +209,52 @@ export default function DoctorSidebar() {
 
       {/* Profile Section */}
       <div className="border-t border-slate-700 p-4">
-        <div
-          className={`flex items-center ${
+        <Link
+          href="/doctor/profile"
+          className={`w-full flex items-center ${
             isOpen ? "space-x-3" : "justify-center"
+          } p-2 rounded-lg hover:bg-slate-700 transition-colors ${
+            currentPath === "/doctor/profile" ? "bg-slate-700" : ""
           }`}
+          onClick={() => setCurrentPath("/doctor/profile")}
         >
-          {/* Profile Picture */}
           <div className="flex-shrink-0">
-            {doctorData?.profileImage ? (
+            {doctorData?.profilePic ? (
               <img
-                src={doctorData.profileImage}
+                src={doctorData.profilePic}
                 alt="Doctor Profile"
-                className="w-10 h-10 rounded-full object-cover border-2 border-slate-400"
+                className="w-10 h-10 rounded-full object-cover border-2 border-gray-600"
               />
             ) : (
-              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center border-2 border-slate-400">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center border-2 border-slate-600">
                 <User size={20} className="text-white" />
               </div>
             )}
           </div>
-
-          {/* Profile Info */}
           {isOpen && (
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 text-left">
               <p className="text-sm font-medium text-white truncate">
-                {doctorData.fullname}
+                {doctorData?.fullname || doctorData?.name || "Doctor"}
               </p>
-              <p className="text-xs text-slate-300 truncate">
-                {doctorData.email}
+              <p className="text-xs text-gray-400 truncate">
+                {doctorData?.email || ""}
               </p>
             </div>
           )}
-        </div>
+        </Link>
+      </div>
+      {/* Logout Button */}
+      <div className="p-4 border-t border-slate-700">
+        <button
+          onClick={handleLogout}
+          className={`w-full flex items-center ${
+            isOpen ? "justify-start space-x-2" : "justify-center"
+          } px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white font-semibold transition-colors duration-200`}
+          title={!isOpen ? "Logout" : ""}
+        >
+          <LogOut size={16} className="flex-shrink-0" />
+          {isOpen && <span>Logout</span>}
+        </button>
       </div>
     </aside>
   );

@@ -6,7 +6,6 @@ import {
   refreshAccessToken,
   addPatient,
   getPatientsForDoctor,
-  getCurrentDoctor,
   getRecentDoctors,
   getPatientDetailsBundle,
   addVitalsForPatient,
@@ -32,7 +31,6 @@ router.route("/:id").get(getDoctorById);
 router.route("/registerPatient").post(verifyJwt, registerPatient);
 router.route("/addPatient").post(verifyJwt, addPatient);
 router.route("/").get(verifyJwt, getPatientsForDoctor);
-router.route("/me").get(verifyJwt, getCurrentDoctor);
 router
   .route("/patients/:patientId/details")
   .get(verifyJwt, getPatientDetailsBundle);
@@ -47,7 +45,5 @@ router
   .post(verifyJwt, createAppointmentForPatient);
 router.route("/appointments/:appointmentId/end").put(verifyJwt, endAppointment);
 router.route("/patients/:patientId/summary").get(verifyJwt, getPatientSummary);
-
-
 
 export default router;

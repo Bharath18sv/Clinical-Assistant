@@ -26,9 +26,9 @@ export default function PatientProfile() {
 
   // Load patient data when user is available
   useEffect(() => {
-    if (!authLoading && user?.data?.user) {
-      setProfile(user.data.user);
-      setEditedProfile(user.data.user);
+    if (!authLoading && user?.user) {
+      setProfile(user?.user);
+      setEditedProfile(user?.user);
     }
   }, [user, authLoading]);
 
@@ -102,9 +102,9 @@ export default function PatientProfile() {
               <div className="flex items-center gap-6 mb-6 lg:mb-0">
                 <div className="relative">
                   <div className="bg-white/20 p-6 rounded-2xl backdrop-blur-sm shadow-lg">
-                    {profile.profilePic ? (
+                    {profile?.profilePic ? (
                       <img
-                        src={profile.profilePic}
+                        src={profile?.profilePic}
                         alt="Profile"
                         className="w-16 h-16 rounded-xl object-cover"
                       />
@@ -118,6 +118,7 @@ export default function PatientProfile() {
                 </div>
                 <div>
                   <h1 className="text-4xl font-bold text-white mb-2">
+                    {console.log("profile : ", profile)}
                     {profile.fullname}
                   </h1>
                   <p className="text-blue-100 text-lg">

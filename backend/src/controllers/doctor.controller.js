@@ -280,7 +280,9 @@ const getPatientsForDoctor = asyncHandler(async (req, res) => {
   const doctorId = req.user?._id || req.user?.id;
   if (!doctorId) throw new ApiError(401, "Unauthorized");
 
-  const patients = await Patient.find({ doctorId }).sort({ createdAt: -1 });
+  const patients = await Patient.find({ doctorId })
+    .sort({ createdAt: -1 })
+    .select("-password -refreshToken");
   res
     .status(200)
     .json(
@@ -452,32 +454,25 @@ const getPatientSummary = asyncHandler(async (req, res) => {
   );
 });
 
-const getCurrentDoctor = asyncHandler(async (req, res) => {
-  console.log("req.user data for /me route", req.user);
-  const { email } = req.user; // Assuming user details are stored in req.user after authentication
-  if (!email) {
-    return res.status(400).json({ message: "User not authenticated" });
-  }
-
-  const user = await Doctor.findOne({ email }).select(
-    "-password -refreshToken"
-  );
-  console.log("doctor data from server", user);
-  res
-    .status(200)
-    .json(new ApiResponse(200, user, "User details fetched successfully"));
-});
-
 const getRecentDoctors = asyncHandler(async (req, res) => {
-  const doctors = await Doctor.find().sort({ createdAt: -1 }).limit(5);
+  const doctors = await Doctor.find()
+    .sort({ createdAt: -1 })
+    .limit(5)
+    .select("-password -refreshToken");
   res
     .status(200)
     .json(new ApiResponse(200, doctors, "Recent doctors fetched successfully"));
 });
 
 const getDoctorById = asyncHandler(async (req, res) => {
+  console.log("req.user : ", req.user);
   const { id } = req.params;
 
+  if (id === "me") {
+    if (req.user) {
+      id = req.user._id;
+    }
+  }
   if (!id) {
     throw new ApiError(
       400,
@@ -487,7 +482,7 @@ const getDoctorById = asyncHandler(async (req, res) => {
   const doctor = await Doctor.findById(id).select("-password -refreshToken");
 
   if (!doctor) {
-    throw new ApiError(401, `The doctor with id : ${id} doesn't exist`);
+    throw new ApiError(404, `The doctor with id : ${id} doesn't exist`);
   }
 
   res
@@ -504,7 +499,6 @@ export {
   getRecentDoctors,
   addPatient,
   getPatientsForDoctor,
-  getCurrentDoctor,
   getPatientDetailsBundle,
   addVitalsForPatient,
   addPrescriptionForPatient,

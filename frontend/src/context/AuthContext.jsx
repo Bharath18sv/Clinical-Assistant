@@ -4,6 +4,9 @@ import React, { createContext, useState, useEffect } from "react";
 
 export const AuthContext = createContext();
 
+// Global reference for API interceptor to access clearUser
+let globalClearUser = null;
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true); // Add loading state
@@ -12,10 +15,45 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      try {
+        const userData = JSON.parse(storedUser);
+        // Check if token is expired before setting user
+        if (userData.accessToken) {
+          const tokenExpired = isTokenExpired(userData.accessToken);
+          if (tokenExpired) {
+            // Clear expired data
+            localStorage.removeItem("user");
+            localStorage.removeItem("token");
+            setUser(null);
+          } else {
+            setUser(userData);
+          }
+        } else {
+          setUser(userData);
+        }
+      } catch (error) {
+        console.error("Error parsing stored user data:", error);
+        localStorage.removeItem("user");
+        localStorage.removeItem("token");
+        setUser(null);
+      }
     }
     setAuthLoading(false); // Set loading to false after checking localStorage
   }, []);
+
+  // Helper function to check token expiration
+  const isTokenExpired = (token) => {
+    if (!token) return true;
+
+    try {
+      const decoded = JSON.parse(atob(token.split(".")[1]));
+      const currentTime = Date.now() / 1000;
+      return decoded.exp < currentTime;
+    } catch (error) {
+      console.error("Error decoding token:", error);
+      return true;
+    }
+  };
 
   // Login function (save to localStorage + state)
   const login = (userData) => {
@@ -30,9 +68,29 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  // Clear user function (for API interceptor to use)
+  const clearUser = () => {
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+    setUser(null);
+  };
+
+  // Set global reference on mount
+  useEffect(() => {
+    globalClearUser = clearUser;
+    return () => {
+      globalClearUser = null;
+    };
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, authLoading }}>
+    <AuthContext.Provider
+      value={{ user, login, logout, clearUser, authLoading }}
+    >
       {children}
     </AuthContext.Provider>
   );
 };
+
+// Export function for API interceptor to use
+export const getGlobalClearUser = () => globalClearUser;

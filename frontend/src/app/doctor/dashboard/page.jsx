@@ -3,7 +3,7 @@
 import { useState, useEffect, useContext } from "react";
 import { useRouter } from "next/navigation";
 import { AuthContext } from "@/context/AuthContext";
-import API from "@/utils/api";
+import API, { getDoctorAppointments } from "@/utils/api";
 import Navbar from "@/components/Navbar";
 import {
   Calendar,
@@ -38,23 +38,17 @@ export default function DoctorDashboardPage() {
   });
   const [showAddPatientForm, setShowAddPatientForm] = useState(false);
 
-  // Safely get the doctor info from context
-  const doctor = user?.user || null;
-
   useEffect(() => {
-    if (doctor) {
-      setDoctorData(doctor);
-      setPatients(doctor.patients || []);
-      getAppointments(doctor._id);
-    }
-  }, [doctor]);
+    setDoctorData(user?.user);
+    setPatients(user?.user.patients || []);
+    getAppointments();
+  }, [doctorData]);
 
-  const getAppointments = async (doctorId) => {
+  const getAppointments = async () => {
     setLoading((prev) => ({ ...prev, appointments: true }));
     try {
-      // Replace this with real API call
-      const response = await API.get(`/appointments/${doctorId}`);
-      setAppointments(response.data || []);
+      const response = await getDoctorAppointments();
+      setAppointments(response?.data || []);
     } catch (error) {
       console.error("Error fetching appointments:", error);
     } finally {
@@ -85,7 +79,7 @@ export default function DoctorDashboardPage() {
     }
   };
 
-  if (authLoading || !doctor) {
+  if (authLoading || !doctorData) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner size="lg" />
@@ -96,7 +90,7 @@ export default function DoctorDashboardPage() {
   return (
     <ProtectedRoute allowedRoles={["doctor"]}>
       <div className="min-h-screen bg-gray-50">
-        <Navbar user={doctor} />
+        <Navbar user={doctorData} />
 
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           {/* Welcome Section */}
@@ -228,7 +222,11 @@ export default function DoctorDashboardPage() {
                           </div>
                         </div>
                       </div>
-                      <span className={`status-badge ${getStatusColor(appointment.status)}`}>
+                      <span
+                        className={`status-badge ${getStatusColor(
+                          appointment.status
+                        )}`}
+                      >
                         {appointment.status}
                       </span>
                     </div>

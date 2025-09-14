@@ -47,6 +47,10 @@ const updateAppointment = asyncHandler(async (req, res) => {
 const getUserAppointments = asyncHandler(async (req, res) => {
   const userId = req.user._id;
 
+  if (!userId) {
+    throw new ApiError(400, "user id is required");
+  }
+
   const appointments = await Appointment.find({
     $or: [{ doctorId: userId }, { patientId: userId }],
   })
@@ -56,8 +60,8 @@ const getUserAppointments = asyncHandler(async (req, res) => {
 
   if (!appointments || appointments.length === 0) {
     return res
-      .status(404)
-      .json(new ApiResponse(404, null, "No appointments found for this user"));
+      .status(200)
+      .json(new ApiResponse(200, null, "No appointments found for this user"));
   }
 
   return res
