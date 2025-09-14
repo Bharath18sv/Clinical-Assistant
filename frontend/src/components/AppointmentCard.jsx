@@ -3,41 +3,49 @@ import { Calendar, Clock } from "lucide-react";
 const getStatusColor = (status) => {
   switch (status.toLowerCase()) {
     case "upcoming":
-      return "bg-blue-100 text-blue-800";
+      return "status-badge status-active";
     case "confirmed":
-      return "bg-green-100 text-green-800";
+      return "status-badge status-confirmed";
     case "completed":
-      return "bg-gray-100 text-gray-800";
+      return "status-badge status-inactive";
     case "cancelled":
-      return "bg-red-100 text-red-800";
+      return "status-badge status-cancelled";
     default:
-      return "bg-gray-100 text-gray-800";
+      return "status-badge status-inactive";
   }
 };
 
 export default function AppointmentCard({ appointment }) {
+  const dateObject = new Date(appointment.scheduledAt);
+  const date = dateObject.toLocaleDateString("en-IN", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+  const time = dateObject.toLocaleTimeString("en-IN", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
   return (
     <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
       <div className="flex items-center">
-        <div className="p-2 bg-blue-100 rounded-lg mr-4">
-          <Calendar className="h-5 w-5 text-blue-600" />
+        <div className="icon-container icon-blue">
+          <Calendar className="h-5 w-5" />
         </div>
-        <div>
+        <div className="ml-4">
           <h3 className="font-medium text-gray-900">
-            {appointment.doctorName}
+            {appointment.doctorId.fullname}
           </h3>
-          <p className="text-sm text-gray-500">{appointment.type}</p>
+          <p className="text-sm text-gray-500">
+            Phone : {appointment.doctorId.phone}
+          </p>
           <div className="flex items-center text-sm text-gray-500 mt-1">
             <Clock className="h-3 w-3 mr-1" />
-            {appointment.date} at {appointment.time}
+            {date} at {time}
           </div>
         </div>
       </div>
-      <span
-        className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(
-          appointment.status
-        )}`}
-      >
+      <span className={getStatusColor(appointment.status)}>
         {appointment.status}
       </span>
     </div>

@@ -1,10 +1,12 @@
 "use client";
 
+import Link from "next/link";
+import { useContext, useState, useEffect } from "react";
 import { Heart, Calendar, Pill, Activity } from "lucide-react";
 import HealthCard from "@/components/HealthCard";
 import AppointmentCard from "@/components/AppointmentCard";
 import MedicationCard from "@/components/MedicationCard";
-import API from "@/utils/api";
+import API, { fetchMyAppointments } from "@/utils/api";
 import { AuthContext } from "@/context/AuthContext";
 
 export default function PatientDashboard() {
@@ -13,11 +15,11 @@ export default function PatientDashboard() {
 
   useEffect(() => {
     if (!authLoading && user) {
-      getAppointments();
+      laodAppointments();
     }
   }, [authLoading, user]);
 
-  if (authLoading || !user) {
+  if (authLoading) {
     return <div>Loading...</div>;
   }
 
@@ -96,14 +98,10 @@ export default function PatientDashboard() {
     },
   ];
 
-  const getAppointments = async () => {
-    try {
-      const res = await API.get("/patient/appointments");
-      console.log("Appointments data:", res.data);
-      setAppointments(res.data);
-    } catch (error) {
-      console.error("Error fetching appointments:", error);
-    }
+  const laodAppointments = async () => {
+    const appts = await fetchMyAppointments();
+    console.log("appts : ", appts);
+    setAppointments(appts);
   };
 
   return (
@@ -131,14 +129,17 @@ export default function PatientDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Upcoming Appointments */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            Your Appointments
-          </h2>
+        <div className="card">
+          <div className="card-header">
+            <h2 className="card-title">Your Appointments</h2>
+          </div>
           <div className="space-y-3">
-            {upcomingAppointments.map((appointment) => (
-              <AppointmentCard key={appointment.id} appointment={appointment} />
-            ))}
+            {appointments ? appointments.map((appointment) => (
+              <AppointmentCard
+                key={appointment._id}
+                appointment={appointment}
+              />
+            )): "Loading..."}
           </div>
           <button className="w-full mt-4 text-blue-600 hover:text-blue-800 text-sm font-medium">
             View All Appointments
@@ -146,10 +147,10 @@ export default function PatientDashboard() {
         </div>
 
         {/* Current Medications */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            Current Medications
-          </h2>
+        <div className="card">
+          <div className="card-header">
+            <h2 className="card-title">Current Medications</h2>
+          </div>
           <div className="space-y-3">
             {currentMedications.map((medication) => (
               <MedicationCard key={medication.id} medication={medication} />
@@ -162,27 +163,31 @@ export default function PatientDashboard() {
       </div>
 
       {/* Quick Actions */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">
-          Quick Actions
-        </h2>
+      <div className="card">
+        <div className="card-header">
+          <h2 className="card-title">Quick Actions</h2>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left">
+          <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left transition-colors">
             <div className="flex items-center">
-              <div className="p-2 bg-blue-100 rounded-lg mr-3">
-                <Calendar className="h-5 w-5 text-blue-600" />
+              <div className="icon-container icon-blue mr-3">
+                <Calendar className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="font-medium text-gray-900">Book Appointment</h3>
-                <p className="text-sm text-gray-500">Schedule a new visit</p>
+                <Link href={`/patient/doctor/all`}>
+                  <h3 className="font-medium text-gray-900">
+                    Book Appointment
+                  </h3>
+                  <p className="text-sm text-gray-500">Schedule a new visit</p>
+                </Link>
               </div>
             </div>
           </button>
 
-          <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left">
+          <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left transition-colors">
             <div className="flex items-center">
-              <div className="p-2 bg-green-100 rounded-lg mr-3">
-                <Activity className="h-5 w-5 text-green-600" />
+              <div className="icon-container icon-green mr-3">
+                <Activity className="h-5 w-5" />
               </div>
               <div>
                 <h3 className="font-medium text-gray-900">Log Symptoms</h3>
@@ -193,10 +198,10 @@ export default function PatientDashboard() {
             </div>
           </button>
 
-          <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left">
+          <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left transition-colors">
             <div className="flex items-center">
-              <div className="p-2 bg-purple-100 rounded-lg mr-3">
-                <Pill className="h-5 w-5 text-purple-600" />
+              <div className="icon-container icon-purple mr-3">
+                <Pill className="h-5 w-5" />
               </div>
               <div>
                 <h3 className="font-medium text-gray-900">

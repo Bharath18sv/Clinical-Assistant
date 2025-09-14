@@ -10,6 +10,8 @@ import {
   updateAppointment,
   startAppointment,
   completeAppointment,
+  getDPAppointment,
+  deleteAppointmentById,
 } from "../controllers/appointments.controllers.js";
 
 const router = Router();
@@ -19,10 +21,13 @@ router
   .route("/")
   .post(verifyJwt, createAppointment)
   .get(verifyJwt, getUserAppointments);
+
+router.route("/dp/:id").get(verifyJwt, getDPAppointment);
 router
   .route("/:id")
   .get(verifyJwt, getAppointmentById)
-  .put(verifyJwt, updateAppointment);
+  .put(verifyJwt, updateAppointment)
+  .delete(verifyJwt, deleteAppointmentById);
 router.route("/active").get(verifyJwt, activeAppointments);
 router.route("/completed").get(verifyJwt, completedAppointments);
 router.route("/:id/start").put(verifyJwt, startAppointment);

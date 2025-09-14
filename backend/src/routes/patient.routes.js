@@ -15,11 +15,6 @@ import {
   getMyDoctors,
   getMyAppointments,
 } from "../controllers/patient.controllers.js";
-import {
-  logSymptoms,
-  logMedication,
-  getMyLogs,
-} from "../controllers/healthcheck.controllers.js";
 import { verifyJwt } from "../middlewares/auth.middleware.js";
 import { upload } from "../middlewares/multer.middlewares.js";
 
@@ -38,9 +33,6 @@ router
   .route("/updateProfilePic")
   .post(verifyJwt, upload.single("ProfilePicture"), updateProfilePic);
 router.route("/me").get(verifyJwt, getCurrentPatient);
-router.route("/logs/symptoms").post(verifyJwt, logSymptoms);
-router.route("/logs/medications").post(verifyJwt, logMedication);
-router.route("/logs").get(verifyJwt, getMyLogs);
 router.route("/doctors").get(verifyJwt, getAllDoctorsForPatient);
 router.route("/myDoctors").get(verifyJwt, getMyDoctors);
 router.route("/appointments").get(verifyJwt, getMyAppointments);

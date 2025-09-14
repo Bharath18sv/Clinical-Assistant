@@ -1,11 +1,11 @@
 import { LucideIcon } from "lucide-react";
 
 const colorClasses = {
-  blue: "bg-blue-100 text-blue-600",
-  green: "bg-green-100 text-green-600",
-  purple: "bg-purple-100 text-purple-600",
-  orange: "bg-orange-100 text-orange-600",
-  red: "bg-red-100 text-red-600",
+  blue: "icon-blue",
+  green: "icon-green", 
+  purple: "icon-purple",
+  orange: "icon-orange",
+  red: "icon-red",
 };
 
 export default function HealthCard({
@@ -16,9 +16,9 @@ export default function HealthCard({
   subtitle,
 }) {
   return (
-    <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+    <div className="card">
       <div className="flex items-center">
-        <div className={`p-2 rounded-lg ${colorClasses[color]}`}>
+        <div className={`icon-container ${colorClasses[color]}`}>
           <Icon className="h-6 w-6" />
         </div>
         <div className="ml-4">

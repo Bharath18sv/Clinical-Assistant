@@ -15,38 +15,66 @@ export default function PatientAllDoctors() {
 
   const router = useRouter();
 
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const [doctorRes, apptRes] = await Promise.all([
-          fetchAllDoctors(),
-          fetchMyAppointments(),
-        ]);
-        if (!mounted) return;
-        setDoctors(doctorRes);
-        setAppointments(apptRes);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  const getAppointments = async () => {
+    const appts = await fetchMyAppointments();
+    console.log("appts : ", appts);
+    setAppointments(appts);
+  };
+
+  // useEffect(() => {
+  //   let mounted = true;
+  //   (async () => {
+  //     try {
+  //       const [doctorRes, apptRes] = await Promise.all([
+  //         fetchAllDoctors(),
+  //         fetchMyAppointments(),
+  //       ]);
+  //       console.log("All doctors : ", doctorRes.data.docs)
+  //       if (!mounted) return;
+  //       setDoctors(doctorRes.data.docs);
+  //       setAppointments(apptRes);
+  //     } catch (e) {
+  //       console.error(e);
+  //     } finally {
+  //       if (mounted) setLoading(false);
+  //     }
+  //   })();
+  //   return () => {
+  //     mounted = false;
+  //   };
+  // }, []);
 
   // Filter doctors by specialization
+
+  useEffect(() => {
+    setLoading(true);
+    const fetchDoctors = async () => {
+      try {
+        const allDoctors = await fetchAllDoctors();
+        setDoctors(allDoctors); //res.docs has the doctors data
+      } catch (error) {
+        console.error("Error fetching doctors:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDoctors();
+    getAppointments();
+  }, []);
+
   const filteredDoctors = useMemo(() => {
     if (filterSpecialization === "all") return doctors;
-    return doctors.filter((doc) => doc.specialization === filterSpecialization);
+    return doctors.filter((doc) =>
+      doc.specialization.includes(filterSpecialization)
+    );
   }, [doctors, filterSpecialization]);
 
   // Specializations for filter dropdown
   const specializations = useMemo(() => {
-    const set = new Set(doctors.map((d) => d.specialization).filter(Boolean));
-    return ["all", ...Array.from(set)];
+    const allSpecs = doctors.flatMap((d) => d.specialization || []);
+    const uniqueSpecs = Array.from(new Set(allSpecs));
+    return ["all", ...uniqueSpecs];
   }, [doctors]);
 
   // Check if patient has appointment with doctor
@@ -68,10 +96,10 @@ export default function PatientAllDoctors() {
         <select
           value={filterSpecialization}
           onChange={(e) => setFilterSpecialization(e.target.value)}
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="input text-sm"
         >
-          {specializations.map((sp) => (
-            <option key={sp} value={sp}>
+          {specializations.map((sp, index) => (
+            <option key={`${sp}-${index}`} value={sp}>
               {sp === "all" ? "All Specializations" : sp}
             </option>
           ))}
@@ -88,7 +116,7 @@ export default function PatientAllDoctors() {
           filteredDoctors.map((doctor) => (
             <div
               key={doctor._id}
-              className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition cursor-pointer"
+              className="card hover:shadow-md transition cursor-pointer"
               onClick={() => setSelectedDoctor(doctor)}
             >
               {/* Profile Image */}
@@ -109,15 +137,17 @@ export default function PatientAllDoctors() {
                     {doctor.fullname}
                   </h3>
                   <p className="text-sm text-gray-600">
-                    {doctor.specialization || "General"}
+                    {doctor.specialization.join(", ") || "General"}
                   </p>
-                  <p
-                    className={`text-xs mt-1 ${
-                      doctor.isAvailable ? "text-green-600" : "text-red-600"
+                  <span
+                    className={`status-badge mt-1 ${
+                      doctor.isAvailable
+                        ? "status-confirmed"
+                        : "status-cancelled"
                     }`}
                   >
                     {doctor.isAvailable ? "Available" : "Not Available"}
-                  </p>
+                  </span>
                 </div>
               </div>
 
@@ -127,9 +157,9 @@ export default function PatientAllDoctors() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      router.push(`/patient/appointments`);
+                      router.push(`/patient/doctor/${doctor._id}/appointment`);
                     }}
-                    className="w-full bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition"
+                    className="btn-primary w-full bg-green-600 hover:bg-green-700"
                   >
                     View Appointment
                   </button>
@@ -137,10 +167,10 @@ export default function PatientAllDoctors() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      router.push(`/patient/doctor/${doctor._id}/book`);
+                      router.push(`/patient/doctor/${doctor._id}/appointment`);
                     }}
                     disabled={!doctor.isAvailable}
-                    className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                    className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Book Appointment
                   </button>
@@ -156,7 +186,7 @@ export default function PatientAllDoctors() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 relative">
             <button
-              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
+              className="absolute top-3 right-3 text-gray-500 cursor-pointer hover:text-gray-700"
               onClick={() => setSelectedDoctor(null)}
             >
               ✕
@@ -201,8 +231,9 @@ export default function PatientAllDoctors() {
                 {selectedDoctor.phone}
               </p>
               <p>
-                <span className="font-semibold">Address:</span>{" "}
-                {selectedDoctor.address?.street}, {selectedDoctor.address?.city}
+                <span className="font-semibold">Qualifications:</span>{" "}
+                {selectedDoctor.qualifications.join(", ")}
+                {/* convert qualifications array into strings */}
               </p>
             </div>
             <div className="mt-6">
@@ -216,7 +247,9 @@ export default function PatientAllDoctors() {
               ) : (
                 <button
                   onClick={() =>
-                    router.push(`/patient/doctor/${selectedDoctor._id}/book`)
+                    router.push(
+                      `/patient/doctor/${selectedDoctor._id}/appointment`
+                    )
                   }
                   disabled={!selectedDoctor.isAvailable}
                   className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"

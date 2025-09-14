@@ -15,7 +15,7 @@ API.interceptors.request.use(
       if (isTokenExpired(token)) {
         // Token expired → clear storage + redirect
         localStorage.removeItem("user");
-        window.location.href = "/signin";
+        window.location.href = "/";
         return Promise.reject("Token expired");
       } else {
         req.headers.Authorization = `Bearer ${token}`;
@@ -54,12 +54,6 @@ API.interceptors.request.use(
 
 export default API;
 
-// Appointment APIs
-export const fetchMyAppointments = async () => {
-  const { data } = await API.get(`/appointments`);
-  return data?.data || [];
-};
-
 export const fetchDoctorActiveAppointments = async () => {
   const { data } = await API.get(`/appointments/active`);
   return data?.data || [];
@@ -67,6 +61,25 @@ export const fetchDoctorActiveAppointments = async () => {
 
 export const fetchDoctorCompletedAppointments = async () => {
   const { data } = await API.get(`/appointments/completed`);
+  return data?.data || [];
+};
+
+export const fetchAllDoctors = async () => {
+  const { data } = await API.get("/doctors/all");
+  console.log("doctors data:", data);
+  return data?.data.docs || [];
+};
+
+//patient apis:
+export const getMyDoctors = async () => {
+  const doctors = await API.get("/patients/myDoctors");
+  console.log("patient/mydoctors/ : ", doctors.data.data);
+  return doctors.data.data;
+};
+
+//appointments api:
+export const fetchMyAppointments = async () => {
+  const { data } = await API.get(`/appointments`);
   return data?.data || [];
 };
 
@@ -90,9 +103,14 @@ export const createAppointment = async ({
   return data?.data;
 };
 
-export const startAppointment = async (id) => {
-  const { data } = await API.put(`/appointments/${id}/start`);
-  return data?.data;
+// export const startAppointment = async (id) => {
+//   const { data } = await API.put(`/appointments/${id}/start`);
+//   return data?.data;
+// };
+
+//this doesn't return anything
+export const deleteAppointmentById = async (id) => {
+  await API.delete(`/appointments/${id}`);
 };
 
 export const completeAppointment = async (id) => {
@@ -100,7 +118,8 @@ export const completeAppointment = async (id) => {
   return data?.data;
 };
 
-export const fetchAllDoctors = async () => {
-  const { data } = await API.get("/doctors/recent");
-  return data?.data || [];
+export const fetchDPAppointment = async (id) => {
+  const appt = await API.get(`/appointments/dp/${id}`);
+  // console.log("appointment complete response:", appt);
+  return appt.data.data;
 };

@@ -107,14 +107,14 @@ export default function AdminSidebar() {
     <aside
       className={`${
         isOpen ? "w-64" : "w-16"
-      } h-screen bg-gray-900 text-white transition-all duration-300 ease-in-out flex flex-col`}
+      } h-screen bg-slate-800 text-white transition-all duration-300 ease-in-out flex flex-col`}
     >
       {/* Header */}
-      <div className="p-4 border-b border-gray-700 flex items-center justify-between">
+      <div className="p-4 border-b border-slate-700 flex items-center justify-between">
         {isOpen && <h2 className="text-xl font-bold">Admin Panel</h2>}
         <button
           onClick={toggleSidebar}
-          className="p-1 rounded hover:bg-gray-700 transition-colors"
+          className="p-1 rounded-lg hover:bg-slate-700 transition-colors"
         >
           {isOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
@@ -130,8 +130,8 @@ export default function AdminSidebar() {
               <li key={link.href}>
                 <Link
                   href={link.href}
-                  className={`w-full flex items-center p-2 rounded hover:bg-gray-700 transition-colors ${
-                    pathname === link.href ? "bg-gray-700 font-semibold" : ""
+                  className={`w-full flex items-center p-2 rounded-lg hover:bg-slate-700 transition-colors ${
+                    pathname === link.href ? "bg-slate-700 font-semibold" : ""
                   }`}
                   title={!isOpen ? link.name : ""}
                 >
@@ -156,8 +156,8 @@ export default function AdminSidebar() {
               <li key={menu.id} className="space-y-1">
                 <button
                   onClick={() => toggleMenu(menu.id)}
-                  className={`w-full flex items-center p-2 rounded hover:bg-gray-700 transition-colors ${
-                    hasActiveSubLink ? "bg-gray-700" : ""
+                  className={`w-full flex items-center p-2 rounded-lg hover:bg-slate-700 transition-colors ${
+                    hasActiveSubLink ? "bg-slate-700" : ""
                   }`}
                   title={!isOpen ? menu.name : ""}
                 >
@@ -176,16 +176,16 @@ export default function AdminSidebar() {
 
                 {/* Sub-menu */}
                 {isOpen && isExpanded && (
-                  <ul className="ml-4 space-y-1 border-l border-gray-700 pl-2">
+                  <ul className="ml-4 space-y-1 border-l border-slate-700 pl-2">
                     {menu.subLinks.map((subLink) => {
                       const SubIcon = subLink.icon;
                       return (
                         <li key={subLink.href}>
                           <Link
                             href={subLink.href}
-                            className={`w-full flex items-center p-2 rounded hover:bg-gray-700 transition-colors text-sm ${
+                            className={`w-full flex items-center p-2 rounded-lg hover:bg-slate-700 transition-colors text-sm ${
                               pathname === subLink.href
-                                ? "bg-gray-700 font-semibold text-blue-300"
+                                ? "bg-slate-700 font-semibold text-slate-200"
                                 : ""
                             }`}
                           >
@@ -206,7 +206,7 @@ export default function AdminSidebar() {
       </nav>
 
       {/* Profile Section */}
-      <div className="border-t border-gray-700 p-4">
+      <div className="border-t border-slate-700 p-4">
         <div
           className={`flex items-center ${
             isOpen ? "space-x-3" : "justify-center"
@@ -217,10 +217,10 @@ export default function AdminSidebar() {
               <img
                 src={adminData.profileImage}
                 alt="Admin Profile"
-                className="w-10 h-10 rounded-full object-cover border-2 border-gray-600"
+                className="w-10 h-10 rounded-full object-cover border-2 border-slate-600"
               />
             ) : (
-              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center border-2 border-gray-600">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center border-2 border-slate-600">
                 <User size={20} className="text-white" />
               </div>
             )}
@@ -231,7 +231,7 @@ export default function AdminSidebar() {
               <p className="text-sm font-medium text-white truncate">
                 {adminData.name}
               </p>
-              <p className="text-xs text-gray-400 truncate">
+              <p className="text-xs text-slate-400 truncate">
                 {adminData.email}
               </p>
             </div>

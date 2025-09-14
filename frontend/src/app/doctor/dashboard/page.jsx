@@ -75,13 +75,13 @@ export default function DoctorDashboardPage() {
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case "confirmed":
-        return "bg-green-100 text-green-800";
+        return "status-confirmed";
       case "pending":
-        return "bg-yellow-100 text-yellow-800";
+        return "status-pending";
       case "cancelled":
-        return "bg-red-100 text-red-800";
+        return "status-cancelled";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "status-inactive";
     }
   };
 
@@ -144,18 +144,16 @@ export default function DoctorDashboardPage() {
             {/* Left Column */}
             <div className="lg:col-span-1 space-y-6">
               {/* Profile */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="card">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    Profile
-                  </h2>
-                  <button className="p-2 text-gray-400 hover:text-gray-600">
+                  <h2 className="card-title">Profile</h2>
+                  <button className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
                     <Edit className="h-4 w-4" />
                   </button>
                 </div>
                 <div className="flex items-center mb-4">
-                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
-                    <Stethoscope className="h-8 w-8 text-blue-600" />
+                  <div className="w-16 h-16 icon-container icon-blue rounded-full flex items-center justify-center">
+                    <Stethoscope className="h-8 w-8" />
                   </div>
                   <div className="ml-4">
                     <h3 className="font-medium text-gray-900">
@@ -182,10 +180,10 @@ export default function DoctorDashboardPage() {
               </div>
 
               {/* Quick Actions */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                  Quick Actions
-                </h2>
+              <div className="card">
+                <div className="card-header">
+                  <h2 className="card-title">Quick Actions</h2>
+                </div>
                 <div className="space-y-3">
                   <button
                     onClick={() => setShowAddPatientForm(true)}
@@ -203,11 +201,9 @@ export default function DoctorDashboardPage() {
             {/* Right Column - Patients & Appointments */}
             <div className="lg:col-span-2 space-y-6">
               {/* Appointments */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="card">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    Today's Appointments
-                  </h2>
+                  <h2 className="card-title">Today's Appointments</h2>
                 </div>
                 <div className="space-y-4">
                   {appointments.map((appointment) => (
@@ -216,8 +212,8 @@ export default function DoctorDashboardPage() {
                       className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
                     >
                       <div className="flex items-center">
-                        <div className="p-2 bg-blue-100 rounded-lg mr-4">
-                          <User className="h-5 w-5 text-blue-600" />
+                        <div className="icon-container icon-blue mr-4">
+                          <User className="h-5 w-5" />
                         </div>
                         <div>
                           <h3 className="font-medium text-gray-900">
@@ -232,11 +228,7 @@ export default function DoctorDashboardPage() {
                           </div>
                         </div>
                       </div>
-                      <span
-                        className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(
-                          appointment.status
-                        )}`}
-                      >
+                      <span className={`status-badge ${getStatusColor(appointment.status)}`}>
                         {appointment.status}
                       </span>
                     </div>
@@ -245,14 +237,12 @@ export default function DoctorDashboardPage() {
               </div>
 
               {/* Patients */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="card">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    Recent Patients
-                  </h2>
+                  <h2 className="card-title">Recent Patients</h2>
                   <button
                     onClick={() => setShowAddPatientForm(true)}
-                    className="flex items-center text-blue-600 hover:text-blue-700 text-sm font-medium"
+                    className="flex items-center text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors"
                   >
                     <Plus className="h-4 w-4 mr-1" />
                     Add Patient
@@ -265,8 +255,8 @@ export default function DoctorDashboardPage() {
                       className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
                     >
                       <div className="flex items-center">
-                        <div className="p-2 bg-green-100 rounded-lg mr-4">
-                          <User className="h-5 w-5 text-green-600" />
+                        <div className="icon-container icon-green mr-4">
+                          <User className="h-5 w-5" />
                         </div>
                         <div>
                           <h3 className="font-medium text-gray-900">

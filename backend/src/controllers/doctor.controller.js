@@ -475,6 +475,28 @@ const getRecentDoctors = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, doctors, "Recent doctors fetched successfully"));
 });
 
+const getDoctorById = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  if (!id) {
+    throw new ApiError(
+      400,
+      "Validation failed: doctor id is not passed in the params"
+    );
+  }
+  const doctor = await Doctor.findById(id).select("-password -refreshToken");
+
+  if (!doctor) {
+    throw new ApiError(401, `The doctor with id : ${id} doesn't exist`);
+  }
+
+  res
+    .status(200)
+    .json(
+      new ApiResponse(200, doctor, "Doctor with id is fetched successfully")
+    );
+});
+
 export {
   registerDoctor,
   loginDoctor,
@@ -489,4 +511,5 @@ export {
   createAppointmentForPatient,
   endAppointment,
   getPatientSummary,
+  getDoctorById,
 };

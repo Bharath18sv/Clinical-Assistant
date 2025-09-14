@@ -81,7 +81,7 @@ export const DashboardLayout = ({ children, className = "", requiredRole }) => {
   };
 
   return (
-    <div className={`flex h-screen bg-gray-100 ${className}`}>
+    <div className={`flex h-screen bg-gray-50 ${className}`}>
       <Sidebar userRole={userRole} userName={getUserDisplayName()} />
       <div className="flex-1 overflow-hidden">
         {/* Top bar with user info */}
@@ -93,13 +93,13 @@ export const DashboardLayout = ({ children, className = "", requiredRole }) => {
               {/* User info in top bar */}
               <div className="flex items-center space-x-4">
                 {user && isDoctor(user) && !user.isAvailable && (
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                  <span className="status-badge status-cancelled">
                     Unavailable
                   </span>
                 )}
 
                 {user && isDoctor(user) && user.status === "pending" && (
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                  <span className="status-badge status-pending">
                     Pending Approval
                   </span>
                 )}

@@ -14,14 +14,19 @@ import {
   createAppointmentForPatient,
   endAppointment,
   getPatientSummary,
+  getDoctorById,
 } from "../controllers/doctor.controller.js";
 import { verifyJwt } from "../middlewares/auth.middleware.js";
+import { getAllDoctors } from "../controllers/admin.controllers.js";
 
 const router = Router();
 
 //unsecured routes
 router.route("/login").post(loginDoctor);
 router.route("/refreshToken").post(refreshAccessToken);
+router.route("/recent").get(getRecentDoctors);
+router.route("/all").get(getAllDoctors);
+router.route("/:id").get(getDoctorById);
 
 //secured routes
 router.route("/registerPatient").post(verifyJwt, registerPatient);
@@ -43,7 +48,6 @@ router
 router.route("/appointments/:appointmentId/end").put(verifyJwt, endAppointment);
 router.route("/patients/:patientId/summary").get(verifyJwt, getPatientSummary);
 
-// admin routes
-router.route("/recent").get(getRecentDoctors);
+
 
 export default router;

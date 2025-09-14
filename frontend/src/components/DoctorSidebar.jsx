@@ -109,16 +109,16 @@ export default function DoctorSidebar() {
     <aside
       className={`${
         isOpen ? "w-64" : "w-16"
-      } h-screen bg-gradient-to-b from-blue-800 to-indigo-900 text-white shadow-xl transition-all duration-300 ease-in-out flex flex-col`}
+      } h-screen bg-slate-800 text-white transition-all duration-300 ease-in-out flex flex-col`}
     >
       {/* Header */}
-      <div className="p-4 border-b border-blue-600 flex items-center justify-between">
+      <div className="p-4 border-b border-slate-700 flex items-center justify-between">
         {isOpen && (
-          <h2 className="text-xl font-bold tracking-wide">Doctor Panel</h2>
+          <h2 className="text-xl font-bold">Doctor Panel</h2>
         )}
         <button
           onClick={toggleSidebar}
-          className="p-1 rounded hover:bg-blue-700 transition-colors"
+          className="p-1 rounded-lg hover:bg-slate-700 transition-colors"
         >
           {isOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
@@ -136,8 +136,8 @@ export default function DoctorSidebar() {
                   href={link.href}
                   className={`w-full flex items-center p-2 rounded-lg transition-colors ${
                     pathname === link.href
-                      ? "bg-blue-600 font-semibold shadow-inner"
-                      : "hover:bg-blue-700"
+                      ? "bg-slate-700 font-semibold"
+                      : "hover:bg-slate-700"
                   }`}
                   title={!isOpen ? link.name : ""}
                 >
@@ -164,8 +164,8 @@ export default function DoctorSidebar() {
                   onClick={() => toggleMenu(menu.id)}
                   className={`w-full flex items-center p-2 rounded-lg transition-colors ${
                     hasActiveSubLink
-                      ? "bg-blue-700 shadow-inner"
-                      : "hover:bg-blue-700"
+                      ? "bg-slate-700"
+                      : "hover:bg-slate-700"
                   }`}
                   title={!isOpen ? menu.name : ""}
                 >
@@ -184,7 +184,7 @@ export default function DoctorSidebar() {
 
                 {/* Sub-menu */}
                 {isOpen && isExpanded && (
-                  <ul className="ml-4 space-y-1 border-l border-blue-600 pl-2">
+                  <ul className="ml-4 space-y-1 border-l border-slate-700 pl-2">
                     {menu.subLinks.map((subLink) => {
                       const SubIcon = subLink.icon;
                       return (
@@ -193,8 +193,8 @@ export default function DoctorSidebar() {
                             href={subLink.href}
                             className={`w-full flex items-center p-2 rounded-lg transition-colors text-sm ${
                               pathname === subLink.href
-                                ? "bg-blue-600 font-semibold text-blue-200 shadow-inner"
-                                : "hover:bg-blue-700"
+                                ? "bg-slate-700 font-semibold text-slate-200"
+                                : "hover:bg-slate-700"
                             }`}
                           >
                             <SubIcon size={16} className="flex-shrink-0" />
@@ -214,7 +214,7 @@ export default function DoctorSidebar() {
       </nav>
 
       {/* Profile Section */}
-      <div className="border-t border-blue-600 p-4">
+      <div className="border-t border-slate-700 p-4">
         <div
           className={`flex items-center ${
             isOpen ? "space-x-3" : "justify-center"
@@ -226,10 +226,10 @@ export default function DoctorSidebar() {
               <img
                 src={doctorData.profileImage}
                 alt="Doctor Profile"
-                className="w-10 h-10 rounded-full object-cover border-2 border-blue-400"
+                className="w-10 h-10 rounded-full object-cover border-2 border-slate-400"
               />
             ) : (
-              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center border-2 border-blue-400">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center border-2 border-slate-400">
                 <User size={20} className="text-white" />
               </div>
             )}
@@ -241,7 +241,7 @@ export default function DoctorSidebar() {
               <p className="text-sm font-medium text-white truncate">
                 {doctorData.fullname}
               </p>
-              <p className="text-xs text-blue-300 truncate">
+              <p className="text-xs text-slate-300 truncate">
                 {doctorData.email}
               </p>
             </div>

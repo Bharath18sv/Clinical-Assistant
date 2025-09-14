@@ -2,6 +2,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { Appointment } from "../models/appointments.models.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import app from "../app.js";
 
 // Patient self-book or general creation endpoint
 const createAppointment = asyncHandler(async (req, res) => {
@@ -22,7 +23,7 @@ const createAppointment = asyncHandler(async (req, res) => {
     reason: reason || "",
     status: "pending",
   });
-
+  console.log("appointment created successfully: ", appt);
   return res
     .status(201)
     .json(new ApiResponse(201, appt, "Appointment created successfully"));
@@ -70,16 +71,24 @@ const getUserAppointments = asyncHandler(async (req, res) => {
     );
 });
 
-const getAppointmentById = asyncHandler(async (req, res) => {
-  const { id } = req.params;
+const getDPAppointment = asyncHandler(async (req, res) => {
+  const userOne = req.user._id; //maybe doctor or patient
+  // console.log("user one: ", userOne);
+  const { id } = req.params; // maybe doctor or patient
+  // console.log("user Two: ", id);
 
-  const appointment = await Appointment.findById(id)
+  const appointment = await Appointment.findOne({
+    $or: [
+      { doctorId: userOne, patientId: id },
+      { doctorId: id, patientId: userOne },
+    ],
+  })
     .populate("doctorId", "fullname email phone address specialization")
     .populate("patientId", "fullname email phone address");
 
   if (!appointment) {
     return res
-      .status(404)
+      .status(200)
       .json(new ApiResponse(404, null, "Appointment not found"));
   }
 
@@ -88,6 +97,23 @@ const getAppointmentById = asyncHandler(async (req, res) => {
     .json(
       new ApiResponse(200, appointment, "Appointment fetched successfully")
     );
+});
+
+const deleteAppointmentById = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  if (!id) {
+    throw new ApiError(
+      400,
+      "patientId or doctorId(from request body) is required"
+    );
+  }
+
+  await Appointment.findByIdAndDelete(id);
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, null, "Appointment deleted successfully"));
 });
 
 //admin only
@@ -216,8 +242,30 @@ const completeAppointment = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, appt, "Appointment completed"));
 });
 
+const getAppointmentById = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  if (!id) {
+    throw new ApiError(400, "Appointment Id is required");
+  }
+
+  const appt = await Appointment.findById(id);
+
+  if (!appt) {
+    throw new ApiError(501, "Appointment with id is not found");
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, appt, "Appointment by id is fetched successfully")
+    );
+});
+
 export {
   getAppointmentById,
+  deleteAppointmentById,
+  getDPAppointment,
   getAllAppointments,
   activeAppointments,
   completedAppointments,

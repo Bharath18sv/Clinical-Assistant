@@ -19,6 +19,7 @@ export default function PatientAppointments() {
     (async () => {
       try {
         const res = await fetchMyAppointments();
+        console.log("my appts :", res);
         if (!mounted) return;
         setAppointments(res);
       } catch (e) {
@@ -105,26 +106,7 @@ export default function PatientAppointments() {
                     onClick={() => setSelected(appointment)}
                     className="cursor-pointer hover:bg-gray-50 rounded-lg"
                   >
-                    <AppointmentCard
-                      appointment={{
-                        id: appointment._id,
-                        doctorName: appointment.doctorId?.fullname || "Doctor",
-                        type: appointment.reason || "Consultation",
-                        date: new Date(appointment.scheduledAt).toDateString(),
-                        time: new Date(
-                          appointment.scheduledAt
-                        ).toLocaleTimeString(),
-                        status: appointment.status,
-                        doctorDetails: {
-                          specialization:
-                            appointment.doctorId?.specialization || "",
-                          phone: appointment.doctorId?.phone || "",
-                          email: appointment.doctorId?.email || "",
-                          location: appointment.doctorId?.address?.street || "",
-                        },
-                        notes: appointment.notes || "",
-                      }}
-                    />
+                    <AppointmentCard appointment={appointment} />
                   </div>
                 ))
               )}
@@ -150,12 +132,19 @@ export default function PatientAppointments() {
                     {new Date(selected.scheduledAt).toLocaleString()}
                   </span>
                 </div>
+                <div className="flex items-center">
+                  <span className="text-sm text-gray-600">
+                    Doctor Specialization:{" "}
+                    {selected.doctorId.specialization.join(", ")}
+                  </span>
+                </div>
                 <div className="pt-4 border-t border-gray-200">
                   <h3 className="font-medium text-gray-900 mb-2">Reason</h3>
                   <p className="text-sm text-gray-600">
                     {selected.reason || "-"}
                   </p>
                 </div>
+
                 {selected.status === "active" && (
                   <div className="pt-4 border-t border-gray-200">
                     <button

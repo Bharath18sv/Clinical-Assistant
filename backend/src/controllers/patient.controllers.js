@@ -397,6 +397,7 @@ const getRecentPatients = asyncHandler(async (req, res) => {
 
 const getAllDoctorsForPatient = asyncHandler(async (req, res) => {
   const doctors = await Doctor.find().select("-password -refreshToken");
+  console.log("All doctors", doctors);
   return res
     .status(200)
     .json(new ApiResponse(200, doctors, "Doctors fetched successfully"));
