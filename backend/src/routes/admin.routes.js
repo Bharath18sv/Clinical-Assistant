@@ -44,7 +44,7 @@ router.get("/me", getCurrentAdmin);
 // Doctor Management
 router.post(
   "/doctors",
-  upload.single("profilePicture"),
+  upload.single("profilePic"),
   checkPermission("manageDoctors"),
   addDoctor
 );

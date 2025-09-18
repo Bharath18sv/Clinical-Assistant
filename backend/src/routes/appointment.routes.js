@@ -12,6 +12,8 @@ import {
   completeAppointment,
   getDPAppointment,
   deleteAppointmentById,
+  cancelAppointment,
+  approveAppointment
 } from "../controllers/appointments.controllers.js";
 
 const router = Router();
@@ -23,14 +25,16 @@ router
   .get(verifyJwt, getUserAppointments);
 
 router.route("/dp/:id").get(verifyJwt, getDPAppointment);
+router.route("/active").get(verifyJwt, activeAppointments);
+router.route("/completed").get(verifyJwt, completedAppointments);
 router
   .route("/:id")
   .get(verifyJwt, getAppointmentById)
   .put(verifyJwt, updateAppointment)
   .delete(verifyJwt, deleteAppointmentById);
-router.route("/active").get(verifyJwt, activeAppointments);
-router.route("/completed").get(verifyJwt, completedAppointments);
+router.route("/:id/approve").put(verifyJwt, approveAppointment);
 router.route("/:id/start").put(verifyJwt, startAppointment);
+router.route("/:id/cancel").put(verifyJwt, cancelAppointment);
 router.route("/:id/complete").put(verifyJwt, completeAppointment);
 
 //admin routes

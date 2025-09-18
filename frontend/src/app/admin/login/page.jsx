@@ -20,7 +20,7 @@ export default function AdminLoginPage() {
       console.log("user data in localStorage:", userExist);
       if (!userExist) return;
       const user = JSON.parse(userExist);
-      if (user.data.role === "admin") {
+      if (user?.data?.role === "admin" || user?.data?.role === "super_admin") {
         console.log("Admin already logged in, redirecting to dashboard...");
         router.replace("/admin/dashboard");
         toast.success("Welcome back, Admin!");

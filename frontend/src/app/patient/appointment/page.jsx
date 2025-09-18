@@ -106,7 +106,15 @@ export default function PatientAppointments() {
                     onClick={() => setSelected(appointment)}
                     className="cursor-pointer hover:bg-gray-50 rounded-lg"
                   >
-                    <AppointmentCard appointment={appointment} />
+                    <AppointmentCard
+                      appointment={{
+                        id: appointment._id,
+                        userDetails: appointment?.doctorId,
+                        reason: appointment.reason || "Consultation",
+                        time: appointment.scheduledAt,
+                        status: appointment.status,
+                      }}
+                    />
                   </div>
                 ))
               )}

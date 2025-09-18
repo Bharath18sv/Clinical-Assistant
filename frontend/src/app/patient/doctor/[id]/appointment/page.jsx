@@ -272,8 +272,8 @@ export default function AppointmentPage() {
                         className="w-20 h-20 rounded-full object-cover border"
                       />
                     ) : (
-                      <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center">
-                        <User size={36} className="text-gray-500" />
+                      <div className="w-20 h-20 rounded-full overflow-hidden flex items-center justify-center">
+                        <User className="w-15 h-15 rounded-full object-cover " />
                       </div>
                     )}
 
@@ -283,10 +283,12 @@ export default function AppointmentPage() {
                         {appointment.doctorId.fullname}
                       </h4>
                       <p className="text-gray-600">
-                        {appointment.doctorId.specialization.length > 1
-                          ? appointment.doctorId.specialization.join(", ") ||
-                            "General"
-                          : appointment.doctorId.specialization}
+                        {Array.isArray(appointment?.doctorId?.specialization)
+                          ? appointment.doctorId.specialization.length > 1
+                            ? appointment.doctorId.specialization.join(", ")
+                            : appointment.doctorId.specialization[0] ||
+                              "General"
+                          : appointment?.doctorId?.specialization || "General"}
                       </p>
                       <p className="text-gray-700 text-sm">
                         <span className="font-semibold">Email:</span>{" "}

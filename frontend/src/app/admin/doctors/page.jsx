@@ -40,6 +40,7 @@ export default function AdminDoctorsPage() {
         }
         const finalData = Array.isArray(doctorsData) ? doctorsData : [];
         setDoctors(finalData);
+        console.log("doctors for admin: ", finalData);
       } else {
         setDoctors([]);
       }
@@ -63,6 +64,19 @@ export default function AdminDoctorsPage() {
       fetchDoctors(); // Refresh list
     } catch (error) {
       console.error("Error approving doctor:", error);
+    }
+  };
+
+  const handleReject = async (doctorId) => {
+    if (confirm("Are you sure you want to reject this doctor?")) {
+      try {
+        await API.put(`/admin/doctors/${doctorId}/approve`, {
+          status: "rejected",
+        });
+        fetchDoctors(); // Refresh list
+      } catch (error) {
+        console.error("Error rejecting doctor:", error);
+      }
     }
   };
 
@@ -148,13 +162,12 @@ export default function AdminDoctorsPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Search */}
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <input
                   type="text"
                   placeholder="Search doctors..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="input pl-10"
+                  className="input pl-10 outline-none"
                 />
               </div>
 
@@ -162,7 +175,7 @@ export default function AdminDoctorsPage() {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="input"
+                className="input outline-none"
               >
                 <option value="all">All Status</option>
                 <option value="approved">Approved</option>
@@ -174,7 +187,7 @@ export default function AdminDoctorsPage() {
               <select
                 value={specializationFilter}
                 onChange={(e) => setSpecializationFilter(e.target.value)}
-                className="input"
+                className="input outline-none"
               >
                 <option value="all">All Specializations</option>
                 <option value="Cardiology">Cardiology</option>
@@ -219,9 +232,20 @@ export default function AdminDoctorsPage() {
                       <tr key={doctor._id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
-                            <div className="icon-container icon-blue mr-4">
-                              <Stethoscope className="h-5 w-5" />
+                            <div className="w-12 h-12 rounded-full overflow-hidden mr-4 flex-shrink-0">
+                              {doctor.profilePic ? (
+                                <img
+                                  src={doctor.profilePic}
+                                  alt={doctor.fullname}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="icon-container icon-blue w-full h-full flex items-center justify-center">
+                                  <Stethoscope className="h-6 w-6" />
+                                </div>
+                              )}
                             </div>
+
                             <div>
                               <div className="text-sm font-medium text-gray-900">
                                 {doctor.fullname}
@@ -278,6 +302,16 @@ export default function AdminDoctorsPage() {
                                 title="Approve"
                               >
                                 <CheckCircle className="h-4 w-4" />
+                              </button>
+                            )}
+                            {/* Reject (only if pending) */}
+                            {doctor.status === "pending" && (
+                              <button
+                                onClick={() => handleReject(doctor._id)}
+                                className="text-yellow-600 hover:text-yellow-900 transition-colors"
+                                title="Reject"
+                              >
+                                <XCircle className="h-4 w-4" />
                               </button>
                             )}
                             <button

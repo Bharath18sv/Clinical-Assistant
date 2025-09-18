@@ -7,6 +7,8 @@ import Select, { MultiValue } from "react-select";
 import { AuthContext } from "@/context/AuthContext";
 import API from "@/utils/api";
 import toast from "react-hot-toast";
+import { MapPin } from "lucide-react";
+import { addDoctor } from "@/utils/api";
 
 export default function AddDoctorPage() {
   const { user, authLoading } = useContext(AuthContext);
@@ -14,13 +16,22 @@ export default function AddDoctorPage() {
     email: "",
     password: "",
     fullname: "",
+    gender: "Male",
+    age: 0,
     specialization: [],
     qualifications: [],
     experience: "",
     about: "",
     phone: "",
+    address: {
+      street: "",
+      city: "",
+      state: "",
+      zip: "",
+      country: "India",
+    },
   });
-  const [profilePicture, setProfilePicture] = useState();
+  const [profilePic, setProfilePicture] = useState();
   const [profilePicturePreview, setProfilePicturePreview] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -31,18 +42,18 @@ export default function AddDoctorPage() {
     console.log("loading page.....");
     setLoading(true);
     const user = JSON.parse(localStorage.getItem("user"));
-    console.log("user data from local storage", user);
+    // console.log("user data from local storage", user);
     if (!user) {
-      console.log("no user found, redirecting to login...");
+      // console.log("no user found, redirecting to login...");
       router.push("/admin/login");
       setLoading(false);
       return;
     }
     console.log("user role", user.role);
     if (user && user.role !== "admin") {
-      console.log(
-        "non-admin user detected, redirecting them to landing page..."
-      );
+      // console.log(
+      //   "non-admin user detected, redirecting them to landing page..."
+      // );
       router.push("/");
       setLoading(false);
     }
@@ -51,10 +62,24 @@ export default function AddDoctorPage() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+
+    // Handle nested address fields
+    if (name.startsWith("address.")) {
+      const field = name.split(".")[1]; // e.g., "street"
+      setFormData((prev) => ({
+        ...prev,
+        address: {
+          ...prev.address,
+          [field]: value,
+        },
+      }));
+    } else {
+      // Normal fields
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
   };
 
   const handleProfilePictureChange = (e) => {
@@ -148,12 +173,14 @@ export default function AddDoctorPage() {
     }
 
     try {
-      console.log("form data being submitted", formData);
       //send form data along with profile picture
-      const response = await API.post("admin/doctors", {
+      const doctorData = {
         ...formData,
-        profilePicture,
-      });
+        age: parseInt(formData.age),
+        profilePic,
+      };
+      console.log("doctor data being submitted", doctorData);
+      const response = await addDoctor(doctorData);
 
       setSuccess("Doctor added successfully!");
       toast.success("Doctor added successfully!");
@@ -164,6 +191,7 @@ export default function AddDoctorPage() {
         email: "",
         password: "",
         fullname: "",
+        age: 0,
         specialization: [],
         qualifications: [],
         experience: "",
@@ -222,9 +250,6 @@ export default function AddDoctorPage() {
                   Smart Care Assistant
                 </h1>
               </Link>
-              <span className="ml-4 text-sm text-gray-500">
-                Admin Dashboard
-              </span>
             </div>
             <Link
               href="/admin/doctors"
@@ -381,6 +406,24 @@ export default function AddDoctorPage() {
                 />
               </div>
 
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Age *
+                </label>
+                <input
+                  type="number"
+                  name="age"
+                  value={formData.age}
+                  onChange={handleInputChange}
+                  required
+                  maxLength={3}
+                  min="1"
+                  max="120"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter age"
+                />
+              </div>
+
               {/* Experience */}
               <div>
                 <label
@@ -399,6 +442,26 @@ export default function AddDoctorPage() {
                   placeholder="0"
                   min="0"
                 />
+              </div>
+              {/* Gender */}
+              <div>
+                <label
+                  htmlFor="gender"
+                  className="block text-sm font-medium text-gray-700 mb-3"
+                >
+                  Gender *
+                </label>
+                <select
+                  name="gender"
+                  value={formData.gender}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200"
+                >
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                </select>
               </div>
             </div>
 
@@ -549,6 +612,87 @@ export default function AddDoctorPage() {
                 required
               />
             </div>
+            {/* Address Information */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <MapPin className="h-5 w-5 text-blue-600 mr-2" />
+                Address Information
+              </h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Street Address
+                  </label>
+                  <input
+                    type="text"
+                    name="address.street"
+                    value={formData.address.street}
+                    onChange={handleInputChange}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter street address"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    City
+                  </label>
+                  <input
+                    type="text"
+                    name="address.city"
+                    value={formData.address.city}
+                    onChange={handleInputChange}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter city"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    State
+                  </label>
+                  <input
+                    type="text"
+                    name="address.state"
+                    value={formData.address.state}
+                    onChange={handleInputChange}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter state"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    ZIP Code
+                  </label>
+                  <input
+                    type="text"
+                    name="address.zip"
+                    value={formData.address.zip}
+                    maxLength={6}
+                    minLength={6}
+                    onChange={handleInputChange}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter ZIP code"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Country
+                  </label>
+                  <input
+                    type="text"
+                    name="address.country"
+                    value={formData.address.country}
+                    onChange={handleInputChange}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter country"
+                  />
+                </div>
+              </div>
+            </div>
 
             {/* Profile Picture */}
             <div>
@@ -587,13 +731,13 @@ export default function AddDoctorPage() {
                 <div className="flex-1">
                   <input
                     type="file"
-                    id="profile-picture"
-                    name="profile-picture"
+                    id="profilePic"
+                    name="profilePic"
                     accept="image/*"
                     onChange={handleProfilePictureChange}
                     className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                   />
-                  {profilePicture && (
+                  {profilePic && (
                     <button
                       type="button"
                       onClick={removeProfilePicture}

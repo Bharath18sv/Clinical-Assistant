@@ -24,7 +24,7 @@ export default function DoctorSidebar() {
   const { user, authLoading, logout: contextLogout } = useContext(AuthContext);
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(true);
-  const [currentPath, setCurrentPath] = useState("/doctor/dashboard");
+  // remove: const [currentPath, setCurrentPath] = useState("/doctor/dashboard");
 
   const [expandedMenus, setExpandedMenus] = useState({
     patients: false,
@@ -35,7 +35,7 @@ export default function DoctorSidebar() {
 
   useEffect(() => {
     setDoctorData(user?.user);
-  }, []);
+  }, [user]);
 
   const toggleSidebar = () => {
     setIsOpen(!isOpen);
@@ -61,6 +61,11 @@ export default function DoctorSidebar() {
       href: "/doctor/dashboard",
       icon: LayoutDashboard,
     },
+    {
+      name: "Appointments",
+      href: "/doctor/appointment",
+      icon: Calendar,
+    },
   ];
 
   const expandableMenus = [
@@ -82,15 +87,43 @@ export default function DoctorSidebar() {
       name: "Appointments",
       icon: Calendar,
       subLinks: [
-        { name: "Active", href: "/doctor/appointments/active", icon: Clock },
+        { name: "Active", href: "/doctor/appointment/active", icon: Clock },
         {
           name: "Completed",
-          href: "/doctor/appointments/completed",
+          href: "/doctor/appointment/completed",
           icon: CheckCircle,
         },
       ],
     },
   ];
+
+  {
+    mainLinks.map((link) => {
+      const Icon = link.icon;
+
+      // Custom highlight logic
+      const isActive =
+        (link.href === "/doctor/dashboard" &&
+          pathname === "/doctor/dashboard") ||
+        (link.href === "/doctor/appointment" &&
+          pathname.startsWith("/doctor/appointment"));
+
+      return (
+        <li key={link.href}>
+          <Link
+            href={link.href}
+            className={`w-full flex items-center p-2 rounded-lg transition-colors ${
+              isActive ? "bg-slate-700 font-semibold" : "hover:bg-slate-700"
+            }`}
+            title={!isOpen ? link.name : ""}
+          >
+            <Icon size={20} className="flex-shrink-0" />
+            {isOpen && <span className="ml-3 text-left">{link.name}</span>}
+          </Link>
+        </li>
+      );
+    });
+  }
 
   const handleLogout = async () => {
     try {
@@ -131,7 +164,7 @@ export default function DoctorSidebar() {
                 <Link
                   href={link.href}
                   className={`w-full flex items-center p-2 rounded-lg transition-colors ${
-                    pathname === link.href
+                    pathname === link.href || pathname.startsWith(link.href)
                       ? "bg-slate-700 font-semibold"
                       : "hover:bg-slate-700"
                   }`}
@@ -151,7 +184,8 @@ export default function DoctorSidebar() {
             const Icon = menu.icon;
             const isExpanded = expandedMenus[menu.id];
             const hasActiveSubLink = menu.subLinks.some(
-              (subLink) => pathname === subLink.href
+              (subLink) =>
+                pathname === subLink.href || pathname.startsWith(subLink.href)
             );
 
             return (
@@ -214,9 +248,8 @@ export default function DoctorSidebar() {
           className={`w-full flex items-center ${
             isOpen ? "space-x-3" : "justify-center"
           } p-2 rounded-lg hover:bg-slate-700 transition-colors ${
-            currentPath === "/doctor/profile" ? "bg-slate-700" : ""
+            pathname.startsWith("/doctor/profile") ? "bg-slate-700" : ""
           }`}
-          onClick={() => setCurrentPath("/doctor/profile")}
         >
           <div className="flex-shrink-0">
             {doctorData?.profilePic ? (

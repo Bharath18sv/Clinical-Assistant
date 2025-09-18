@@ -81,6 +81,13 @@ const doctorSchema = new Schema(
       enum: ["pending", "approved", "rejected", "suspended"],
       default: "pending",
     },
+    address: {
+      street: { type: String, trim: true },
+      city: { type: String, trim: true },
+      state: { type: String, default: "Karnataka", trim: true },
+      zip: { type: String, trim: true },
+      country: { type: String, default: "India", trim: true },
+    },
     rejectionReason: {
       type: String,
     },

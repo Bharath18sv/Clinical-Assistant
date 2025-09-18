@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ChevronDown,
@@ -16,10 +16,14 @@ import {
   XCircle,
   Clock,
   X,
+  LogOut
 } from "lucide-react";
 import { usePathname } from "next/navigation"; // <-- usePathname instead of router
+import { AuthContext } from "@/context/AuthContext";
 
 export default function AdminSidebar() {
+  const { user, authLoading, logout: contextLogout } = useContext(AuthContext);
+  const [adminData, setAdminData] = useState(null);
   const pathname = usePathname(); // current route
   const [isOpen, setIsOpen] = useState(true);
   const [expandedMenus, setExpandedMenus] = useState({
@@ -97,10 +101,21 @@ export default function AdminSidebar() {
     },
   ];
 
-  const adminData = {
-    name: "John Smith",
-    email: "admin@hospital.com",
-    profileImage: null,
+  useEffect(() => {
+    if (user) {
+      setAdminData(user?.user);
+    }
+  }, [user]);
+
+  const handleLogout = async () => {
+    try {
+      contextLogout(); // Use context logout method
+      toast.success("Logged out successfully");
+      window.location.href = "/admin/login";
+    } catch (error) {
+      console.error("Error logging out:", error);
+      toast.error("Error logging out. Please try again.");
+    }
   };
 
   return (
@@ -213,9 +228,9 @@ export default function AdminSidebar() {
           }`}
         >
           <div className="flex-shrink-0">
-            {adminData.profileImage ? (
+            {adminData?.profilePic ? (
               <img
-                src={adminData.profileImage}
+                src={adminData?.profilePic}
                 alt="Admin Profile"
                 className="w-10 h-10 rounded-full object-cover border-2 border-slate-600"
               />
@@ -229,14 +244,27 @@ export default function AdminSidebar() {
           {isOpen && (
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-white truncate">
-                {adminData.name}
+                {adminData?.fullname}
               </p>
               <p className="text-xs text-slate-400 truncate">
-                {adminData.email}
+                {adminData?.email}
               </p>
             </div>
           )}
         </div>
+      </div>
+      {/* Logout Button */}
+      <div className="p-4 border-t border-slate-700">
+        <button
+          onClick={handleLogout}
+          className={`w-full flex items-center ${
+            isOpen ? "justify-start space-x-2" : "justify-center"
+          } px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white font-semibold transition-colors duration-200`}
+          title={!isOpen ? "Logout" : ""}
+        >
+          <LogOut size={16} className="flex-shrink-0" />
+          {isOpen && <span>Logout</span>}
+        </button>
       </div>
     </aside>
   );

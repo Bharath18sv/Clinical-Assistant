@@ -29,7 +29,7 @@ const createAppointment = asyncHandler(async (req, res) => {
     .json(new ApiResponse(201, appt, "Appointment created successfully"));
 });
 
-//check this later
+//appointment update - reschedule or change reason by patient
 const updateAppointment = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { scheduledAt, reason, status } = req.body;
@@ -54,8 +54,11 @@ const getUserAppointments = asyncHandler(async (req, res) => {
   const appointments = await Appointment.find({
     $or: [{ doctorId: userId }, { patientId: userId }],
   })
-    .populate("doctorId", "fullname email phone address specialization")
-    .populate("patientId", "fullname email phone address")
+    .populate(
+      "doctorId",
+      "fullname email phone address specialization profilePic"
+    )
+    .populate("patientId", "fullname email phone address profilePic")
     .sort({ scheduledAt: -1 });
 
   if (!appointments || appointments.length === 0) {
@@ -87,8 +90,11 @@ const getDPAppointment = asyncHandler(async (req, res) => {
       { doctorId: id, patientId: userOne },
     ],
   })
-    .populate("doctorId", "fullname email phone address specialization")
-    .populate("patientId", "fullname email phone address");
+    .populate(
+      "doctorId",
+      "fullname email phone address specialization profilePic"
+    )
+    .populate("patientId", "fullname email phone address profilePic");
 
   if (!appointment) {
     return res
@@ -123,8 +129,8 @@ const deleteAppointmentById = asyncHandler(async (req, res) => {
 //admin only
 const getAllAppointments = asyncHandler(async (req, res) => {
   const allAppointments = await Appointment.find()
-    .populate("doctorId", "fullname email phone")
-    .populate("patientId", "fullname email phone");
+    .populate("doctorId", "fullname email phone profilePic")
+    .populate("patientId", "fullname email phone profilePic");
   if (!allAppointments || allAppointments.length === 0) {
     return res
       .status(404)
@@ -148,7 +154,7 @@ const activeAppointments = asyncHandler(async (req, res) => {
     doctorId: userId,
     status: "active",
   })
-    .populate("patientId", "fullname email phone")
+    .populate("patientId", "fullname email phone profilePic")
     .sort({ scheduledAt: -1 });
 
   if (!appointments || appointments.length === 0) {
@@ -181,7 +187,7 @@ const completedAppointments = asyncHandler(async (req, res) => {
     doctorId: userId,
     status: "completed",
   })
-    .populate("patientId", "fullname email phone")
+    .populate("patientId", "fullname email phone profilePic")
     .sort({ scheduledAt: -1 });
 
   if (!appointments || appointments.length === 0) {
@@ -220,6 +226,8 @@ const startAppointment = asyncHandler(async (req, res) => {
     throw new ApiError(403, "Not authorized for this appointment");
   }
   appt.status = "active";
+  appt.notes = req.body.notes || appt.notes || "";
+
   if (!appt.scheduledAt) appt.scheduledAt = new Date();
   await appt.save();
   return res
@@ -240,6 +248,8 @@ const completeAppointment = asyncHandler(async (req, res) => {
     throw new ApiError(403, "Not authorized for this appointment");
   }
   appt.status = "completed";
+  appt.notes = req.body.notes || appt.notes || "";
+
   await appt.save();
   return res
     .status(200)
@@ -266,6 +276,41 @@ const getAppointmentById = asyncHandler(async (req, res) => {
     );
 });
 
+const cancelAppointment = asyncHandler(async (req, res) => {
+  const doctorId = req.user._id;
+  const { id } = req.params;
+  const { reason } = req.body;
+  const appt = await Appointment.findById(id);
+  if (!appt) throw new ApiError(404, "Appointment not found");
+  if (String(appt.doctorId) !== String(doctorId)) {
+    throw new ApiError(403, "Not authorized for this appointment");
+  }
+  appt.status = "cancelled";
+  appt.notes = req.body.notes || appt.notes || "";
+
+  appt.cancellationReason = reason || "No reason provided";
+  await appt.save();
+  return res
+    .status(200)
+    .json(new ApiResponse(200, appt, "Appointment cancelled"));
+});
+
+const approveAppointment = asyncHandler(async (req, res) => {
+  const doctorId = req.user._id;
+  const { id } = req.params;
+  const appt = await Appointment.findById(id);
+  if (!appt) throw new ApiError(404, "Appointment not found");
+  if (String(appt.doctorId) !== String(doctorId)) {
+    throw new ApiError(403, "Not authorized for this appointment");
+  }
+  appt.status = "approved";
+  appt.notes = req.body.notes || appt.notes || "";
+  await appt.save();
+  return res
+    .status(200)
+    .json(new ApiResponse(200, appt, "Appointment approved"));
+});
+
 export {
   getAppointmentById,
   deleteAppointmentById,
@@ -278,4 +323,6 @@ export {
   updateAppointment,
   startAppointment,
   completeAppointment,
+  cancelAppointment,
+  approveAppointment,
 };

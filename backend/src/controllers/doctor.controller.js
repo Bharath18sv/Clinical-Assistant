@@ -12,6 +12,7 @@ import { SymptomLog } from "../models/symptomLogs.models.js";
 import { Prescription } from "../models/prescription.models.js";
 import { Vitals } from "../models/vitals.models.js";
 import { Appointment } from "../models/appointments.models.js";
+import mongoose from "mongoose";
 
 const registerDoctor = asyncHandler(async (req, res) => {
   const { email, password, fullname, gender, age, phone, address } = req.body;
@@ -280,16 +281,66 @@ const getPatientsForDoctor = asyncHandler(async (req, res) => {
   const doctorId = req.user?._id || req.user?.id;
   if (!doctorId) throw new ApiError(401, "Unauthorized");
 
-  const patients = await Patient.find({ doctorId })
-    .sort({ createdAt: -1 })
-    .select("-password -refreshToken");
+  const patients = await Appointment.aggregate([
+    {
+      $match: {
+        doctorId: new mongoose.Types.ObjectId(doctorId),
+        status: "active",
+      },
+    },
+    {
+      // Group by patientId to get unique patients
+      $group: {
+        _id: "$patientId",
+        latestAppointment: { $first: "$$ROOT" }, // Get the first (latest due to sort) appointment
+        totalAppointments: { $sum: 1 },
+        lastVisit: { $max: "$scheduledAt" },
+        appointmentStatuses: { $push: "$status" },
+      },
+    },
+    {
+      $sort: { lastVisit: -1 }, // Sort by latest visit
+    },
+    {
+      // Populate patient details
+      $lookup: {
+        from: "patients", // Collection name (usually lowercase and pluralized)
+        localField: "_id",
+        foreignField: "_id",
+        as: "patientDetails",
+      },
+    },
+    {
+      $unwind: "$patientDetails",
+    },
+    {
+      // Project the final structure
+      $project: {
+        _id: 1,
+        patientId: "$_id",
+        patientDetails: {
+          $mergeObjects: [
+            "$patientDetails",
+            { password: "$$REMOVE", refreshToken: "$$REMOVE" }, // Remove sensitive fields
+          ],
+        },
+        totalAppointments: 1,
+        lastVisit: 1,
+        appointmentStatuses: 1,
+        latestAppointmentId: "$latestAppointment._id",
+        latestStatus: "$latestAppointment.status",
+        latestReason: "$latestAppointment.reason",
+      },
+    },
+  ]);
+
   res
     .status(200)
     .json(
       new ApiResponse(
         200,
-        { patients },
-        "All patients of the doctor fetched successfully"
+        { patients, total: patients.length },
+        "Unique patients of the doctor fetched successfully"
       )
     );
 });
@@ -492,6 +543,110 @@ const getDoctorById = asyncHandler(async (req, res) => {
     );
 });
 
+const updateInfo = asyncHandler(async (req, res) => {
+  const {
+    fullname,
+    email,
+    experience,
+    about,
+    specialization,
+    qualifications,
+    age,
+    phone,
+    address,
+    isAvailable,
+  } = req.body;
+
+  if (
+    !fullname ||
+    !email ||
+    !experience ||
+    !about ||
+    !specialization ||
+    !qualifications ||
+    !age ||
+    !phone ||
+    !address ||
+    !isAvailable
+  ) {
+    throw new ApiError(400, "All fields are required");
+  }
+
+  const doctor = await Doctor.findById(req.user?._id); //we can use findbyandUpdate also.
+  if (!doctor) {
+    throw new ApiError(400, "doctor not found");
+  }
+
+  const updatedDoctor = await Doctor.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        fullname,
+        email,
+        experience,
+        about,
+        specialization,
+        qualifications,
+        age,
+        phone,
+        address,
+        isAvailable,
+      },
+    },
+    { new: true }
+  ).select("-password -refreshToken");
+
+  res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        updatedDoctor,
+        "Patient information updated successfully"
+      )
+    );
+});
+
+const updateProfilePic = asyncHandler(async (req, res) => {
+  const profilePicLocalPath = req.files?.path;
+
+  if (!profilePicLocalPath) {
+    throw new ApiError(400, "Profile picture is required");
+  }
+
+  const profilePic = await uploadOnCloudinary(profilePicLocalPath);
+
+  if (!profilePic.url) {
+    throw new ApiError(500, "Failed to upload Profile picture");
+  }
+
+  const doctor = await Doctor.findById(req.user?._id);
+
+  if (!doctor) {
+    throw new ApiError(400, "Patient not found");
+  }
+
+  const updatedDoctor = await Doctor.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        profilePic: profilePic.url,
+      },
+    },
+    { new: true }
+  ).select("-password -refreshToken");
+
+  res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        updatedDoctor,
+        "Profile picture updated successfully"
+      )
+    );
+});
+
 export {
   registerDoctor,
   loginDoctor,
@@ -506,4 +661,6 @@ export {
   endAppointment,
   getPatientSummary,
   getDoctorById,
+  updateInfo,
+  updateProfilePic,
 };

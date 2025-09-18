@@ -134,12 +134,20 @@ export default function PatientDashboard() {
             <h2 className="card-title">Your Appointments</h2>
           </div>
           <div className="space-y-3">
-            {appointments ? appointments.map((appointment) => (
-              <AppointmentCard
-                key={appointment._id}
-                appointment={appointment}
-              />
-            )): "Loading..."}
+            {appointments
+              ? appointments.map((a) => (
+                  <AppointmentCard
+                    key={a._id}
+                    appointment={{
+                      id: a._id,
+                      userDetails: a?.doctorId,
+                      reason: a.reason || "Consultation",
+                      time: a.scheduledAt,
+                      status: a.status,
+                    }}
+                  />
+                ))
+              : "Loading..."}
           </div>
           <button className="w-full mt-4 text-blue-600 hover:text-blue-800 text-sm font-medium">
             View All Appointments

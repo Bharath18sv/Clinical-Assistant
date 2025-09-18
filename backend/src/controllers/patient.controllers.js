@@ -11,7 +11,11 @@ import { Appointment } from "../models/appointments.models.js";
 import jwt from "jsonwebtoken";
 
 const registerPatient = asyncHandler(async (req, res) => {
-  console.log("req.boy data: ", req.body);
+  console.log("req.body data: ", req.body);
+  console.log("req.file data: ", req.file);
+  console.log("req.user : ", req.user);
+  const doctorId = req.user?._id;
+
   const {
     email,
     password,
@@ -19,56 +23,85 @@ const registerPatient = asyncHandler(async (req, res) => {
     gender,
     age,
     phone,
-    address,
     chronicConditions,
     allergies,
     symptoms,
+    // Address fields (flattened from frontend)
+    "address.street": street,
+    "address.city": city,
+    "address.state": state,
+    "address.zip": zip,
+    "address.country": country,
   } = req.body;
 
-  //check whether all fields are passed from the request
+  // Reconstruct address object
+  const address = {
+    street: street || "",
+    city: city || "",
+    state: state || "",
+    zip: zip || "",
+    country: country || "India",
+  };
+
+  // Parse arrays (FormData sends arrays as comma-separated strings or individual fields)
+  const parseArrayField = (field) => {
+    if (!field) return [];
+    if (Array.isArray(field)) return field;
+    return [field]; // Single value
+  };
+
+  const parsedChronicConditions = parseArrayField(chronicConditions);
+  const parsedAllergies = parseArrayField(allergies);
+  const parsedSymptoms = parseArrayField(symptoms);
+
+  // Validation
   if (
     [email, password, fullname, gender, phone].some(
       (field) => typeof field !== "string" || !field.trim()
     ) ||
-    typeof age !== "number" ||
-    !address ||
-    typeof address !== "object"
+    !age ||
+    isNaN(parseInt(age))
   ) {
     console.log("All fields are required");
     throw new ApiError(400, "Validation failed: Missing required fields");
   }
 
-  //check if user already exist
-  const PatientAlreadyExist = await Patient.findOne({
-    email,
-  });
-
+  // Check if user already exists
+  const PatientAlreadyExist = await Patient.findOne({ email });
   if (PatientAlreadyExist) {
-    console.log("Patient already exist with email:", email);
-    throw new ApiError(400, `User with email: ${email} already exist`);
+    console.log("Patient already exists with email:", email);
+    throw new ApiError(400, `User with email: ${email} already exists`);
   }
 
-  if (age < 1 || age > 100) {
+  const ageNum = parseInt(age);
+  if (ageNum < 1 || ageNum > 120) {
     console.log("Age is invalid");
     throw new ApiError(400, "Age is invalid");
   }
 
-  //get the profile picture path
-  const profilePicLocalPath = req.files?.profilePic?.[0]?.path;
+  // Get the profile picture path (single file upload)
+  const profilePicLocalPath = req.file?.path;
+  console.log("Profile pic local path:", profilePicLocalPath);
 
-  //upload image to cloudinary
+  // Upload image to cloudinary
   let profilePic;
   if (profilePicLocalPath) {
     try {
       profilePic = await uploadOnCloudinary(profilePicLocalPath);
       console.log("Profile picture uploaded successfully");
     } catch (error) {
-      console.log("profile pic upload failed", error);
+      console.log("Profile pic upload failed", error);
       throw new ApiError(500, "Failed to upload Profile picture");
     }
   }
 
-  //create the patient/user
+  if (profilePic) {
+    console.log("Profile picture uploaded successfully");
+  } else {
+    console.log("Profile picture not uploaded");
+  }
+
+  // Create the patient
   try {
     const newPatient = await Patient.create({
       email,
@@ -76,40 +109,42 @@ const registerPatient = asyncHandler(async (req, res) => {
       password,
       profilePic: profilePic?.url || "",
       gender,
-      age,
+      age: ageNum,
       phone,
       address,
-      chronicConditions: chronicConditions || [],
-      allergies: allergies || [],
-      symptoms: symptoms || [],
+      chronicConditions: parsedChronicConditions,
+      allergies: parsedAllergies,
+      symptoms: parsedSymptoms,
+      doctorId: doctorId || null,
+
     });
 
-    console.log("New user created:", newPatient.fullname);
+    console.log("New patient created:", newPatient.fullname);
 
-    const createdPatient = await Patient.findById(newPatient.id).select(
+    const createdPatient = await Patient.findById(newPatient._id).select(
       "-password -refreshToken"
     );
 
     if (!createdPatient) {
       throw new ApiError(
         500,
-        "Something went wrong while registering the user"
+        "Something went wrong while registering the patient"
       );
     }
 
     res
-      .status(200)
+      .status(201)
       .json(
-        new ApiResponse(200, createdPatient, "User registered Successfully")
+        new ApiResponse(201, createdPatient, "Patient registered successfully")
       );
   } catch (error) {
-    console.log("User creation failed", error);
+    console.log("Patient creation failed", error);
     if (profilePic) {
       deleteFromCloudinary(profilePic.public_id);
     }
     throw new ApiError(
       500,
-      "Something went wrong while creating the user and images were deleted"
+      "Something went wrong while creating the patient and images were deleted"
     );
   }
 });

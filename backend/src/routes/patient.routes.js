@@ -21,7 +21,7 @@ import { upload } from "../middlewares/multer.middlewares.js";
 const router = Router();
 
 //unsecured routes
-router.route("/register").post(registerPatient);
+router.route("/register").post(upload.single("profilePic"), registerPatient);
 router.route("/login").post(loginPatient);
 router.route("/refreshToken").post(refreshAccessToken);
 
@@ -37,7 +37,9 @@ router.route("/doctors").get(verifyJwt, getAllDoctorsForPatient);
 router.route("/myDoctors").get(verifyJwt, getMyDoctors);
 router.route("/appointments").get(verifyJwt, getMyAppointments);
 router.route("/appointments/active").get(verifyJwt, getActiveAppointments);
-router.route("/appointments/completed").get(verifyJwt, getCompletedAppointments);
+router
+  .route("/appointments/completed")
+  .get(verifyJwt, getCompletedAppointments);
 
 //admin routes
 router.route("/recent").get(getRecentPatients);

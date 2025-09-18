@@ -142,6 +142,8 @@ const addDoctor = asyncHandler(async (req, res) => {
     email,
     password,
     fullname,
+    gender,
+    age,
     specialization,
     qualifications,
     experience,
@@ -153,6 +155,10 @@ const addDoctor = asyncHandler(async (req, res) => {
     !email ||
     !password ||
     !fullname ||
+    !gender ||
+    !age ||
+    !experience ||
+    !phone ||
     !specialization ||
     !qualifications ||
     !about
@@ -182,13 +188,15 @@ const addDoctor = asyncHandler(async (req, res) => {
     email,
     password,
     fullname,
+    gender,
+    age,
     specialization,
     qualifications,
     experience: experience || 0,
     about,
     phone,
     addedBy: req.admin._id,
-    profilePicture: profilePic ? profilePic.url : undefined,
+    profilePic: profilePic ? profilePic.url : null,
   });
 
   const createdDoctor = await Doctor.findById(doctor._id).select("-password");
@@ -355,6 +363,44 @@ const approveDoctor = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, updatedDoctor, `Doctor ${status} successfully`));
 });
+
+// const rejectDoctor = asyncHandler(async (req, res) => {
+//   const { doctorId } = req.params;
+//   const { status, rejectionReason } = req.body;
+
+//   if (!["approved", "rejected", "suspended"].includes(status)) {
+//     throw new ApiError(
+//       400,
+//       "Invalid status. Must be approved, rejected, or suspended"
+//     );
+//   }
+
+//   const doctor = await Doctor.findById(doctorId);
+
+//   if (!doctor) {
+//     throw new ApiError(404, "Doctor not found");
+//   }
+
+//   const updateData = {
+//     status,
+//     isApproved: status === "rejected",
+//   };
+
+//   if (status === "rejected") {
+//     updateData.approvedBy = req.admin._id;
+//     updateData.approvedAt = new Date();
+//   } else if (status === "rejected" && rejectionReason) {
+//     updateData.rejectionReason = rejectionReason;
+//   }
+
+//   const updatedDoctor = await Doctor.findByIdAndUpdate(doctorId, updateData, {
+//     new: true,
+//   }).select("-password");
+
+//   return res
+//     .status(200)
+//     .json(new ApiResponse(200, updatedDoctor, `Doctor ${status} successfully`));
+// });
 
 const deleteDoctor = asyncHandler(async (req, res) => {
   const { doctorId } = req.params;

@@ -29,32 +29,6 @@ API.interceptors.request.use(
         req.headers.Authorization = `Bearer ${token}`;
       }
     }
-
-    // 🔹 Detect if request contains a file → switch to multipart/form-data
-    if (req.data) {
-      const hasFile = Object.values(req.data).some(
-        (value) =>
-          value instanceof File ||
-          value instanceof Blob ||
-          (Array.isArray(value) && value.some((item) => item instanceof File))
-      );
-
-      if (hasFile) {
-        const formData = new FormData();
-
-        Object.entries(req.data).forEach(([key, value]) => {
-          if (Array.isArray(value)) {
-            value.forEach((item) => formData.append(key, item));
-          } else {
-            formData.append(key, value);
-          }
-        });
-
-        req.data = formData;
-        req.headers["Content-Type"] = "multipart/form-data";
-      }
-    }
-
     return req;
   },
   (error) => Promise.reject(error)
@@ -85,6 +59,44 @@ export const getMyDoctors = async () => {
   return doctors.data.data;
 };
 
+export const registerPatient = async (data) => {
+  const formData = new FormData();
+
+  formData.append("fullname", data.fullname);
+  formData.append("email", data.email);
+  formData.append("password", data.password);
+  formData.append("phone", data.phone);
+  formData.append("age", data.age);
+  formData.append("gender", data.gender);
+  formData.append("address[street]", data.address.street);
+  formData.append("address[city]", data.address.city);
+  formData.append("address[state]", data.address.state);
+  formData.append("address[zip]", data.address.zip);
+  formData.append("address[country]", data.address.country);
+  formData.append("chronicConditions", data.chronicConditions);
+  formData.append("allergies", data.allergies);
+  formData.append("symptoms", data.symptoms);
+
+  data.chronicConditions?.forEach((c) =>
+    formData.append("chronicConditions[]", c.value || c)
+  );
+  data.allergies?.forEach((a) => formData.append("allergies[]", a.value || a));
+  data.symptoms?.forEach((s) => formData.append("symptoms[]", s.value || s));
+
+  // File
+  if (data.profilePic) {
+    formData.append("profilePic", data.profilePic);
+  }
+
+  try {
+    const registeredPatient = await API.post("/patients/register", formData);
+    return registerPatient;
+  } catch (error) {
+    console.error("❌ Error:", error);
+    return null;
+  }
+};
+
 //appointments api:
 export const fetchMyAppointments = async () => {
   const { data } = await API.get(`/appointments`);
@@ -111,10 +123,26 @@ export const createAppointment = async ({
   return data?.data;
 };
 
-// export const startAppointment = async (id) => {
-//   const { data } = await API.put(`/appointments/${id}/start`);
-//   return data?.data;
-// };
+export const updateAppointment = async (id, updateData) => {
+  let data;
+  if (updateData.status === "completed") {
+    data = await API.put(`/appointments/${id}/complete`, updateData);
+  } else if (updateData.status === "cancelled") {
+    data = await API.put(`/appointments/${id}/cancel`, updateData);
+  } else if (updateData.status === "active") {
+    data = await API.put(`/appointments/${id}/start`, updateData);
+  } else if (updateData.status === "approved") {
+    data = await API.put(`/appointments/${id}/approve`, updateData);
+  } else {
+    data = await API.put(`/appointments/${id}`, updateData);
+  }
+  return data?.data;
+};
+
+export const startAppointment = async (id) => {
+  const { data } = await API.put(`/appointments/${id}/start`);
+  return data?.data;
+};
 
 //this doesn't return anything
 export const deleteAppointmentById = async (id) => {
@@ -135,5 +163,106 @@ export const fetchDPAppointment = async (id) => {
 //doctor apis
 export const getDoctorAppointments = async () => {
   const appts = await API.get("/appointments");
-  // console.log("/appointments:", appts);
+  // console.log("/api appointments.data:", appts.data.data);
+  return appts.data.data;
+};
+
+export const addPatient = async (patientData) => {
+  const formData = new FormData();
+
+  // Add basic fields
+  formData.append("fullname", patientData.fullname);
+  formData.append("email", patientData.email);
+  formData.append("password", patientData.password);
+  formData.append("gender", patientData.gender);
+  formData.append("age", patientData.age.toString());
+  formData.append("phone", patientData.phone);
+
+  // Add address fields with dot notation
+  Object.entries(patientData.address).forEach(([key, value]) => {
+    formData.append(`address.${key}`, value || "");
+  });
+
+  // Add arrays
+  patientData.chronicConditions.forEach((condition) =>
+    formData.append("chronicConditions", condition)
+  );
+
+  patientData.allergies.forEach((allergy) =>
+    formData.append("allergies", allergy)
+  );
+
+  patientData.symptoms.forEach((symptom) =>
+    formData.append("symptoms", symptom)
+  );
+
+  // Add the profile picture file
+  if (patientData.profilePic) {
+    formData.append("profilePic", patientData.profilePic);
+  }
+
+  console.log("Patient data from frontend:", patientData);
+
+  try {
+    // Use patient registration endpoint instead of doctor endpoint
+    const response = await API.post("/doctors/registerPatient", formData);
+    console.log("Created patient response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error creating patient:", error);
+    throw error;
+  }
+};
+export const viewMyPatients = async () => {
+  const patients = await API.get("/doctors/");
+  return patients.data.data.patients || [];
+};
+
+//admin apis
+export const addDoctor = async (doctorData) => {
+  const formData = new FormData();
+
+  // Add basic fields
+  formData.append("email", doctorData.email);
+  formData.append("password", doctorData.password);
+  formData.append("fullname", doctorData.fullname);
+  formData.append("gender", doctorData.gender);
+  formData.append("age", doctorData.age.toString());
+  formData.append("experience", doctorData.experience);
+  formData.append("about", doctorData.about);
+  formData.append("phone", doctorData.phone);
+
+  // Add address fields with dot notation
+  Object.entries(doctorData.address).forEach(([key, value]) => {
+    formData.append(`address.${key}`, value || "");
+  });
+
+  if (doctorData.specialization.length > 0) {
+    doctorData.specialization.forEach((spec) =>
+      formData.append("specialization", spec)
+    );
+  }
+
+  if (doctorData.qualifications.length > 0) {
+    doctorData.qualifications.forEach((qlf) =>
+      formData.append("qualifications", qlf)
+    );
+  }
+
+  // Add the profile picture file
+  if (doctorData.profilePic) {
+    formData.append("profilePic", doctorData.profilePic);
+  }
+
+  console.log("Doctor data from frontend:", doctorData);
+
+  try {
+    // Use patient registration endpoint instead of doctor endpoint
+    const response = await API.post("/admin/doctors", formData);
+    console.log("Created doctor response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error creating doctor:", error);
+    throw error;
+  }
 };

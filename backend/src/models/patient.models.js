@@ -28,7 +28,7 @@ const patientSchema = new Schema(
       trim: true,
       index: true,
     },
- 
+
     isActive: {
       type: Boolean, //active only if they're undergoing treatment
       default: true,
@@ -76,10 +76,9 @@ const patientSchema = new Schema(
       country: { type: String, default: "India", trim: true },
     },
     doctorId: {
-      type: Schema.Types.ObjectId,
+      type: [Schema.Types.ObjectId],
       ref: "Doctor",
       default: null,
-      // required: true,
     },
     refreshToken: {
       type: String,

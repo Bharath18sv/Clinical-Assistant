@@ -7,7 +7,8 @@ import { CHRONIC_CONDITIONS, ALLERGIES, SYMPTOMS } from "@/data/constant";
 import { useRouter } from "next/navigation";
 import { AuthContext } from "@/context/AuthContext";
 import { toast } from "react-hot-toast";
-import API from "@/utils/api";
+import { registerPatient } from "@/utils/api";
+import { User } from "lucide-react";
 
 // Memoized input component for better performance
 const MemoizedInput = memo(({ label, error, errorMessage, ...props }) => (
@@ -54,6 +55,9 @@ export default function PatientSignupPage() {
   const [isMounted, setIsMounted] = useState(false);
   const router = useRouter();
   const { user, login } = useContext(AuthContext);
+  const [profilePic, setProfilePicture] = useState(null);
+  const [profilePicturePreview, setProfilePicturePreview] = useState("");
+  const [error, setError] = useState("");
 
   // Memoize options to prevent unnecessary re-renders
   const createOptions = useCallback(
@@ -65,8 +69,36 @@ export default function PatientSignupPage() {
     setIsMounted(true);
   }, []);
 
+  const handleProfilePictureChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith("image/")) {
+        setError("Please select a valid image file");
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        setError("Profile picture must be less than 5MB");
+        return;
+      }
+
+      setProfilePicture(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setProfilePicturePreview(e.target?.result);
+      };
+      reader.readAsDataURL(file);
+      setError("");
+    }
+  };
+
+  const removeProfilePicture = () => {
+    setProfilePicture(null);
+    setProfilePicturePreview("");
+  };
+
   const onSubmit = async (data) => {
-    console.log(`Submitted data: ${JSON.stringify(data)}`);
+    // console.log(`Submitted data: ${JSON.stringify(data)}`);
 
     // Additional validation before submission
     if (data.age < 1 || data.age > 100) {
@@ -117,18 +149,20 @@ export default function PatientSignupPage() {
         data.chronicConditions?.map((item) => item.value) || [],
       allergies: data.allergies?.map((item) => item.value) || [],
       symptoms: data.symptoms?.map((item) => item.value) || [],
+      profilePic: profilePic || "",
     };
-
+    console.log("formatted data: ", formattedData);
     setLoading(true);
     try {
-      const res = await API.post("/patients/register", formattedData);
+      // const res = await API.post("/patients/register", formattedData);
+      const res = await registerPatient(formattedData);
       setMessage("Patient registered successfully!");
       const userData = res.data;
       localStorage.setItem("user", JSON.stringify(userData));
       login(userData); // Update context
       reset();
       toast.success("Registration successful! Redirecting...");
-      router.push("/patient/dashboard");
+      router.push("/patient/login");
     } catch (error) {
       console.error(error);
       setMessage(error.message || "Registration failed. Please try again.");
@@ -385,6 +419,7 @@ export default function PatientSignupPage() {
                     control={control}
                     render={({ field }) => (
                       <Select
+                        instanceId={"chronic conditions"}
                         {...field}
                         isMulti
                         options={createOptions(CHRONIC_CONDITIONS)}
@@ -414,6 +449,7 @@ export default function PatientSignupPage() {
                     control={control}
                     render={({ field }) => (
                       <Select
+                        instanceId={"allergies"}
                         {...field}
                         isMulti
                         options={createOptions(ALLERGIES)}
@@ -443,7 +479,7 @@ export default function PatientSignupPage() {
                     control={control}
                     render={({ field }) => (
                       <Select
-                      instanceId="symptoms-select"
+                        instanceId="symptoms-select"
                         {...field}
                         isMulti
                         options={createOptions(SYMPTOMS)}
@@ -461,6 +497,43 @@ export default function PatientSignupPage() {
                       />
                     )}
                   />
+                </div>
+              </div>
+              <div className="mt-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Profile Picture
+                </label>
+                <div className="flex items-center space-x-4">
+                  <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-gray-300 bg-gray-50">
+                    {profilePicturePreview ? (
+                      <img
+                        src={profilePicturePreview}
+                        alt="Profile Preview"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <User className="h-8 w-8 text-gray-400" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleProfilePictureChange}
+                      className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                    />
+                    {profilePic && (
+                      <button
+                        type="button"
+                        onClick={removeProfilePicture}
+                        className="mt-2 text-xs text-red-600 hover:text-red-800"
+                      >
+                        Remove Picture
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

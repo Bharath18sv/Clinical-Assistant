@@ -33,9 +33,9 @@ export default function PatientSidebar() {
     if (!authLoading && user) {
       const userData = user.data?.user || user;
       setPatientData(userData);
-      console.log("patientData set: ", userData);
+      // console.log("patientData set: ", userData);
     } else if (!authLoading && !user) {
-      console.log("No user found after auth loading completed");
+      // console.log("No user found after auth loading completed");
       setPatientData(null);
     }
   }, [user, authLoading]);

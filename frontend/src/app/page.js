@@ -84,10 +84,17 @@ export default function Home() {
               </button>
               <Link
                 prefetch={false}
+                href="/doctor/login"
+                className="text-gray-700 hover:text-blue-600 transition-colors duration-200 font-medium pt-2 pb-2"
+              >
+                Doctor
+              </Link>
+              <Link
+                prefetch={false}
                 href="/patient/login"
                 className="text-gray-700 hover:text-blue-600 transition-colors duration-200 font-medium pt-2 pb-2"
               >
-                Login
+                Patient
               </Link>
               <Link
                 prefetch={false}
@@ -159,14 +166,21 @@ export default function Home() {
                 </button>
                 <Link
                   prefetch={false}
-                  href="/patient/login"
+                  href="/doctor/login"
                   className="block px-3 py-2 text-gray-700 hover:text-blue-600 transition-colors duration-200"
                 >
-                  Login
+                  Doctor
                 </Link>
                 <Link
                   prefetch={false}
-                  href='/admin/login'
+                  href="/patient/login"
+                  className="block px-3 py-2 text-gray-700 hover:text-blue-600 transition-colors duration-200"
+                >
+                  Patient
+                </Link>
+                <Link
+                  prefetch={false}
+                  href="/admin/login"
                   className="block px-3 py-2 text-gray-700 hover:text-blue-600 transition-colors duration-200"
                 >
                   Admin

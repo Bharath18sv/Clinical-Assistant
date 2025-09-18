@@ -6,6 +6,7 @@ import { Patient } from "../models/patient.models.js";
 
 export const verifyJwt = asyncHandler(async (req, res, next) => {
   // Check token in cookies or headers
+  // console.log("verify jwt called");
   const authHeader = req.header("Authorization");
   const token =
     req.cookies?.accessToken ||
@@ -31,6 +32,7 @@ export const verifyJwt = asyncHandler(async (req, res, next) => {
           "Unauthorized User, User with this access token is not found"
         );
       }
+      // console.log("doctor in verify jwt : ", doctor);
       req.user = doctor;
     } else if (decodedToken.role === "patient") {
       const patient = await Patient.findById(decodedToken._id).select(
