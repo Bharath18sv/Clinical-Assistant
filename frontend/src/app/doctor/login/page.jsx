@@ -5,7 +5,7 @@ import Link from "next/link";
 import { AuthContext } from "@/context/AuthContext";
 import API from "@/utils/api";
 import toast from "react-hot-toast";
-import { set } from "mongoose";
+
 
 // Doctor Login Page
 // - Handles doctor authentication via AuthContext

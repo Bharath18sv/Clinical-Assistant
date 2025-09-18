@@ -61,11 +61,6 @@ export default function DoctorSidebar() {
       href: "/doctor/dashboard",
       icon: LayoutDashboard,
     },
-    {
-      name: "Appointments",
-      href: "/doctor/appointment",
-      icon: Calendar,
-    },
   ];
 
   const expandableMenus = [
@@ -87,6 +82,7 @@ export default function DoctorSidebar() {
       name: "Appointments",
       icon: Calendar,
       subLinks: [
+        { name: "All Appointments", href: "/doctor/appointment", icon: Clock },
         { name: "Active", href: "/doctor/appointment/active", icon: Clock },
         {
           name: "Completed",

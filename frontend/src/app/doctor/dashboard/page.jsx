@@ -22,6 +22,7 @@ import {
 import HealthCard from "@/components/HealthCard";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import AppointmentCard from "@/components/AppointmentCard";
 
 export default function DoctorDashboardPage() {
   const { user, authLoading } = useContext(AuthContext);
@@ -147,141 +148,133 @@ export default function DoctorDashboardPage() {
             />
           </div>
 
-          {/* Main Content */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Left Column */}
-            <div className="lg:col-span-1 space-y-6">
-              {/* Quick Actions */}
-              <div className="card">
-                <div className="card-header">
-                  <h2 className="card-title">Quick Actions</h2>
-                </div>
-                <div className="space-y-4 my-3">
-                  <button
-                    onClick={() => router.push("/doctor/patient/add")}
-                    className="w-full flex items-center p-3 bg-blue-100 rounded-lg hover:bg-blue-200 transition-colors cursor-pointer"
-                  >
-                    <Plus className="h-5 w-5 text-blue-600 mr-3" />
-                    <span className="text-sm font-medium text-gray-700">
-                      Add New Patient
-                    </span>
-                  </button>
-                </div>
-                <div className="space-y-4 my-3">
-                  <button
-                    onClick={() => router.push("/doctor/patient/")}
-                    className="w-full flex items-center p-3 bg-blue-100 rounded-lg hover:bg-blue-200 transition-colors cursor-pointer"
-                  >
-                    <Stethoscope className="h-5 w-5 text-blue-600 mr-3" />
-                    <span className="text-sm font-medium text-gray-700">
-                      View your patients
-                    </span>
-                  </button>
-                </div>
+          {/* Appointments and Patients Side by Side */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            {/* Appointments Column */}
+            <div className="card h-fit">
+              <div className="card-header">
+                <h2 className="card-title">Upcoming Appointments</h2>
               </div>
-            </div>
-
-            {/* Right Column - Patients & Appointments */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Appointments */}
-              <h1 className="text-lg font-semibold">Upcoming Appointments</h1>
-              {appointments.map((appointment) => (
-                <div
-                  key={appointment._id}
-                  className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm"
-                >
-                  <div className="flex items-center space-x-4">
-                    {/* Profile Picture */}
-                    {appointment.patientId.profilePic ? (
-                      <img
-                        src={appointment.patientId.profilePic}
-                        alt={`${appointment.patientId.fullname} profile`}
-                        className="h-15 w-14 rounded-md object-cover border border-gray-300"
-                      />
-                    ) : (
-                      <div className="h-12 w-12 flex items-center justify-center rounded-full bg-gray-200 border border-gray-300">
-                        <User className="h-6 w-6 text-gray-500" />
-                      </div>
-                    )}
-
-                    {/* Patient Info */}
-                    <div>
-                      <h3 className="font-medium text-gray-900">
-                        {appointment.patientId.fullname}
-                      </h3>
-                      <p className="text-sm text-gray-500">
-                        {appointment.reason}
-                      </p>
-                      <div className="flex items-center text-sm text-gray-500 mt-1">
-                        <Clock className="h-4 w-4 mr-1" />
-                        {formatDateTime(appointment.scheduledAt)}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Status Badge */}
-                  <span
-                    className={`status-badge ${getStatusColor(
-                      appointment.status
-                    )}`}
-                  >
-                    {appointment.status}
-                  </span>
-                </div>
-              ))}
-
-              {/* Patients */}
-              <div className="card">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="card-title">Recent Patients</h2>
-                  <button
-                    onClick={() => router.push("/doctor/patient/add")}
-                    className="flex items-center text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors cursor-pointer"
-                  >
-                    <Plus className="h-4 w-4 mr-1" />
-                    Add Patient
-                  </button>
-                </div>
-                {loading.patients ? (
+              <div className="space-y-4">
+                {loading.appointments ? (
                   <div className="flex justify-center py-6">
                     <LoadingSpinner size="md" />
                   </div>
-                ) : patients && patients.length > 0 ? (
-                  <div className="space-y-4">
-                    {patients.map((patient) => (
-                      <div
-                        key={patient.patientId}
-                        className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
-                      >
-                        <div className="flex items-center">
-                          <img
-                            src={
-                              patient.patientDetails.profilePic ||
-                              "/default-avatar.png"
-                            }
-                            alt={patient.fullname}
-                            className="h-12 w-12 rounded-full object-cover mr-4 border border-gray-200"
-                          />
-                          <div>
-                            <h3 className="font-medium text-gray-900">
-                              {patient.patientDetails.fullname}
-                            </h3>
-                            <p className="text-sm text-gray-500">
-                              {patient.patientDetails.age} years old •{" "}
-                              {patient.patientDetails.gender}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                ) : appointments && appointments.length > 0 ? (
+                  appointments.slice(0, 3).map((appointment) => (
+                    <AppointmentCard
+                      key={appointment._id}
+                      appointment={{
+                        id: appointment._id,
+                        userDetails: appointment?.patientId,
+                        reason: appointment.reason || "Consultation",
+                        time: appointment.scheduledAt,
+                        status: appointment.status,
+                      }}
+                    />
+                  ))
                 ) : (
-                  <p className="text-gray-500 text-sm">
-                    No recent patients available.
+                  <p className="text-gray-500 text-sm text-center py-6">
+                    No upcoming appointments.
                   </p>
                 )}
               </div>
             </div>
+
+            {/* Patients Column */}
+            <div className="card h-fit">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="card-title">Recent Patients</h2>
+                <button
+                  onClick={() => router.push("/doctor/patient/add")}
+                  className="flex items-center text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors cursor-pointer"
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Patient
+                </button>
+              </div>
+              {loading.patients ? (
+                <div className="flex justify-center py-6">
+                  <LoadingSpinner size="md" />
+                </div>
+              ) : patients && patients.length > 0 ? (
+                <div className="space-y-4 max-h-80 overflow-y-auto">
+                  {patients.slice(0, 4).map((patient) => (
+                    <div
+                      key={patient.patientId}
+                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                      onClick={() =>
+                        router.push(`/doctor/patient/${patient.patientId}`)
+                      }
+                    >
+                      <div className="flex items-center">
+                        <img
+                          src={
+                            patient.patientDetails.profilePic ||
+                            "/default-avatar.png"
+                          }
+                          alt={patient.patientDetails.fullname}
+                          className="h-12 w-12 rounded-full object-cover mr-4 border border-gray-200"
+                        />
+                        <div>
+                          <h3 className="font-medium text-gray-900">
+                            {patient.patientDetails.fullname}
+                          </h3>
+                          <p className="text-sm text-gray-500">
+                            {patient.patientDetails.age} years old •{" "}
+                            {patient.patientDetails.gender}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500 text-sm text-center py-6">
+                  No recent patients available.
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Quick Actions at Bottom */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl mx-auto">
+            <button
+              onClick={() => router.push("/doctor/patient/add")}
+              className="flex items-center justify-center p-4 bg-blue-100 rounded-lg hover:bg-blue-200 transition-colors cursor-pointer"
+            >
+              <Plus className="h-5 w-5 text-blue-600 mr-3" />
+              <span className="text-sm font-medium text-gray-700">
+                Add New Patient
+              </span>
+            </button>
+            <button
+              onClick={() => router.push("/doctor/patient/")}
+              className="flex items-center justify-center p-4 bg-green-100 rounded-lg hover:bg-green-200 transition-colors cursor-pointer"
+            >
+              <Stethoscope className="h-5 w-5 text-green-600 mr-3" />
+              <span className="text-sm font-medium text-gray-700">
+                View Your Patients
+              </span>
+            </button>
+            <button
+              onClick={() => router.push("/doctor/appointment")}
+              className="flex items-center justify-center p-4 bg-purple-100 rounded-lg hover:bg-purple-200 transition-colors cursor-pointer"
+            >
+              <Calendar className="h-5 w-5 text-purple-600 mr-3" />
+              <span className="text-sm font-medium text-gray-700">
+                Manage Appointments
+              </span>
+            </button>
+            <button
+              onClick={() => router.push("/doctor/reports")}
+              className="flex items-center justify-center p-4 bg-orange-100 rounded-lg hover:bg-orange-200 transition-colors cursor-pointer"
+            >
+              <FileText className="h-5 w-5 text-orange-600 mr-3" />
+              <span className="text-sm font-medium text-gray-700">
+                View Reports
+              </span>
+            </button>
           </div>
         </main>
       </div>

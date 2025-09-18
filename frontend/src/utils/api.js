@@ -42,7 +42,7 @@ export const fetchDoctorActiveAppointments = async () => {
 };
 
 export const fetchDoctorCompletedAppointments = async () => {
-  const { data } = await API.get(`/appointments/completed`);
+  const data = await API.get(`/appointments/completed`);
   return data?.data || [];
 };
 
@@ -125,17 +125,46 @@ export const createAppointment = async ({
 
 export const updateAppointment = async (id, updateData) => {
   let data;
-  if (updateData.status === "completed") {
-    data = await API.put(`/appointments/${id}/complete`, updateData);
-  } else if (updateData.status === "cancelled") {
-    data = await API.put(`/appointments/${id}/cancel`, updateData);
-  } else if (updateData.status === "active") {
-    data = await API.put(`/appointments/${id}/start`, updateData);
-  } else if (updateData.status === "approved") {
-    data = await API.put(`/appointments/${id}/approve`, updateData);
-  } else {
-    data = await API.put(`/appointments/${id}`, updateData);
+  console.log("updated data : ", updateData);
+  console.log("status check:", updateData.status, typeof updateData.status);
+
+  // Transform doctorNotes to notes for backend compatibility
+  const backendPayload = {
+    notes: updateData.doctorNotes || updateData.notes || "",
+    // Don't include status in individual endpoints as they set it automatically
+  };
+
+  // Add any additional fields that specific endpoints might need
+  if (updateData.reason) {
+    backendPayload.reason = updateData.reason;
   }
+
+  switch (updateData.status) {
+    case "approved":
+      console.log("Calling approve endpoint");
+      data = await API.put(`/appointments/${id}/approve`, backendPayload);
+      break;
+    case "cancelled":
+      console.log("Calling cancel endpoint");
+      data = await API.put(`/appointments/${id}/cancel`, backendPayload);
+      break;
+    case "in-progress":
+      console.log("Calling start endpoint");
+      data = await API.put(`/appointments/${id}/start`, backendPayload);
+      break;
+    case "completed":
+      console.log("Calling complete endpoint");
+      data = await API.put(`/appointments/${id}/complete`, backendPayload);
+      break;
+    default:
+      console.log(
+        "Using default update endpoint for status:",
+        updateData.status
+      );
+      data = await API.put(`/appointments/${id}`, updateData);
+  }
+
+  console.log("API response:", data);
   return data?.data;
 };
 
@@ -215,6 +244,7 @@ export const addPatient = async (patientData) => {
 };
 export const viewMyPatients = async () => {
   const patients = await API.get("/doctors/");
+  console.log("view my patients res: ", patients);
   return patients.data.data.patients || [];
 };
 

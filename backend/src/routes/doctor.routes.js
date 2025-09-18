@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { registerPatient } from "../controllers/patient.controllers.js";
 import {
   registerDoctor,
   loginDoctor,
@@ -31,28 +30,38 @@ router.route("/all").get(getAllDoctors);
 router.route("/:id").get(getDoctorById);
 
 //secured routes
+//add patient by doctor
 router
   .route("/registerPatient")
-  .post(verifyJwt, upload.single("profilePic"), registerPatient);
+  .post(verifyJwt, upload.single("profilePic"), addPatient);
 router.route("/updateInfo").post(verifyJwt, updateInfo);
+
+//update profile pic
 router
   .route("/updateProfilePic")
   .post(verifyJwt, upload.single("ProfilePicture"), updateProfilePic);
-router.route("/addPatient").post(verifyJwt, addPatient);
+
+//get patients for a doctor
 router.route("/").get(verifyJwt, getPatientsForDoctor);
+
 router
   .route("/patients/:patientId/details")
   .get(verifyJwt, getPatientDetailsBundle);
+
 router
   .route("/patients/:patientId/vitals")
   .post(verifyJwt, addVitalsForPatient);
+
 router
   .route("/patients/:patientId/prescriptions")
   .post(verifyJwt, addPrescriptionForPatient);
+
 router
   .route("/patients/:patientId/appointments")
   .post(verifyJwt, createAppointmentForPatient);
+
 router.route("/appointments/:appointmentId/end").put(verifyJwt, endAppointment);
+
 router.route("/patients/:patientId/summary").get(verifyJwt, getPatientSummary);
 
 export default router;

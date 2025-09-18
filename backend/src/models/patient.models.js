@@ -76,7 +76,7 @@ const patientSchema = new Schema(
       country: { type: String, default: "India", trim: true },
     },
     doctorId: {
-      type: [Schema.Types.ObjectId],
+      type: Schema.Types.ObjectId,
       ref: "Doctor",
       default: null,
     },

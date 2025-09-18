@@ -1,4 +1,4 @@
-import { Calendar, Clock } from "lucide-react";
+import { Calendar, Clock, Check, X } from "lucide-react";
 
 const getStatusColor = (status) => {
   switch (status.toLowerCase()) {
@@ -34,6 +34,48 @@ export default function AppointmentCard({ appointment }) {
     return `${date} at ${time}`;
   };
 
+   const getStatusBadge = (status) => {
+     const statusConfig = {
+       pending: {
+         color: "bg-yellow-100 text-yellow-800 border-yellow-200",
+         icon: Clock,
+         label: "Pending",
+       },
+       approved: {
+         color: "bg-green-100 text-green-800 border-green-200",
+         icon: Check,
+         label: "Approved",
+       },
+       cancelled: {
+         color: "bg-red-100 text-red-800 border-red-200",
+         icon: X,
+         label: "Cancelled",
+       },
+       active: {
+         color: "bg-blue-100 text-blue-800 border-blue-200",
+         icon: Clock,
+         label: "Active",
+       },
+       completed: {
+         color: "bg-purple-100 text-purple-800 border-purple-200",
+         icon: Check,
+         label: "Completed",
+       },
+     };
+
+     const config = statusConfig[status] || statusConfig.pending;
+     const IconComponent = config.icon;
+
+     return (
+       <span
+         className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${config.color}`}
+       >
+         <IconComponent size={12} />
+         {config.label}
+       </span>
+     );
+   };
+
   return (
     <div className="flex items-center justify-between p-5 bg-white shadow-sm rounded-2xl border border-gray-100 hover:shadow-md transition">
       {/* Left side - user info */}
@@ -67,7 +109,7 @@ export default function AppointmentCard({ appointment }) {
           appointment.status
         )}`}
       >
-        {appointment.status}
+        {getStatusBadge(appointment.status)}
       </span>
     </div>
   );

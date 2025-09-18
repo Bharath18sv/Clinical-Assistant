@@ -159,10 +159,10 @@ const activeAppointments = asyncHandler(async (req, res) => {
 
   if (!appointments || appointments.length === 0) {
     return res
-      .status(404)
+      .status(200)
       .json(
         new ApiResponse(
-          404,
+          200,
           null,
           "No active appointments found for this doctor"
         )
@@ -192,10 +192,10 @@ const completedAppointments = asyncHandler(async (req, res) => {
 
   if (!appointments || appointments.length === 0) {
     return res
-      .status(404)
+      .status(200)
       .json(
         new ApiResponse(
-          404,
+          200,
           null,
           "No completed appointments found for this doctor"
         )

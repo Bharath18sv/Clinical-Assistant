@@ -27,6 +27,7 @@ router
 router.route("/dp/:id").get(verifyJwt, getDPAppointment);
 router.route("/active").get(verifyJwt, activeAppointments);
 router.route("/completed").get(verifyJwt, completedAppointments);
+
 router
   .route("/:id")
   .get(verifyJwt, getAppointmentById)

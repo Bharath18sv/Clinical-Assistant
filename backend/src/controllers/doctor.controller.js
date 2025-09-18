@@ -13,6 +13,7 @@ import { Prescription } from "../models/prescription.models.js";
 import { Vitals } from "../models/vitals.models.js";
 import { Appointment } from "../models/appointments.models.js";
 import mongoose from "mongoose";
+import app from "../app.js";
 
 const registerDoctor = asyncHandler(async (req, res) => {
   const { email, password, fullname, gender, age, phone, address } = req.body;
@@ -243,42 +244,142 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 // });
 
 const addPatient = asyncHandler(async (req, res) => {
+  console.log("req.body data: ", req.body);
+  console.log("req.file data: ", req.file);
+  console.log("req.user : ", req.user);
+
+  const doctorId = req.user?._id;
+  if (!doctorId) throw new ApiError(401, "Unauthorized");
+
   const {
-    fullname,
     email,
     password,
+    fullname,
     gender,
     age,
     phone,
-    address,
     chronicConditions,
     allergies,
     symptoms,
-    doctorId,
+    scheduledAt,
+    reason,
+    // Address fields
+    "address.street": street,
+    "address.city": city,
+    "address.state": state,
+    "address.zip": zip,
+    "address.country": country,
   } = req.body;
 
-  const patient = await Patient.create({
-    fullname,
-    email,
-    password,
-    gender,
-    age,
-    phone,
-    address,
-    chronicConditions,
-    allergies,
-    symptoms,
-    doctorId,
-  });
+  const address = {
+    street: street || "",
+    city: city || "",
+    state: state || "",
+    zip: zip || "",
+    country: country || "India",
+  };
 
-  res
-    .status(200)
-    .json(new ApiResponse(200, patient, "Patient created successfully"));
+  // Parse arrays
+  const parseArrayField = (field) => {
+    if (!field) return [];
+    if (Array.isArray(field)) return field;
+    return [field];
+  };
+  const parsedChronicConditions = parseArrayField(chronicConditions);
+  const parsedAllergies = parseArrayField(allergies);
+  const parsedSymptoms = parseArrayField(symptoms);
+
+  // Validation
+  if (
+    [email, password, fullname, gender, phone].some(
+      (field) => typeof field !== "string" || !field.trim()
+    ) ||
+    !age ||
+    isNaN(parseInt(age))
+  ) {
+    throw new ApiError(400, "Validation failed: Missing required fields");
+  }
+
+  const existingPatient = await Patient.findOne({ email });
+  if (existingPatient) {
+    throw new ApiError(400, `Patient with email: ${email} already exists`);
+  }
+
+  const ageNum = parseInt(age);
+  if (ageNum < 1 || ageNum > 120) {
+    throw new ApiError(400, "Age is invalid");
+  }
+
+  // Profile picture
+  const profilePicLocalPath = req.file?.path;
+  let profilePic;
+  if (profilePicLocalPath) {
+    try {
+      profilePic = await uploadOnCloudinary(profilePicLocalPath);
+    } catch (error) {
+      console.log("Profile pic upload failed", error);
+      throw new ApiError(500, "Failed to upload Profile picture");
+    }
+  }
+
+  let createdPatient;
+  try {
+    // Create patient
+    createdPatient = await Patient.create({
+      email,
+      fullname,
+      password,
+      profilePic: profilePic?.secure_url || profilePic?.url || "",
+      gender,
+      age: ageNum,
+      phone,
+      address,
+      chronicConditions: parsedChronicConditions,
+      allergies: parsedAllergies,
+      symptoms: parsedSymptoms,
+      doctorId,
+    });
+
+    // Create appointment
+    const createdAppointment = await Appointment.create({
+      doctorId,
+      patientId: createdPatient._id,
+      scheduledAt: scheduledAt ? new Date(scheduledAt) : new Date(),
+      reason: reason || parsedSymptoms[0] || "Initial consultation",
+      status: "active",
+    });
+
+    res.status(201).json(
+      new ApiResponse(
+        201,
+        {
+          patient: createdPatient,
+          appointment: createdAppointment,
+        },
+        "Patient and appointment created successfully"
+      )
+    );
+  } catch (error) {
+    console.log("Error creating patient/appointment:", error);
+
+    if (createdPatient && createdPatient._id) {
+      try {
+        await Patient.findByIdAndDelete(createdPatient._id);
+      } catch (cleanupErr) {
+        console.log("Failed to rollback patient after error:", cleanupErr);
+      }
+    }
+    if (profilePic) {
+      await deleteFromCloudinary(profilePic.public_id);
+    }
+
+    throw new ApiError(500, "Failed to create patient and appointment");
+  }
 });
 
 // Get all patients for the authenticated doctor
 const getPatientsForDoctor = asyncHandler(async (req, res) => {
-  const doctorId = req.user?._id || req.user?.id;
+  const doctorId = req.user?._id;
   if (!doctorId) throw new ApiError(401, "Unauthorized");
 
   const patients = await Appointment.aggregate([
