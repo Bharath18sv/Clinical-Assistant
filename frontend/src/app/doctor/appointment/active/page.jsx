@@ -16,6 +16,7 @@ import {
   MessageSquare,
   AlertCircle,
 } from "lucide-react";
+import Link from "next/link";
 
 export default function DoctorActiveAppointments() {
   const [appointments, setAppointments] = useState([]);
@@ -195,83 +196,90 @@ export default function DoctorActiveAppointments() {
             const isCompleting = completingIds.has(appointment._id);
 
             return (
-              <div
+              <Link
                 key={appointment._id}
-                className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200"
+                href={`/doctor/appointment/${appointment._id}`}
+                className="block"
               >
-                <div className="p-6">
-                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-                    {/* Patient Info */}
-                    <div className="flex items-start space-x-4">
-                      <div className="p-3 bg-blue-100 rounded-lg">
-                        <User className="h-6 w-6 text-blue-600" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          {appointment.patientId?.fullname || "Unknown Patient"}
-                        </h3>
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 mt-1 space-y-1 sm:space-y-0">
-                          <div className="flex items-center text-sm text-gray-600">
-                            <Calendar className="h-4 w-4 mr-2" />
-                            {date}
+                <div
+                  key={appointment._id}
+                  className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200"
+                >
+                  <div className="p-6">
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+                      {/* Patient Info */}
+                      <div className="flex items-start space-x-4">
+                        <div className="p-3 bg-blue-100 rounded-lg">
+                          <User className="h-6 w-6 text-blue-600" />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            {appointment.patientId?.fullname ||
+                              "Unknown Patient"}
+                          </h3>
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 mt-1 space-y-1 sm:space-y-0">
+                            <div className="flex items-center text-sm text-gray-600">
+                              <Calendar className="h-4 w-4 mr-2" />
+                              {date}
+                            </div>
+                            <div className="flex items-center text-sm text-gray-600">
+                              <Clock className="h-4 w-4 mr-2" />
+                              {time}
+                            </div>
                           </div>
-                          <div className="flex items-center text-sm text-gray-600">
-                            <Clock className="h-4 w-4 mr-2" />
-                            {time}
+                          <div className="mt-2">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              <div className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
+                              Active for {duration}
+                            </span>
                           </div>
                         </div>
-                        <div className="mt-2">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            <div className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
-                            Active for {duration}
-                          </span>
-                        </div>
                       </div>
-                    </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 lg:flex-shrink-0">
-                      {/* <button className="flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200">
+                      {/* Action Buttons */}
+                      <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 lg:flex-shrink-0">
+                        {/* <button className="flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200">
                         <Video className="h-4 w-4 mr-2" />
                         Join Call
                       </button> */}
-                      <button className="flex items-center justify-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors duration-200">
-                        <MessageSquare className="h-4 w-4 mr-2" />
-                        Chat
-                      </button>
-                      <button
-                        onClick={() =>
-                          handleCompleteAppointment(appointment._id)
-                        }
-                        disabled={isCompleting}
-                        className="flex items-center justify-center px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white rounded-lg transition-colors duration-200 disabled:cursor-not-allowed"
-                      >
-                        {isCompleting ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                            Ending...
-                          </>
-                        ) : (
-                          <>
-                            <CheckCircle className="h-4 w-4 mr-2" />
-                            End Session
-                          </>
-                        )}
-                      </button>
+                        <button className="flex items-center justify-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors duration-200">
+                          <MessageSquare className="h-4 w-4 mr-2" />
+                          Chat
+                        </button>
+                        <button
+                          onClick={() =>
+                            handleCompleteAppointment(appointment._id)
+                          }
+                          disabled={isCompleting}
+                          className="flex items-center justify-center px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white rounded-lg transition-colors duration-200 disabled:cursor-not-allowed"
+                        >
+                          {isCompleting ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                              Ending...
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              End Session
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Additional Info */}
-                  {appointment.reason && (
-                    <div className="mt-4 pt-4 border-t border-gray-100">
-                      <p className="text-sm text-gray-600">
-                        <span className="font-medium">Reason:</span>{" "}
-                        {appointment.reason}
-                      </p>
-                    </div>
-                  )}
+                    {/* Additional Info */}
+                    {appointment.reason && (
+                      <div className="mt-4 pt-4 border-t border-gray-100">
+                        <p className="text-sm text-gray-600">
+                          <span className="font-medium">Reason:</span>{" "}
+                          {appointment.reason}
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              </Link>
             );
           })}
         </div>

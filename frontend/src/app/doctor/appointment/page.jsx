@@ -4,6 +4,7 @@ import { fetchMyAppointments } from "@/utils/api";
 import AppointmentCard from "@/components/AppointmentCard";
 import { Check, X, FileText, AlertCircle, Clock } from "lucide-react";
 import { updateAppointment } from "@/utils/api";
+import Link from "next/link";
 
 export default function DoctorAppointments() {
   const [appointments, setAppointments] = useState([]);
@@ -228,17 +229,19 @@ export default function DoctorAppointments() {
             >
               <div className="flex items-center gap-4 p-6">
                 {/* Appointment Card */}
-                <div className="flex-1">
-                  <AppointmentCard
-                    appointment={{
-                      id: appointment._id,
-                      userDetails: appointment?.patientId,
-                      reason: appointment.reason || "Consultation",
-                      time: appointment.scheduledAt,
-                      status: appointment.status,
-                    }}
-                  />
-                </div>
+                <Link href={`/doctor/appointment/${appointment._id}`}>
+                  <div className="flex-1">
+                    <AppointmentCard
+                      appointment={{
+                        id: appointment._id,
+                        userDetails: appointment?.patientId,
+                        reason: appointment.reason || "Consultation",
+                        time: appointment.scheduledAt,
+                        status: appointment.status,
+                      }}
+                    />
+                  </div>
+                </Link>
 
                 {/* Status and Actions */}
                 <div className="flex flex-col items-center gap-3">

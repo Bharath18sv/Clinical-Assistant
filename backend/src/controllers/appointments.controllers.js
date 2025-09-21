@@ -263,7 +263,12 @@ const getAppointmentById = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Appointment Id is required");
   }
 
-  const appt = await Appointment.findById(id);
+  const appt = await Appointment.findById(id)
+    .populate(
+      "doctorId",
+      "fullname email phone address specialization profilePic"
+    )
+    .populate("patientId", "fullname email phone address profilePic gender age symptoms allergies chronicConditions");
 
   if (!appt) {
     throw new ApiError(501, "Appointment with id is not found");
