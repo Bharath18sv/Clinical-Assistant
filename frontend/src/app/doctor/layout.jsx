@@ -1,6 +1,6 @@
 "use client";
 
-import DoctorSidebar from "@/components/DoctorSidebar";
+import DoctorSidebar from "@/components/sidebars/DoctorSidebar";
 import { usePathname } from "next/navigation";
 
 export default function DoctorLayout({ children }) {

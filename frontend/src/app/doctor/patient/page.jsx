@@ -24,7 +24,7 @@ export default function DoctorPatientsPage({ params }) {
   const [searchTerm, setSearchTerm] = useState("");
 
   const handlePatientClick = (patientId) => {
-    router.push(`/doctor/patients/${patientId}`);
+    router.push(`/doctor/patient/${patientId}`);
   };
 
   useEffect(() => {

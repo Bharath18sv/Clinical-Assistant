@@ -22,6 +22,15 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["next-env.d.ts", ".next/types/**/*.ts", "**/*.ts", "**/*.tsx", "src/app/patient/(auth)/signup/page.jsx", "src/app/doctor/patient/add/page.jsx"],
+  "include": [
+    "next-env.d.ts",
+    ".next/types/**/*.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    "src/app/patient/(auth)/signup/page.jsx",
+    "src/app/doctor/patient/add/page.jsx",
+    "src/app/patient/prescriptions/[id]/page.jsx",
+    "src/app/doctor/logs/medications/page.jsx"
+  ],
   "exclude": ["node_modules"]
 }

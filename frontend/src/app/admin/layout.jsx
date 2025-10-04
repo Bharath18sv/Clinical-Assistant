@@ -1,6 +1,6 @@
 "use client";
 
-import AdminSidebar from "@/components/AdminSidebar";
+import AdminSidebar from "@/components/sidebars/AdminSidebar";
 import { usePathname } from "next/navigation";
 
 export default function AdminLayout({ children }) {

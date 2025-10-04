@@ -248,6 +248,12 @@ export const viewMyPatients = async () => {
   return patients.data.data.patients || [];
 };
 
+export const getPatientById = async (id) => {
+  const patient = await API.get(`/doctors/patients/${id}`);
+  console.log("get patient by id res: ", patient);
+  return patient.data.data;
+};
+
 //admin apis
 export const addDoctor = async (doctorData) => {
   const formData = new FormData();
@@ -293,6 +299,165 @@ export const addDoctor = async (doctorData) => {
     return response.data;
   } catch (error) {
     console.error("Error creating doctor:", error);
+    throw error;
+  }
+};
+
+//presecription apis
+export const updatePrescription = async (prescriptionId, prescriptionData) => {
+  try {
+    const response = await API.put(
+      `/prescriptions/${prescriptionId}`,
+      prescriptionData
+    );
+    console.log("Updated prescription response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error updating prescription:", error);
+    throw error;
+  }
+};
+
+export const addPrescription = async (prescriptionData) => {
+  try {
+    const response = await API.post("/prescriptions/", prescriptionData);
+    console.log("Added prescription response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error adding prescription:", error);
+    throw error;
+  }
+};
+
+export const getPatientPrescriptions = async (patientId) => {
+  console.log("PatientID in api.js:", patientId);
+  try {
+    const response = await API.get(`/prescriptions/patient/${patientId}/`);
+    console.log("Fetched prescriptions response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching prescriptions:", error);
+    throw error;
+  }
+};
+
+export const getPrescriptionById = async (id) => {
+  try {
+    const response = await API.get(`/prescriptions/${id}/`);
+    console.log("Fetched prescription by ID response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching prescription by ID:", error);
+    throw error;
+  }
+};
+
+export const getDoctorPrescriptions = async () => {
+  try {
+    const response = await API.get(`/prescriptions/`);
+    console.log("Fetched doctor prescriptions response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching doctor prescriptions:", error);
+    throw error;
+  }
+};
+
+export const getLatestPrescription = async (patientId) => {
+  try {
+    const response = await API.get(
+      `/doctors/patients/${patientId}/prescriptions/latest`
+    );
+    console.log("Fetched latest prescription response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching latest prescription:", error);
+    throw error;
+  }
+};
+
+// medication logs apis
+export const getMedicationLogs = async (prescriptionId) => {
+  try {
+    const response = await API.get(`/medicationLogs/${prescriptionId}/`);
+    console.log("Fetched medication logs response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching medication logs:", error);
+    throw error;
+  }
+};
+
+export const addMedicationLog = async (logData, prescriptionId) => {
+  try {
+    const response = await API.post(
+      `/medicationLogs/${prescriptionId}/`,
+      logData
+    );
+    console.log("Added medication log response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error adding medication log:", error);
+    throw error;
+  }
+};
+
+export const getAllMedicationLogs = async () => {
+  try {
+    const response = await API.get(`/medicationLogs/`);
+    console.log("Fetched all medication logs response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching all medication logs:", error);
+    throw error;
+  }
+};
+
+//vitals apis
+export const addVitals = async (vitalsData) => {
+  console.log("vitalsData in api.js:", vitalsData);
+
+  try {
+    const response = await API.post("/vitals", vitalsData);
+    console.log("Added vitals response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error adding vitals:", error);
+    throw error;
+  }
+};
+
+export const getVitalsById = async (id) => {
+  try {
+    const response = await API.get(`/vitals/${id}/`);
+    console.log("Fetched vitals response:", response);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching vitals:", error);
+    throw error;
+  }
+};
+
+export const getAllVitals = async () => {
+  try {
+    const response = await API.get("/vitals/");
+    console.log("Fetched all vitals response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching all vitals:", error);
+    throw error;
+  }
+};
+
+export const getLatestVitals = async (patientId) => {
+  console.log("patientId in api.js : ", patientId);
+
+  try {
+    const res = await API.get(`/vitals/latest/${patientId}`);
+    console.log("latest vitals response:", res.data);
+    return res.data;
+  } catch (error) {
+    console.error("Error fetching latest vitals : ", error);
     throw error;
   }
 };

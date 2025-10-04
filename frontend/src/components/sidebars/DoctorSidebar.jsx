@@ -1,7 +1,8 @@
 "use client";
 
-import { useContext, useEffect, useState } from "react";
+import { useState, useContext, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   ChevronDown,
   ChevronRight,
@@ -9,53 +10,44 @@ import {
   LayoutDashboard,
   Users,
   Calendar,
+  User,
+  UserPlus,
+  CheckCircle,
+  Clock,
+  X,
+  LogOut,
   FileText,
   Activity,
-  User,
-  UserCheck,
-  LogOut,
-  X,
+  AlertCircle,
+  Pill,
 } from "lucide-react";
-import toast from "react-hot-toast";
 import { AuthContext } from "@/context/AuthContext";
+import toast from "react-hot-toast";
 
-export default function PatientSidebar() {
+export default function DoctorSidebar() {
   const { user, authLoading, logout: contextLogout } = useContext(AuthContext);
-  const [patientData, setPatientData] = useState(null);
-  const [currentPath, setCurrentPath] = useState("/patient/dashboard");
+  const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(true);
+  // remove: const [currentPath, setCurrentPath] = useState("/doctor/dashboard");
+
   const [expandedMenus, setExpandedMenus] = useState({
-    doctors: false,
+    patients: false,
+    appointments: false,
   });
+  const [doctorData, setDoctorData] = useState(null);
+  // console.log("user", user);
 
   useEffect(() => {
-    // Only update patientData when authLoading is false and user exists
-    if (!authLoading && user) {
-      const userData = user.data?.user || user;
-      setPatientData(userData);
-      // console.log("patientData set: ", userData);
-    } else if (!authLoading && !user) {
-      // console.log("No user found after auth loading completed");
-      setPatientData(null);
-    }
-  }, [user, authLoading]);
-
-  // Don't render sidebar while auth is loading
-  if (authLoading) {
-    return (
-      <aside className="w-64 h-screen bg-gray-800 text-white flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-white border-t-transparent"></div>
-      </aside>
-    );
-  }
+    setDoctorData(user?.user);
+  }, [user]);
 
   const toggleSidebar = () => {
     setIsOpen(!isOpen);
-    if (!isOpen) {
-      // keep expanded menus when opening
-    } else {
-      // collapse all when closing
-      setExpandedMenus({ doctors: false });
+    if (isOpen) {
+      setExpandedMenus({
+        patients: false,
+        appointments: false,
+      });
     }
   };
 
@@ -67,45 +59,121 @@ export default function PatientSidebar() {
     }));
   };
 
+  const mainLinks = [
+    {
+      name: "Home",
+      href: "/doctor/dashboard",
+      icon: LayoutDashboard,
+    },
+  ];
+
+  const expandableMenus = [
+    {
+      id: "patients",
+      name: "Patients",
+      icon: Users,
+      subLinks: [
+        { name: "Add Patient", href: "/doctor/patient/add", icon: UserPlus },
+        {
+          name: "My Patients",
+          href: "/doctor/patient/",
+          icon: Users,
+        },
+      ],
+    },
+    {
+      id: "appointments",
+      name: "Appointments",
+      icon: Calendar,
+      subLinks: [
+        { name: "All Appointments", href: "/doctor/appointment", icon: Clock },
+        { name: "Active", href: "/doctor/appointment/active", icon: Clock },
+        {
+          name: "Completed",
+          href: "/doctor/appointment/completed",
+          icon: CheckCircle,
+        },
+      ],
+    },
+    {
+      id: "prescriptions",
+      name: "Prescriptions",
+      icon: FileText,
+      subLinks: [
+        {
+          name: "All Prescriptions",
+          href: "/doctor/prescriptions/all",
+          icon: FileText,
+        },
+      ],
+    },
+    {
+      id: "logs",
+      name: "Logs",
+      icon: Activity,
+      subLinks: [
+        {
+          name: "Medication Logs",
+          href: "/doctor/logs/medications",
+          icon: Pill,
+        },
+        {
+          name: "Symptom Logs",
+          href: "/doctor/logs/symptom",
+          icon: AlertCircle,
+        },
+      ],
+    },
+  ];
+
+  {
+    mainLinks.map((link) => {
+      const Icon = link.icon;
+
+      // Custom highlight logic
+      const isActive =
+        (link.href === "/doctor/dashboard" &&
+          pathname === "/doctor/dashboard") ||
+        (link.href === "/doctor/appointment" &&
+          pathname.startsWith("/doctor/appointment"));
+
+      return (
+        <li key={link.href}>
+          <Link
+            href={link.href}
+            className={`w-full flex items-center p-2 rounded-lg transition-colors ${
+              isActive ? "bg-slate-700 font-semibold" : "hover:bg-slate-700"
+            }`}
+            title={!isOpen ? link.name : ""}
+          >
+            <Icon size={20} className="flex-shrink-0" />
+            {isOpen && <span className="ml-3 text-left">{link.name}</span>}
+          </Link>
+        </li>
+      );
+    });
+  }
+
   const handleLogout = async () => {
     try {
       contextLogout(); // Use context logout method
       toast.success("Logged out successfully");
-      window.location.href = "/patient/login";
+      window.location.href = "/doctor/login";
     } catch (error) {
       console.error("Error logging out:", error);
       toast.error("Error logging out. Please try again.");
     }
   };
 
-  const mainLinks = [
-    { name: "Dashboard", href: "/patient/dashboard", icon: LayoutDashboard },
-    { name: "Appointments", href: "/patient/appointment", icon: Calendar },
-    { name: "Prescriptions", href: "/patient/prescriptions", icon: FileText },
-    { name: "Symptoms", href: "/patient/symptoms", icon: Activity },
-  ];
-
-  const expandableMenus = [
-    {
-      id: "doctors",
-      name: "Doctors",
-      icon: Users,
-      subLinks: [
-        { name: "My Doctors", href: "/patient/doctor", icon: UserCheck },
-        { name: "All Doctors", href: "/patient/doctor/all", icon: Users },
-      ],
-    },
-  ];
-
   return (
     <aside
       className={`${
         isOpen ? "w-64" : "w-16"
-      } h-screen bg-slate-800 text-white transition-all duration-300 ease-in-out flex flex-col relative`}
+      } h-screen bg-slate-800 text-white transition-all duration-300 ease-in-out flex flex-col`}
     >
       {/* Header */}
       <div className="p-4 border-b border-slate-700 flex items-center justify-between">
-        {isOpen && <h2 className="text-xl font-bold">Patient Panel</h2>}
+        {isOpen && <h2 className="text-xl font-bold">Doctor Panel</h2>}
         <button
           onClick={toggleSidebar}
           className="p-1 rounded-lg hover:bg-slate-700 transition-colors"
@@ -124,13 +192,12 @@ export default function PatientSidebar() {
               <li key={link.href}>
                 <Link
                   href={link.href}
-                  className={`w-full flex items-center p-2 rounded-lg hover:bg-slate-700 transition-colors ${
-                    currentPath === link.href
+                  className={`w-full flex items-center p-2 rounded-lg transition-colors ${
+                    pathname === link.href || pathname.startsWith(link.href)
                       ? "bg-slate-700 font-semibold"
-                      : ""
+                      : "hover:bg-slate-700"
                   }`}
                   title={!isOpen ? link.name : ""}
-                  onClick={() => setCurrentPath(link.href)}
                 >
                   <Icon size={20} className="flex-shrink-0" />
                   {isOpen && (
@@ -146,15 +213,16 @@ export default function PatientSidebar() {
             const Icon = menu.icon;
             const isExpanded = expandedMenus[menu.id];
             const hasActiveSubLink = menu.subLinks.some(
-              (subLink) => currentPath === subLink.href
+              (subLink) =>
+                pathname === subLink.href || pathname.startsWith(subLink.href)
             );
 
             return (
               <li key={menu.id} className="space-y-1">
                 <button
                   onClick={() => toggleMenu(menu.id)}
-                  className={`w-full flex items-center p-2 rounded-lg hover:bg-slate-700 transition-colors ${
-                    hasActiveSubLink ? "bg-slate-700" : ""
+                  className={`w-full flex items-center p-2 rounded-lg transition-colors ${
+                    hasActiveSubLink ? "bg-slate-700" : "hover:bg-slate-700"
                   }`}
                   title={!isOpen ? menu.name : ""}
                 >
@@ -180,12 +248,11 @@ export default function PatientSidebar() {
                         <li key={subLink.href}>
                           <Link
                             href={subLink.href}
-                            className={`w-full flex items-center p-2 rounded-lg hover:bg-slate-700 transition-colors text-sm ${
-                              currentPath === subLink.href
+                            className={`w-full flex items-center p-2 rounded-lg transition-colors text-sm ${
+                              pathname === subLink.href
                                 ? "bg-slate-700 font-semibold text-slate-200"
-                                : ""
+                                : "hover:bg-slate-700"
                             }`}
-                            onClick={() => setCurrentPath(subLink.href)}
                           >
                             <SubIcon size={16} className="flex-shrink-0" />
                             <span className="ml-2 text-left">
@@ -206,19 +273,18 @@ export default function PatientSidebar() {
       {/* Profile Section */}
       <div className="border-t border-slate-700 p-4">
         <Link
-          href="/patient/profile"
+          href="/doctor/profile"
           className={`w-full flex items-center ${
             isOpen ? "space-x-3" : "justify-center"
           } p-2 rounded-lg hover:bg-slate-700 transition-colors ${
-            currentPath === "/patient/profile" ? "bg-slate-700" : ""
+            pathname.startsWith("/doctor/profile") ? "bg-slate-700" : ""
           }`}
-          onClick={() => setCurrentPath("/patient/profile")}
         >
           <div className="flex-shrink-0">
-            {patientData?.profilePic ? (
+            {doctorData?.profilePic ? (
               <img
-                src={patientData.profilePic}
-                alt="Patient Profile"
+                src={doctorData.profilePic}
+                alt="Doctor Profile"
                 className="w-10 h-10 rounded-full object-cover border-2 border-gray-600"
               />
             ) : (
@@ -230,16 +296,15 @@ export default function PatientSidebar() {
           {isOpen && (
             <div className="flex-1 min-w-0 text-left">
               <p className="text-sm font-medium text-white truncate">
-                {patientData?.fullname || patientData?.name || "Patient"}
+                {doctorData?.fullname || doctorData?.name || "Doctor"}
               </p>
               <p className="text-xs text-gray-400 truncate">
-                {patientData?.email || ""}
+                {doctorData?.email || ""}
               </p>
             </div>
           )}
         </Link>
       </div>
-
       {/* Logout Button */}
       <div className="p-4 border-t border-slate-700">
         <button

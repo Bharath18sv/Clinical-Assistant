@@ -39,6 +39,10 @@ import doctorRouter from "./routes/doctor.routes.js";
 import adminRouter from "./routes/admin.routes.js";
 import authRouter from "./routes/auth.routes.js";
 import appointmentRouter from "./routes/appointment.routes.js"
+import prescriptionRouter from "./routes/prescription.routes.js";
+import vitalsRouter from "./routes/vitals.routes.js";
+import medicationLogsRouter from "./routes/medicationLogs.routes.js";
+
 
 //routes
 app.use("/api/patients", patientRouter); //routes should always start with /
@@ -46,5 +50,8 @@ app.use("/api/doctors", doctorRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/appointments", appointmentRouter);
+app.use("/api/prescriptions", prescriptionRouter);
+app.use("/api/vitals", vitalsRouter);
+app.use("/api/medicationLogs", medicationLogsRouter);
 
 export default app;

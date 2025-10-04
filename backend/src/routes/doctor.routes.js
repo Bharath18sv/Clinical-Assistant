@@ -15,6 +15,7 @@ import {
   getDoctorById,
   updateInfo,
   updateProfilePic,
+  getPatientById
 } from "../controllers/doctor.controller.js";
 import { verifyJwt } from "../middlewares/auth.middleware.js";
 import { getAllDoctors } from "../controllers/admin.controllers.js";
@@ -34,7 +35,11 @@ router.route("/:id").get(getDoctorById);
 router
   .route("/registerPatient")
   .post(verifyJwt, upload.single("profilePic"), addPatient);
+
 router.route("/updateInfo").post(verifyJwt, updateInfo);
+
+//get patient by id
+router.route("/patients/:patientId").get(verifyJwt, getPatientById);
 
 //update profile pic
 router

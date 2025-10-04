@@ -13,10 +13,28 @@ const VitalsSchema = new mongoose.Schema({
     required: true,
   },
   bloodPressure: {
-    systolic: Number,
-    diastolic: Number,
+    systolic: { type: Number },
+    diastolic: { type: Number },
   },
   sugar: {
+    type: Number,
+  },
+  heartRate: {
+    type: Number,
+  },
+  temperature: {
+    type: Number,
+  },
+  respiratoryRate: {
+    type: Number,
+  },
+  oxygenSaturation: {
+    type: Number,
+  },
+  weight: {
+    type: Number,
+  },
+  height: {
     type: Number,
   },
   takenAt: {

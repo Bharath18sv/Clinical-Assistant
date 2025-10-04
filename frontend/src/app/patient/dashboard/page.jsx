@@ -2,130 +2,243 @@
 
 import Link from "next/link";
 import { useContext, useState, useEffect } from "react";
-import { Heart, Calendar, Pill, Activity } from "lucide-react";
+import {
+  Heart,
+  Calendar,
+  Pill,
+  Activity,
+  Thermometer,
+  Droplets,
+  Scale,
+} from "lucide-react";
 import HealthCard from "@/components/HealthCard";
 import AppointmentCard from "@/components/AppointmentCard";
-import MedicationCard from "@/components/MedicationCard";
-import API, { fetchMyAppointments } from "@/utils/api";
+import MedicationList from "@/components/MedicationList";
+import {
+  fetchMyAppointments,
+  getPatientPrescriptions,
+  getLatestVitals,
+} from "@/utils/api";
 import { AuthContext } from "@/context/AuthContext";
 
 export default function PatientDashboard() {
   const { user, authLoading } = useContext(AuthContext);
+  console.log("user : ", user);
+  const patientId = user?.data?.user?._id;
   const [appointments, setAppointments] = useState([]);
+  const [prescriptions, setPrescriptions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [healthStats, setHealthStats] = useState({
+    sugar: "",
+    bloodPressure: {
+      systolic: "",
+      diastolic: "",
+    },
+    heartRate: "",
+    temperature: "",
+    respiratoryRate: "",
+    oxygenSaturation: "",
+    weight: "",
+  });
+
+  const fetchVitals = async () => {
+    try {
+      const vitals = await getLatestVitals(patientId);
+      console.log("Fetched vitals:", vitals);
+      setHealthStats(vitals.data || {});
+    } catch (error) {
+      console.error("Error fetching vitals:", error);
+    }
+  };
+
+  const fetchPatientPrescriptions = async () => {
+    try {
+      const res = await getPatientPrescriptions(patientId);
+      setPrescriptions(res.data || []);
+    } catch (error) {
+      console.error("Error fetching prescriptions:", error);
+    }
+  };
+
+  const loadAppointments = async () => {
+    try {
+      const appts = await fetchMyAppointments();
+      console.log("appts : ", appts);
+      setAppointments(appts || []);
+    } catch (error) {
+      console.error("Error fetching appointments:", error);
+    }
+  };
 
   useEffect(() => {
-    if (!authLoading && user) {
-      laodAppointments();
-    }
+    const fetchData = async () => {
+      if (!authLoading && user) {
+        setLoading(true);
+        await Promise.all([
+          loadAppointments(),
+          fetchPatientPrescriptions(),
+          fetchVitals(),
+        ]);
+        setLoading(false);
+      }
+    };
+    fetchData();
   }, [authLoading, user]);
 
-  if (authLoading) {
-    return <div>Loading...</div>;
+  // Convert vitals object to health stats array for display
+  const getHealthStatsArray = () => {
+    const stats = [];
+
+    // Blood Pressure
+    if (
+      healthStats?.bloodPressure?.systolic &&
+      healthStats?.bloodPressure?.diastolic
+    ) {
+      stats.push({
+        icon: Activity,
+        title: "Blood Pressure",
+        value: `${healthStats.bloodPressure.systolic}/${healthStats.bloodPressure.diastolic}`,
+        color: "blue",
+        subtitle: "mmHg",
+      });
+    }
+
+    // Heart Rate
+    if (healthStats?.heartRate) {
+      stats.push({
+        icon: Heart,
+        title: "Heart Rate",
+        value: `${healthStats.heartRate}`,
+        color: "red",
+        subtitle: "BPM",
+      });
+    }
+
+    // Temperature
+    if (healthStats?.temperature) {
+      stats.push({
+        icon: Thermometer,
+        title: "Temperature",
+        value: `${healthStats.temperature}°F`,
+        color: "orange",
+        subtitle: "Body temp",
+      });
+    }
+
+    // Oxygen Saturation
+    if (healthStats?.oxygenSaturation) {
+      stats.push({
+        icon: Droplets,
+        title: "Oxygen Saturation",
+        value: `${healthStats.oxygenSaturation}%`,
+        color: "blue",
+        subtitle: "SpO2",
+      });
+    }
+
+    // Respiratory Rate
+    if (healthStats?.respiratoryRate) {
+      stats.push({
+        icon: Activity,
+        title: "Respiratory Rate",
+        value: `${healthStats.respiratoryRate}`,
+        color: "green",
+        subtitle: "breaths/min",
+      });
+    }
+
+    // Weight
+    if (healthStats?.weight) {
+      stats.push({
+        icon: Scale,
+        title: "Weight",
+        value: `${healthStats.weight}`,
+        color: "purple",
+        subtitle: "kg",
+      });
+    }
+
+    // Active Medications Count
+    if (prescriptions?.length > 0) {
+      stats.push({
+        icon: Pill,
+        title: "Active Medications",
+        value: prescriptions.length.toString(),
+        color: "purple",
+        subtitle: "Prescriptions",
+      });
+    }
+
+    // Next Appointment
+    if (appointments?.length > 0) {
+      const nextAppt = appointments.find(
+        (a) => a.status !== "cancelled" && a.status !== "completed"
+      );
+      if (nextAppt) {
+        stats.push({
+          icon: Calendar,
+          title: "Next Appointment",
+          value: new Date(nextAppt.scheduledAt).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+          }),
+          color: "green",
+          subtitle: nextAppt.doctorId?.fullname || "Doctor",
+        });
+      }
+    }
+
+    return stats;
+  };
+
+  if (authLoading || loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
   }
 
-  // Mock data - in a real app, this would come from API calls
-  const healthStats = [
-    {
-      icon: Heart,
-      title: "Heart Rate",
-      value: "72 BPM",
-      color: "red",
-      subtitle: "Normal range",
-    },
-    {
-      icon: Activity,
-      title: "Blood Pressure",
-      value: "120/80",
-      color: "blue",
-      subtitle: "Optimal",
-    },
-    {
-      icon: Calendar,
-      title: "Next Appointment",
-      value: "Dec 15",
-      color: "green",
-      subtitle: "Dr. Smith",
-    },
-    {
-      icon: Pill,
-      title: "Active Medications",
-      value: "3",
-      color: "purple",
-      subtitle: "All on track",
-    },
-  ];
-
-  const upcomingAppointments = [
-    {
-      id: 1,
-      doctorName: "Dr. Sarah Smith",
-      type: "General Checkup",
-      date: "Dec 15, 2024",
-      time: "10:00 AM",
-      status: "Confirmed",
-    },
-    {
-      id: 2,
-      doctorName: "Dr. John Wilson",
-      type: "Follow-up",
-      date: "Dec 20, 2024",
-      time: "2:30 PM",
-      status: "Upcoming",
-    },
-  ];
-
-  const currentMedications = [
-    {
-      id: 1,
-      name: "Metformin",
-      dosage: "500mg",
-      frequency: "Twice daily",
-      startDate: "Nov 1, 2024",
-    },
-    {
-      id: 2,
-      name: "Lisinopril",
-      dosage: "10mg",
-      frequency: "Once daily",
-      startDate: "Oct 15, 2024",
-    },
-    {
-      id: 3,
-      name: "Vitamin D3",
-      dosage: "1000 IU",
-      frequency: "Once daily",
-      startDate: "Nov 10, 2024",
-    },
-  ];
-
-  const laodAppointments = async () => {
-    const appts = await fetchMyAppointments();
-    console.log("appts : ", appts);
-    setAppointments(appts);
-  };
+  const healthStatsArray = getHealthStatsArray();
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Patient Dashboard</h1>
         <p className="text-gray-600 mt-2">
-          Welcome back! Here's your health overview.
+          Welcome back, {user?.data?.user?.fullname || "Patient"}! Here's your
+          health overview.
         </p>
       </div>
 
       {/* Health Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {healthStats.map((stat, index) => (
-          <HealthCard
-            key={index}
-            icon={stat.icon}
-            title={stat.title}
-            value={stat.value}
-            color={stat.color}
-            subtitle={stat.subtitle}
-          />
-        ))}
-      </div>
+      {healthStatsArray.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {healthStatsArray.map((stat, index) => (
+            <HealthCard
+              key={index}
+              icon={stat.icon}
+              title={stat.title}
+              value={stat.value}
+              color={stat.color}
+              subtitle={stat.subtitle}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl shadow-sm border p-8 text-center">
+          <Activity className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            No Health Data Yet
+          </h3>
+          <p className="text-gray-600">
+            Your vital signs will appear here once recorded.
+          </p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Upcoming Appointments */}
@@ -134,24 +247,33 @@ export default function PatientDashboard() {
             <h2 className="card-title">Your Appointments</h2>
           </div>
           <div className="space-y-3">
-            {appointments
-              ? appointments.map((a) => (
-                  <AppointmentCard
-                    key={a._id}
-                    appointment={{
-                      id: a._id,
-                      userDetails: a?.doctorId,
-                      reason: a.reason || "Consultation",
-                      time: a.scheduledAt,
-                      status: a.status,
-                    }}
-                  />
-                ))
-              : "Loading..."}
+            {appointments && appointments.length > 0 ? (
+              appointments.slice(0, 3).map((a) => (
+                <AppointmentCard
+                  key={a._id}
+                  appointment={{
+                    id: a._id,
+                    userDetails: a?.doctorId,
+                    reason: a.reason || "Consultation",
+                    time: a.scheduledAt,
+                    status: a.status,
+                  }}
+                />
+              ))
+            ) : (
+              <div className="text-center py-8">
+                <Calendar className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+                <p className="text-gray-500 text-sm">
+                  No appointments scheduled
+                </p>
+              </div>
+            )}
           </div>
-          <button className="w-full mt-4 text-blue-600 hover:text-blue-800 text-sm font-medium">
-            View All Appointments
-          </button>
+          {appointments && appointments.length > 3 && (
+            <button className="w-full mt-4 text-blue-600 hover:text-blue-800 text-sm font-medium">
+              View All Appointments
+            </button>
+          )}
         </div>
 
         {/* Current Medications */}
@@ -160,13 +282,27 @@ export default function PatientDashboard() {
             <h2 className="card-title">Current Medications</h2>
           </div>
           <div className="space-y-3">
-            {currentMedications.map((medication) => (
-              <MedicationCard key={medication.id} medication={medication} />
-            ))}
+            {prescriptions && prescriptions.length > 0 ? (
+              prescriptions
+                .slice(0, 3)
+                .map((medication) => (
+                  <MedicationList
+                    key={medication._id}
+                    prescription={medication}
+                  />
+                ))
+            ) : (
+              <div className="text-center py-8">
+                <Pill className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+                <p className="text-gray-500 text-sm">No active medications</p>
+              </div>
+            )}
           </div>
-          <button className="w-full mt-4 text-blue-600 hover:text-blue-800 text-sm font-medium">
-            Manage Medications
-          </button>
+          {prescriptions && prescriptions.length > 3 && (
+            <button className="w-full mt-4 text-blue-600 hover:text-blue-800 text-sm font-medium">
+              Manage Medications
+            </button>
+          )}
         </div>
       </div>
 
@@ -176,21 +312,21 @@ export default function PatientDashboard() {
           <h2 className="card-title">Quick Actions</h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left transition-colors">
-            <div className="flex items-center">
-              <div className="icon-container icon-blue mr-3">
-                <Calendar className="h-5 w-5" />
-              </div>
-              <div>
-                <Link href={`/patient/doctor/all`}>
+          <Link href="/patient/doctor/all">
+            <button className="w-full p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left transition-colors">
+              <div className="flex items-center">
+                <div className="icon-container icon-blue mr-3">
+                  <Calendar className="h-5 w-5" />
+                </div>
+                <div>
                   <h3 className="font-medium text-gray-900">
                     Book Appointment
                   </h3>
                   <p className="text-sm text-gray-500">Schedule a new visit</p>
-                </Link>
+                </div>
               </div>
-            </div>
-          </button>
+            </button>
+          </Link>
 
           <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left transition-colors">
             <div className="flex items-center">

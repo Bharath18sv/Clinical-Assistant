@@ -1,5 +1,5 @@
 "use client";
-import PatientSidebar from "@/components/PatientSidebar";
+import PatientSidebar from "@/components/sidebars/PatientSidebar";
 import { usePathname } from "next/navigation";
 
 export default function PatientLayout({ children }) {

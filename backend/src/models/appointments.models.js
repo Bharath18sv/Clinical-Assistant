@@ -19,6 +19,11 @@ const AppointmentSchema = new Schema(
       default: Date.now(),
       required: true,
     },
+    type: {
+      type: String,
+      enum: ["consultation", "follow-up", "routine-check", "emergency"],
+      default: "consultation",
+    },
     status: {
       type: String,
       enum: ["pending", "approved", "active", "completed", "cancelled"],

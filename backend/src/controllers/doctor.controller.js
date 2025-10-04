@@ -232,6 +232,27 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     );
 });
 
+const getPatientById = asyncHandler(async (req, res) => {
+  const { patientId } = req.params;
+
+  if (!patientId) {
+    throw new ApiError(501, "Patient with the given Id is not found");
+  }
+
+  const doctorId = req.user?._id;
+  if (!doctorId) throw new ApiError(401, "Unauthorized");
+
+  const patient = await Patient.findById(patientId).select(
+    "-password -refreshToken"
+  );
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, patient, "Patient with ID fetched successfully")
+    );
+});
+
 //*** do this later **
 
 // const isAvailable = asyncHandler(async (req, res) => {
@@ -520,11 +541,12 @@ const addPrescriptionForPatient = asyncHandler(async (req, res) => {
   const { patientId } = req.params;
   if (!doctorId) throw new ApiError(401, "Unauthorized");
 
-  const { medications } = req.body;
+  const { medications, title } = req.body;
   if (!Array.isArray(medications) || medications.length === 0) {
     throw new ApiError(400, "Medications required");
   }
   const prescription = await Prescription.create({
+    title,
     patientId,
     doctorId,
     medications,
@@ -764,4 +786,5 @@ export {
   getDoctorById,
   updateInfo,
   updateProfilePic,
+  getPatientById,
 };
