@@ -1,5 +1,7 @@
 "use client";
 
+import Select from "react-select";
+import { useForm, Controller } from "react-hook-form";
 import { useContext, useEffect, useState } from "react";
 import {
   Edit,
@@ -14,93 +16,186 @@ import {
   AlertTriangle,
   Activity,
   Shield,
-  CheckCircle,
   Loader2,
 } from "lucide-react";
 import { AuthContext } from "@/context/AuthContext";
 import { updatePatientProfile } from "@/utils/api";
+import toast from "react-hot-toast";
+
+// Medical data constants
+const ALLERGIES = [
+  "Peanuts",
+  "Tree Nuts",
+  "Milk",
+  "Eggs",
+  "Wheat",
+  "Soy",
+  "Fish",
+  "Shellfish",
+  "Sesame",
+  "Penicillin",
+  "Aspirin",
+  "Sulfa Drugs",
+  "Latex",
+  "Pollen",
+  "Dust Mites",
+  "Pet Dander",
+  "Insect Stings",
+  "Mold",
+];
+
+const CHRONIC_CONDITIONS = [
+  "Diabetes Type 1",
+  "Diabetes Type 2",
+  "Hypertension",
+  "High Blood Pressure",
+  "Heart Disease",
+  "Asthma",
+  "COPD",
+  "Arthritis",
+  "Osteoporosis",
+  "Thyroid Disorder",
+  "Kidney Disease",
+  "Liver Disease",
+  "Cancer",
+  "Depression",
+  "Anxiety",
+  "Epilepsy",
+  "Migraine",
+  "Allergies",
+];
+
+const SYMPTOMS = [
+  "Fever",
+  "Cough",
+  "Shortness of Breath",
+  "Fatigue",
+  "Headache",
+  "Muscle Pain",
+  "Joint Pain",
+  "Nausea",
+  "Vomiting",
+  "Diarrhea",
+  "Abdominal Pain",
+  "Chest Pain",
+  "Dizziness",
+  "Rash",
+  "Sore Throat",
+  "Runny Nose",
+  "Loss of Appetite",
+  "Weight Loss",
+  "Weight Gain",
+  "Insomnia",
+];
+
+// Helper function to create options for react-select
+const createOptions = (items) => {
+  return items.map((item) => ({ value: item, label: item }));
+};
+
+// Helper function to convert array to react-select format
+const arrayToSelectValue = (array) => {
+  if (!array || !Array.isArray(array)) return [];
+  return array.map((item) => ({ value: item, label: item }));
+};
+
+// Helper function to convert react-select value to array
+const selectValueToArray = (selectValue) => {
+  if (!selectValue) return [];
+  return selectValue.map((item) => item.value);
+};
 
 export default function PatientProfile() {
   const { user, authLoading, setUser } = useContext(AuthContext);
   const [profile, setProfile] = useState(null);
-  const [editedProfile, setEditedProfile] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [updateError, setUpdateError] = useState(null);
-  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm({
+    defaultValues: {
+      fullname: "",
+      email: "",
+      phone: "",
+      age: "",
+      address: {
+        street: "",
+        city: "",
+        state: "",
+        zip: "",
+        country: "",
+      },
+      allergies: [],
+      chronicConditions: [],
+      symptoms: [],
+    },
+  });
 
   // Load patient data when user is available
   useEffect(() => {
     if (!authLoading && user?.data?.user) {
       const userData = user.data.user;
       setProfile(userData);
-      setEditedProfile(userData);
+
+      // Reset form with user data
+      reset({
+        fullname: userData.fullname || "",
+        email: userData.email || "",
+        phone: userData.phone || "",
+        age: userData.age || "",
+        address: {
+          street: userData.address?.street || "",
+          city: userData.address?.city || "",
+          state: userData.address?.state || "",
+          zip: userData.address?.zip || "",
+          country: userData.address?.country || "",
+        },
+        allergies: arrayToSelectValue(userData.allergies || []),
+        chronicConditions: arrayToSelectValue(userData.chronicConditions || []),
+        symptoms: arrayToSelectValue(userData.symptoms || []),
+      });
     }
-  }, [user, authLoading]);
+  }, [user, authLoading, reset]);
 
   const handleEdit = () => {
-    setEditedProfile({ ...profile });
     setIsEditing(true);
-    setUpdateError(null);
-    setShowSuccessMessage(false);
   };
 
-  const handleSave = async () => {
+  const onSubmit = async (data) => {
     setIsSaving(true);
-    setUpdateError(null);
 
     try {
-      // Validate required fields
-      if (!editedProfile.fullname?.trim()) {
-        setUpdateError("Full name is required");
-        setIsSaving(false);
-        return;
-      }
-
-      if (!editedProfile.email?.trim()) {
-        setUpdateError("Email is required");
-        setIsSaving(false);
-        return;
-      }
-
-      // Validate email format
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(editedProfile.email)) {
-        setUpdateError("Please enter a valid email address");
-        setIsSaving(false);
-        return;
-      }
-
       // Clean up the data before sending
       const dataToUpdate = {
-        fullname: editedProfile.fullname.trim(),
-        email: editedProfile.email.trim(),
-        phone: editedProfile.phone?.trim() || "",
-        age: editedProfile.age || null,
-        gender: editedProfile.gender || "",
+        fullname: data.fullname.trim(),
+        email: data.email.trim(),
+        phone: data.phone?.trim() || "",
+        age: data.age ? parseInt(data.age) : null,
         address: {
-          street: editedProfile.address?.street?.trim() || "",
-          city: editedProfile.address?.city?.trim() || "",
-          state: editedProfile.address?.state?.trim() || "",
-          zip: editedProfile.address?.zip?.trim() || "",
-          country: editedProfile.address?.country?.trim() || "",
+          street: data.address.street?.trim() || "",
+          city: data.address.city?.trim() || "",
+          state: data.address.state?.trim() || "",
+          zip: data.address.zip?.trim() || "",
+          country: data.address.country?.trim() || "",
         },
-        allergies: editedProfile.allergies || [],
-        chronicConditions: editedProfile.chronicConditions || [],
-        symptoms: editedProfile.symptoms || [],
+        allergies: selectValueToArray(data.allergies),
+        chronicConditions: selectValueToArray(data.chronicConditions),
+        symptoms: selectValueToArray(data.symptoms),
       };
-
-      console.log("Updating profile with data:", dataToUpdate);
-
+      console.log("Data to update:", dataToUpdate);
       const response = await updatePatientProfile(dataToUpdate);
+      console.log("Profile update response:", response);
 
-      console.log("Update response:", response);
-
-      if (response.success) {
-        // Update local state with the response data
-        const updatedUser = response.data?.user || editedProfile;
+      if (response.data.message) {
+        const updatedUser = response.data?.user || {
+          ...profile,
+          ...dataToUpdate,
+        };
         setProfile(updatedUser);
-        setEditedProfile(updatedUser);
 
         // Update the auth context with new user data
         if (setUser) {
@@ -113,19 +208,34 @@ export default function PatientProfile() {
           });
         }
 
-        setIsEditing(false);
-        setShowSuccessMessage(true);
+        // Reset form with updated data
+        reset({
+          fullname: updatedUser.fullname || "",
+          email: updatedUser.email || "",
+          phone: updatedUser.phone || "",
+          age: updatedUser.age || "",
+          address: {
+            street: updatedUser.address?.street || "",
+            city: updatedUser.address?.city || "",
+            state: updatedUser.address?.state || "",
+            zip: updatedUser.address?.zip || "",
+            country: updatedUser.address?.country || "",
+          },
+          allergies: arrayToSelectValue(updatedUser.allergies || []),
+          chronicConditions: arrayToSelectValue(
+            updatedUser.chronicConditions || []
+          ),
+          symptoms: arrayToSelectValue(updatedUser.symptoms || []),
+        });
 
-        // Hide success message after 5 seconds
-        setTimeout(() => {
-          setShowSuccessMessage(false);
-        }, 5000);
+        setIsEditing(false);
+        toast.success("Profile updated successfully!");
       } else {
-        setUpdateError(response.message || "Failed to update profile");
+        toast.error(response.data.message || "Failed to update profile");
       }
     } catch (error) {
       console.error("Error updating profile:", error);
-      setUpdateError(
+      toast.error(
         error.response?.data?.message ||
           error.message ||
           "Failed to update profile. Please try again."
@@ -136,32 +246,24 @@ export default function PatientProfile() {
   };
 
   const handleCancel = () => {
-    setEditedProfile({ ...profile });
+    // Reset form to original profile data
+    reset({
+      fullname: profile.fullname || "",
+      email: profile.email || "",
+      phone: profile.phone || "",
+      age: profile.age || "",
+      address: {
+        street: profile.address?.street || "",
+        city: profile.address?.city || "",
+        state: profile.address?.state || "",
+        zip: profile.address?.zip || "",
+        country: profile.address?.country || "",
+      },
+      allergies: arrayToSelectValue(profile.allergies || []),
+      chronicConditions: arrayToSelectValue(profile.chronicConditions || []),
+      symptoms: arrayToSelectValue(profile.symptoms || []),
+    });
     setIsEditing(false);
-    setUpdateError(null);
-    setShowSuccessMessage(false);
-  };
-
-  const handleInputChange = (field, value) => {
-    setEditedProfile((prev) => ({ ...prev, [field]: value }));
-    setUpdateError(null);
-  };
-
-  const handleAddressChange = (field, value) => {
-    setEditedProfile((prev) => ({
-      ...prev,
-      address: { ...prev.address, [field]: value },
-    }));
-    setUpdateError(null);
-  };
-
-  const handleArrayChange = (field, value) => {
-    const items = value
-      .split(",")
-      .map((item) => item.trim())
-      .filter((item) => item);
-    setEditedProfile((prev) => ({ ...prev, [field]: items }));
-    setUpdateError(null);
   };
 
   const formatDate = (dateString) => {
@@ -175,7 +277,7 @@ export default function PatientProfile() {
 
   if (authLoading || !profile) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="animate-spin h-12 w-12 text-blue-600 mx-auto mb-4" />
           <p className="text-lg font-medium text-gray-700">
@@ -187,545 +289,567 @@ export default function PatientProfile() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 py-8 px-4">
-      <div className="max-w-7xl mx-auto space-y-8">
-        {/* Success Message */}
-        {showSuccessMessage && (
-          <div className="bg-green-50 border-2 border-green-200 rounded-xl p-4 flex items-center justify-between animate-fade-in">
-            <div className="flex items-center gap-3">
-              <div className="bg-green-500 p-2 rounded-full">
-                <CheckCircle className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <p className="text-green-800 font-semibold">
-                  Profile Updated Successfully!
-                </p>
-                <p className="text-green-600 text-sm">
-                  Your changes have been saved.
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={() => setShowSuccessMessage(false)}
-              className="text-green-600 hover:text-green-800"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-        )}
-
-        {/* Error Message */}
-        {updateError && (
-          <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <AlertTriangle className="h-5 w-5 text-red-600" />
-              <div>
-                <p className="text-red-800 font-semibold">Update Failed</p>
-                <p className="text-red-600 text-sm">{updateError}</p>
-              </div>
-            </div>
-            <button
-              onClick={() => setUpdateError(null)}
-              className="text-red-600 hover:text-red-800"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-        )}
-
-        {/* Header */}
-        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 overflow-hidden">
-          <div className="relative bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 px-8 py-8">
-            <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity=0.05'%3E%3Ccircle cx='30' cy='30' r='8'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-20"></div>
-
-            <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex items-center gap-6 mb-6 lg:mb-0">
-                <div className="relative">
-                  <div className="bg-white/20 p-6 rounded-2xl backdrop-blur-sm shadow-lg">
-                    {profile?.profilePic ? (
-                      <img
-                        src={profile.profilePic}
-                        alt="Profile"
-                        className="w-16 h-16 rounded-xl object-cover"
-                      />
-                    ) : (
-                      <User className="w-16 h-16 text-white" />
-                    )}
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-8 px-4">
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <div className="max-w-7xl mx-auto space-y-6">
+          {/* Header */}
+          <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6">
+              <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+                <div className="flex items-start gap-6">
+                  <div className="relative flex-shrink-0">
+                    <div className="w-24 h-24 rounded-xl overflow-hidden bg-white/20 backdrop-blur-sm">
+                      {profile?.profilePic ? (
+                        <img
+                          src={profile.profilePic}
+                          alt="Profile"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <User className="w-12 h-12 text-white" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="absolute -bottom-2 -right-2 bg-green-500 p-1.5 rounded-full">
+                      <Shield className="w-4 h-4 text-white" />
+                    </div>
                   </div>
-                  <div className="absolute -bottom-2 -right-2 bg-green-500 text-white p-2 rounded-full shadow-lg">
-                    <Shield className="w-4 h-4" />
+
+                  <div className="flex-1">
+                    <h1 className="text-3xl font-bold text-white mb-1">
+                      {profile.fullname}
+                    </h1>
+                    <p className="text-blue-100 mb-3">
+                      Personal Health Profile
+                    </p>
+                    <div className="flex flex-wrap items-center gap-3 text-sm">
+                      <span className="text-blue-100">
+                        Member since {formatDate(profile.createdAt)}
+                      </span>
+                      <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full font-medium">
+                        Active
+                      </span>
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <h1 className="text-4xl font-bold text-white mb-2">
-                    {profile.fullname}
-                  </h1>
-                  <p className="text-blue-100 text-lg">
-                    Personal Health Profile
-                  </p>
-                  <div className="flex items-center gap-4 mt-2">
-                    <span className="text-blue-100 text-sm">
-                      Member since {formatDate(profile.createdAt)}
-                    </span>
-                    <span className="text-green-200 text-sm bg-green-500/20 px-3 py-1 rounded-full">
-                      Active
-                    </span>
-                  </div>
-                </div>
-              </div>
 
-              {!isEditing && (
-                <button
-                  onClick={handleEdit}
-                  className="group bg-white/20 backdrop-blur-sm text-white px-6 py-3 rounded-2xl hover:bg-white/30 transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center gap-2"
-                >
-                  <Edit className="h-5 w-5" />
-                  <span className="font-semibold">Edit Profile</span>
-                </button>
-              )}
+                {!isEditing && (
+                  <button
+                    type="button"
+                    onClick={handleEdit}
+                    className="bg-white text-blue-600 px-5 py-2.5 rounded-lg hover:bg-blue-50 transition-colors flex items-center justify-center gap-2 text-sm font-medium shadow-lg"
+                  >
+                    <Edit className="h-4 w-4" />
+                    Edit Profile
+                  </button>
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-          {/* Personal Information */}
-          <div className="xl:col-span-2">
-            <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 p-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-8 flex items-center gap-3">
-                <div className="bg-blue-100 p-2 rounded-xl">
-                  <User className="w-6 h-6 text-blue-600" />
-                </div>
-                Personal Information
-              </h2>
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            {/* Personal Information */}
+            <div className="xl:col-span-2 space-y-6">
+              <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                  <User className="w-5 h-5 text-blue-600" />
+                  Personal Information
+                </h2>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Full Name */}
-                <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-gray-700 uppercase tracking-wide">
-                    Full Name <span className="text-red-500">*</span>
-                  </label>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      value={editedProfile.fullname || ""}
-                      onChange={(e) =>
-                        handleInputChange("fullname", e.target.value)
-                      }
-                      className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                      placeholder="Enter your full name"
-                    />
-                  ) : (
-                    <div className="bg-gray-50 rounded-xl px-4 py-3 border border-gray-200">
-                      <p className="text-gray-900 font-medium">
-                        {profile.fullname || "-"}
-                      </p>
+                <div className="space-y-6">
+                  {/* Basic Information Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Full Name */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Full Name <span className="text-red-500">*</span>
+                      </label>
+                      {isEditing ? (
+                        <Controller
+                          name="fullname"
+                          control={control}
+                          rules={{ required: "Full name is required" }}
+                          render={({ field }) => (
+                            <>
+                              <input
+                                {...field}
+                                type="text"
+                                className={`w-full border rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                                  errors.fullname
+                                    ? "border-red-500"
+                                    : "border-gray-300"
+                                }`}
+                                placeholder="Enter your full name"
+                              />
+                              {errors.fullname && (
+                                <p className="text-red-500 text-xs mt-1">
+                                  {errors.fullname.message}
+                                </p>
+                              )}
+                            </>
+                          )}
+                        />
+                      ) : (
+                        <p className="bg-gray-50 rounded-lg px-4 py-2.5 border border-gray-200">
+                          {profile.fullname || "-"}
+                        </p>
+                      )}
                     </div>
-                  )}
-                </div>
 
-                {/* Email */}
-                <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-gray-700 uppercase tracking-wide">
-                    Email Address <span className="text-red-500">*</span>
-                  </label>
-                  {isEditing ? (
-                    <input
-                      type="email"
-                      value={editedProfile.email || ""}
-                      onChange={(e) =>
-                        handleInputChange("email", e.target.value)
-                      }
-                      className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                      placeholder="your@email.com"
-                    />
-                  ) : (
-                    <div className="bg-gray-50 rounded-xl px-4 py-3 border border-gray-200 flex items-center gap-3">
-                      <Mail className="w-4 h-4 text-gray-500" />
-                      <p className="text-gray-900 font-medium">
-                        {profile.email || "-"}
-                      </p>
+                    {/* Email */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Email Address <span className="text-red-500">*</span>
+                      </label>
+                      {isEditing ? (
+                        <Controller
+                          name="email"
+                          control={control}
+                          rules={{
+                            required: "Email is required",
+                            pattern: {
+                              value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                              message: "Invalid email address",
+                            },
+                          }}
+                          render={({ field }) => (
+                            <>
+                              <input
+                                {...field}
+                                type="email"
+                                className={`w-full border rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                                  errors.email
+                                    ? "border-red-500"
+                                    : "border-gray-300"
+                                }`}
+                                placeholder="your@email.com"
+                              />
+                              {errors.email && (
+                                <p className="text-red-500 text-xs mt-1">
+                                  {errors.email.message}
+                                </p>
+                              )}
+                            </>
+                          )}
+                        />
+                      ) : (
+                        <div className="bg-gray-50 rounded-lg px-4 py-2.5 border border-gray-200 flex items-center gap-2">
+                          <Mail className="w-4 h-4 text-gray-500" />
+                          <span>{profile.email || "-"}</span>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
 
-                {/* Phone */}
-                <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-gray-700 uppercase tracking-wide">
-                    Phone Number
-                  </label>
-                  {isEditing ? (
-                    <input
-                      type="tel"
-                      value={editedProfile.phone || ""}
-                      onChange={(e) =>
-                        handleInputChange("phone", e.target.value)
-                      }
-                      className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                      placeholder="+91 XXXXX XXXXX"
-                    />
-                  ) : (
-                    <div className="bg-gray-50 rounded-xl px-4 py-3 border border-gray-200 flex items-center gap-3">
-                      <Phone className="w-4 h-4 text-gray-500" />
-                      <p className="text-gray-900 font-medium">
-                        {profile.phone || "-"}
-                      </p>
+                    {/* Phone */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Phone Number
+                      </label>
+                      {isEditing ? (
+                        <Controller
+                          name="phone"
+                          control={control}
+                          render={({ field }) => (
+                            <input
+                              {...field}
+                              type="tel"
+                              className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              placeholder="+91 XXXXX XXXXX"
+                            />
+                          )}
+                        />
+                      ) : (
+                        <div className="bg-gray-50 rounded-lg px-4 py-2.5 border border-gray-200 flex items-center gap-2">
+                          <Phone className="w-4 h-4 text-gray-500" />
+                          <span>{profile.phone || "-"}</span>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
 
-                {/* Age */}
-                <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-gray-700 uppercase tracking-wide">
-                    Age
-                  </label>
-                  {isEditing ? (
-                    <input
-                      type="number"
-                      min="0"
-                      max="150"
-                      value={editedProfile.age || ""}
-                      onChange={(e) =>
-                        handleInputChange(
-                          "age",
-                          parseInt(e.target.value) || null
-                        )
-                      }
-                      className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                      placeholder="Enter your age"
-                    />
-                  ) : (
-                    <div className="bg-gray-50 rounded-xl px-4 py-3 border border-gray-200 flex items-center gap-3">
-                      <Calendar className="w-4 h-4 text-gray-500" />
-                      <p className="text-gray-900 font-medium">
-                        {profile.age ? `${profile.age} years old` : "-"}
-                      </p>
+                    {/* Age */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Age
+                      </label>
+                      {isEditing ? (
+                        <Controller
+                          name="age"
+                          control={control}
+                          rules={{
+                            min: { value: 0, message: "Age must be positive" },
+                            max: { value: 150, message: "Invalid age" },
+                          }}
+                          render={({ field }) => (
+                            <>
+                              <input
+                                {...field}
+                                type="number"
+                                min="0"
+                                max="150"
+                                className={`w-full border rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                                  errors.age
+                                    ? "border-red-500"
+                                    : "border-gray-300"
+                                }`}
+                                placeholder="Enter your age"
+                              />
+                              {errors.age && (
+                                <p className="text-red-500 text-xs mt-1">
+                                  {errors.age.message}
+                                </p>
+                              )}
+                            </>
+                          )}
+                        />
+                      ) : (
+                        <div className="bg-gray-50 rounded-lg px-4 py-2.5 border border-gray-200 flex items-center gap-2">
+                          <Calendar className="w-4 h-4 text-gray-500" />
+                          <span>
+                            {profile.age ? `${profile.age} years old` : "-"}
+                          </span>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
 
-                {/* Gender */}
-                <div className="space-y-2 md:col-span-2">
-                  <label className="block text-sm font-semibold text-gray-700 uppercase tracking-wide">
-                    Gender
-                  </label>
-                  {isEditing ? (
-                    <select
-                      value={editedProfile.gender || ""}
-                      onChange={(e) =>
-                        handleInputChange("gender", e.target.value)
-                      }
-                      className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                    >
-                      <option value="">Select Gender</option>
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
-                      <option value="Other">Other</option>
-                    </select>
-                  ) : (
-                    <div className="bg-gray-50 rounded-xl px-4 py-3 border border-gray-200 inline-block">
-                      <p className="text-gray-900 font-medium">
-                        {profile.gender || "-"}
-                      </p>
+                    {/* Gender - Read Only */}
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Gender
+                      </label>
+                      <div className="bg-gray-50 rounded-lg px-4 py-2.5 border border-gray-200 inline-block">
+                        <span>{profile.gender || "-"}</span>
+                      </div>
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
 
               {/* Address Section */}
-              <div className="mt-8 space-y-4">
-                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                  <MapPin className="w-5 h-5 text-blue-600" />
+              <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
+                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <MapPin className="w-5 h-5 text-purple-600" />
                   Address Information
                 </h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Street */}
-                  <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Street Address
                     </label>
                     {isEditing ? (
-                      <input
-                        type="text"
-                        value={editedProfile.address?.street || ""}
-                        onChange={(e) =>
-                          handleAddressChange("street", e.target.value)
-                        }
-                        className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                        placeholder="Street address"
+                      <Controller
+                        name="address.street"
+                        control={control}
+                        render={({ field }) => (
+                          <input
+                            {...field}
+                            type="text"
+                            className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Street address"
+                          />
+                        )}
                       />
                     ) : (
-                      <div className="bg-gray-50 rounded-xl px-4 py-3 border border-gray-200">
-                        <p className="text-gray-900 font-medium">
-                          {profile.address?.street || "-"}
-                        </p>
-                      </div>
+                      <p className="bg-gray-50 rounded-lg px-4 py-2.5 border border-gray-200">
+                        {profile.address?.street || "-"}
+                      </p>
                     )}
                   </div>
 
                   {/* City */}
-                  <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       City
                     </label>
                     {isEditing ? (
-                      <input
-                        type="text"
-                        value={editedProfile.address?.city || ""}
-                        onChange={(e) =>
-                          handleAddressChange("city", e.target.value)
-                        }
-                        className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                        placeholder="City"
+                      <Controller
+                        name="address.city"
+                        control={control}
+                        render={({ field }) => (
+                          <input
+                            {...field}
+                            type="text"
+                            className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="City"
+                          />
+                        )}
                       />
                     ) : (
-                      <div className="bg-gray-50 rounded-xl px-4 py-3 border border-gray-200">
-                        <p className="text-gray-900 font-medium">
-                          {profile.address?.city || "-"}
-                        </p>
-                      </div>
+                      <p className="bg-gray-50 rounded-lg px-4 py-2.5 border border-gray-200">
+                        {profile.address?.city || "-"}
+                      </p>
                     )}
                   </div>
 
                   {/* State */}
-                  <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       State
                     </label>
                     {isEditing ? (
-                      <input
-                        type="text"
-                        value={editedProfile.address?.state || ""}
-                        onChange={(e) =>
-                          handleAddressChange("state", e.target.value)
-                        }
-                        className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                        placeholder="State"
+                      <Controller
+                        name="address.state"
+                        control={control}
+                        render={({ field }) => (
+                          <input
+                            {...field}
+                            type="text"
+                            className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="State"
+                          />
+                        )}
                       />
                     ) : (
-                      <div className="bg-gray-50 rounded-xl px-4 py-3 border border-gray-200">
-                        <p className="text-gray-900 font-medium">
-                          {profile.address?.state || "-"}
-                        </p>
-                      </div>
+                      <p className="bg-gray-50 rounded-lg px-4 py-2.5 border border-gray-200">
+                        {profile.address?.state || "-"}
+                      </p>
                     )}
                   </div>
 
                   {/* ZIP */}
-                  <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       ZIP Code
                     </label>
                     {isEditing ? (
-                      <input
-                        type="text"
-                        value={editedProfile.address?.zip || ""}
-                        onChange={(e) =>
-                          handleAddressChange("zip", e.target.value)
-                        }
-                        className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                        placeholder="ZIP code"
+                      <Controller
+                        name="address.zip"
+                        control={control}
+                        render={({ field }) => (
+                          <input
+                            {...field}
+                            type="text"
+                            className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="ZIP code"
+                          />
+                        )}
                       />
                     ) : (
-                      <div className="bg-gray-50 rounded-xl px-4 py-3 border border-gray-200">
-                        <p className="text-gray-900 font-medium">
-                          {profile.address?.zip || "-"}
-                        </p>
-                      </div>
+                      <p className="bg-gray-50 rounded-lg px-4 py-2.5 border border-gray-200">
+                        {profile.address?.zip || "-"}
+                      </p>
                     )}
                   </div>
 
                   {/* Country */}
-                  <div className="space-y-2 md:col-span-2">
-                    <label className="block text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Country
                     </label>
                     {isEditing ? (
-                      <input
-                        type="text"
-                        value={editedProfile.address?.country || ""}
-                        onChange={(e) =>
-                          handleAddressChange("country", e.target.value)
-                        }
-                        className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                        placeholder="Country"
+                      <Controller
+                        name="address.country"
+                        control={control}
+                        render={({ field }) => (
+                          <input
+                            {...field}
+                            type="text"
+                            className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Country"
+                          />
+                        )}
                       />
                     ) : (
-                      <div className="bg-gray-50 rounded-xl px-4 py-3 border border-gray-200 inline-block">
-                        <p className="text-gray-900 font-medium">
-                          {profile.address?.country || "-"}
-                        </p>
-                      </div>
+                      <p className="bg-gray-50 rounded-lg px-4 py-2.5 border border-gray-200">
+                        {profile.address?.country || "-"}
+                      </p>
                     )}
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Medical Information Sidebar */}
-          <div className="xl:col-span-1 space-y-6">
-            {/* Allergies */}
-            <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
-                <div className="bg-red-100 p-2 rounded-xl">
+            {/* Medical Information Sidebar */}
+            <div className="xl:col-span-1 space-y-6">
+              {/* Allergies */}
+              <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
+                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
                   <AlertTriangle className="w-5 h-5 text-red-600" />
-                </div>
-                Allergies
-              </h3>
-              {isEditing ? (
-                <div className="space-y-2">
-                  <textarea
-                    value={editedProfile.allergies?.join(", ") || ""}
-                    onChange={(e) =>
-                      handleArrayChange("allergies", e.target.value)
-                    }
-                    placeholder="Enter allergies separated by commas"
-                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
-                    rows="3"
+                  Allergies
+                </h3>
+                {isEditing ? (
+                  <Controller
+                    name="allergies"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        {...field}
+                        instanceId="allergies-select"
+                        isMulti
+                        options={createOptions(ALLERGIES)}
+                        placeholder="Select allergies..."
+                        className="react-select-container"
+                        classNamePrefix="react-select"
+                        styles={{
+                          control: (base) => ({
+                            ...base,
+                            border: "1px solid #d1d5db",
+                            borderRadius: "8px",
+                            padding: "2px",
+                          }),
+                        }}
+                      />
+                    )}
                   />
-                  <p className="text-xs text-gray-500">
-                    Separate multiple items with commas
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {profile.allergies && profile.allergies.length > 0 ? (
-                    profile.allergies.map((allergy, index) => (
-                      <div
-                        key={index}
-                        className="bg-red-50 border border-red-200 rounded-xl px-4 py-2"
-                      >
-                        <p className="text-red-800 font-medium">{allergy}</p>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-gray-500 italic">No known allergies</p>
-                  )}
-                </div>
-              )}
-            </div>
+                ) : (
+                  <div className="space-y-2">
+                    {profile.allergies && profile.allergies.length > 0 ? (
+                      profile.allergies.map((allergy, index) => (
+                        <div
+                          key={index}
+                          className="bg-red-50 border border-red-200 rounded-lg px-4 py-2"
+                        >
+                          <p className="text-red-800 font-medium">{allergy}</p>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-gray-500 italic text-sm">
+                        No known allergies
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
 
-            {/* Chronic Conditions */}
-            <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
-                <div className="bg-orange-100 p-2 rounded-xl">
+              {/* Chronic Conditions */}
+              <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
+                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
                   <Heart className="w-5 h-5 text-orange-600" />
-                </div>
-                Chronic Conditions
-              </h3>
-              {isEditing ? (
-                <div className="space-y-2">
-                  <textarea
-                    value={editedProfile.chronicConditions?.join(", ") || ""}
-                    onChange={(e) =>
-                      handleArrayChange("chronicConditions", e.target.value)
-                    }
-                    placeholder="Enter conditions separated by commas"
-                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
-                    rows="3"
+                  Chronic Conditions
+                </h3>
+                {isEditing ? (
+                  <Controller
+                    name="chronicConditions"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        {...field}
+                        instanceId="chronic-conditions-select"
+                        isMulti
+                        options={createOptions(CHRONIC_CONDITIONS)}
+                        placeholder="Select conditions..."
+                        className="react-select-container"
+                        classNamePrefix="react-select"
+                        styles={{
+                          control: (base) => ({
+                            ...base,
+                            border: "1px solid #d1d5db",
+                            borderRadius: "8px",
+                            padding: "2px",
+                          }),
+                        }}
+                      />
+                    )}
                   />
-                  <p className="text-xs text-gray-500">
-                    Separate multiple items with commas
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {profile.chronicConditions &&
-                  profile.chronicConditions.length > 0 ? (
-                    profile.chronicConditions.map((condition, index) => (
-                      <div
-                        key={index}
-                        className="bg-orange-50 border border-orange-200 rounded-xl px-4 py-2"
-                      >
-                        <p className="text-orange-800 font-medium">
-                          {condition}
-                        </p>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-gray-500 italic">
-                      No chronic conditions
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
+                ) : (
+                  <div className="space-y-2">
+                    {profile.chronicConditions &&
+                    profile.chronicConditions.length > 0 ? (
+                      profile.chronicConditions.map((condition, index) => (
+                        <div
+                          key={index}
+                          className="bg-orange-50 border border-orange-200 rounded-lg px-4 py-2"
+                        >
+                          <p className="text-orange-800 font-medium">
+                            {condition}
+                          </p>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-gray-500 italic text-sm">
+                        No chronic conditions
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
 
-            {/* Current Symptoms */}
-            <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
-                <div className="bg-blue-100 p-2 rounded-xl">
+              {/* Current Symptoms */}
+              <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
+                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
                   <Activity className="w-5 h-5 text-blue-600" />
-                </div>
-                Current Symptoms
-              </h3>
-              {isEditing ? (
-                <div className="space-y-2">
-                  <textarea
-                    value={editedProfile.symptoms?.join(", ") || ""}
-                    onChange={(e) =>
-                      handleArrayChange("symptoms", e.target.value)
-                    }
-                    placeholder="Enter symptoms separated by commas"
-                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                    rows="3"
+                  Current Symptoms
+                </h3>
+                {isEditing ? (
+                  <Controller
+                    name="symptoms"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        {...field}
+                        instanceId="symptoms-select"
+                        isMulti
+                        options={createOptions(SYMPTOMS)}
+                        placeholder="Select symptoms..."
+                        className="react-select-container"
+                        classNamePrefix="react-select"
+                        styles={{
+                          control: (base) => ({
+                            ...base,
+                            border: "1px solid #d1d5db",
+                            borderRadius: "8px",
+                            padding: "2px",
+                          }),
+                        }}
+                      />
+                    )}
                   />
-                  <p className="text-xs text-gray-500">
-                    Separate multiple items with commas
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {profile.symptoms && profile.symptoms.length > 0 ? (
-                    profile.symptoms.map((symptom, index) => (
-                      <div
-                        key={index}
-                        className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-2"
-                      >
-                        <p className="text-blue-800 font-medium">{symptom}</p>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-gray-500 italic">No current symptoms</p>
-                  )}
-                </div>
-              )}
+                ) : (
+                  <div className="space-y-2">
+                    {profile.symptoms && profile.symptoms.length > 0 ? (
+                      profile.symptoms.map((symptom, index) => (
+                        <div
+                          key={index}
+                          className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2"
+                        >
+                          <p className="text-blue-800 font-medium">{symptom}</p>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-gray-500 italic text-sm">
+                        No current symptoms
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Action Buttons */}
-        {isEditing && (
-          <div className="flex justify-end gap-4">
-            <button
-              onClick={handleCancel}
-              disabled={isSaving}
-              className="bg-gray-200 text-gray-700 px-8 py-4 rounded-2xl hover:bg-gray-300 transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center gap-2 font-semibold disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-            >
-              <X className="h-5 w-5" />
-              Cancel
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-4 rounded-2xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center gap-2 font-semibold disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="h-5 w-5" />
-                  Save Changes
-                </>
-              )}
-            </button>
-          </div>
-        )}
-      </div>
+          {/* Action Buttons */}
+          {isEditing && (
+            <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
+              <button
+                type="button"
+                onClick={handleCancel}
+                disabled={isSaving}
+                className="bg-gray-100 text-gray-700 px-6 py-2.5 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <X className="h-5 w-5" />
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSaving}
+                className="bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-5 w-5" />
+                    Save Changes
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+        </div>
+      </form>
     </div>
   );
 }

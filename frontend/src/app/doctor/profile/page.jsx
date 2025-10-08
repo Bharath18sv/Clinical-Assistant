@@ -1,5 +1,4 @@
 "use client";
-
 import { useContext, useEffect, useState } from "react";
 import {
   Edit,
@@ -8,33 +7,33 @@ import {
   User,
   Mail,
   Phone,
-  Calendar,
-  Shield,
-  Briefcase,
-  BookOpen,
-  CheckCircle,
-  AlertCircle,
-  Info,
+  Clock,
+  FileText,
   MapPin,
   Camera,
-  Clock,
+  Shield,
   UserCheck,
-  FileText,
+  Briefcase,
+  BookOpen,
+  Info,
+  Loader2,
+  CheckCircle2,
+  AlertCircle,
 } from "lucide-react";
 import { AuthContext } from "@/context/AuthContext";
-import API from "@/utils/api";
+import API, { downloadDoctorReportPdf, updateDoctorProfile } from "@/utils/api";
 import toast from "react-hot-toast";
-import { downloadDoctorReportPdf } from "@/utils/api";
+import { SPECIALIZATION, QUALIFICATIONS } from "@/data/constant";
 
 export default function DoctorProfile() {
   const { user, authLoading, setUser } = useContext(AuthContext);
   const [profile, setProfile] = useState(null);
   const [editedProfile, setEditedProfile] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [isUpdatingPic, setIsUpdatingPic] = useState(false);
   const [profilePicFile, setProfilePicFile] = useState(null);
+  const [isUpdatingPic, setIsUpdatingPic] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  // Load doctor data
   useEffect(() => {
     if (!authLoading && user?.user) {
       setProfile(user?.user);
@@ -42,42 +41,10 @@ export default function DoctorProfile() {
     }
   }, [user, authLoading]);
 
-  const handleEdit = () => {
-    setEditedProfile({ ...profile });
-    setIsEditing(true);
-  };
-
-  const handleSave = async () => {
-    try {
-      // Prepare data for API - exclude fields that shouldn't be updated via info endpoint
-      const updateData = {
-        fullname: editedProfile.fullname,
-        email: editedProfile.email,
-        phone: editedProfile.phone,
-        experience: editedProfile.experience,
-        about: editedProfile.about,
-        specialization: editedProfile.specialization,
-        qualifications: editedProfile.qualifications,
-        address: editedProfile.address,
-        isAvailable: editedProfile.isAvailable,
-      };
-
-      const response = await API.post("/doctors/updateInfo", updateData);
-
-      if (response.data.success) {
-        setProfile(editedProfile);
-        setUser({ ...user, user: editedProfile }); // Update context
-        setIsEditing(false);
-        toast.success("Profile updated successfully!");
-      }
-    } catch (error) {
-      console.error("Error updating profile:", error);
-      toast.error(error.response?.data?.message || "Failed to update profile");
-    }
-  };
+  const handleEdit = () => setIsEditing(true);
 
   const handleCancel = () => {
-    setEditedProfile({ ...profile });
+    setEditedProfile(profile);
     setIsEditing(false);
   };
 
@@ -92,12 +59,51 @@ export default function DoctorProfile() {
     }));
   };
 
-  const handleArrayChange = (field, value) => {
-    const items = value
-      .split(",")
-      .map((item) => item.trim())
-      .filter((item) => item);
-    setEditedProfile((prev) => ({ ...prev, [field]: items }));
+  const handleSpecializationToggle = (spec) => {
+    const current = editedProfile?.specialization || [];
+    const updated = current.includes(spec)
+      ? current.filter((s) => s !== spec)
+      : [...current, spec];
+    handleInputChange("specialization", updated);
+  };
+
+  const handleQualificationToggle = (qual) => {
+    const current = editedProfile?.qualifications || [];
+    const updated = current.includes(qual)
+      ? current.filter((q) => q !== qual)
+      : [...current, qual];
+    handleInputChange("qualifications", updated);
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const updateData = {
+        fullname: editedProfile.fullname,
+        email: editedProfile.email,
+        phone: editedProfile.phone,
+        experience: editedProfile.experience,
+        about: editedProfile.about,
+        specialization: editedProfile.specialization,
+        qualifications: editedProfile.qualifications,
+        address: editedProfile.address,
+        isAvailable: editedProfile.isAvailable,
+      };
+
+      const response = await updateDoctorProfile(updateData);
+      console.log("response in page : ", response);
+      if (response.success) {
+        setIsEditing(false);
+        setProfile(editedProfile);
+        setUser({ ...user, user: editedProfile });
+        toast.success("Profile updated successfully!");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error(error?.message || "Failed to update profile");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleProfilePicChange = (e) => {
@@ -108,7 +114,7 @@ export default function DoctorProfile() {
         return;
       }
       if (file.size > 5 * 1024 * 1024) {
-        toast.error("Profile picture must be less than 5MB");
+        toast.error("Image must be less than 5MB");
         return;
       }
       setProfilePicFile(file);
@@ -117,175 +123,160 @@ export default function DoctorProfile() {
 
   const handleProfilePicUpdate = async () => {
     if (!profilePicFile) return;
-
     setIsUpdatingPic(true);
     try {
       const formData = new FormData();
       formData.append("ProfilePicture", profilePicFile);
-
       const response = await API.post("/doctors/updateProfilePic", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+        headers: { "Content-Type": "multipart/form-data" },
       });
-
       if (response.data.success) {
+        const updatedPic = response.data.data.profilePic;
         const updatedUser = {
           ...user,
-          user: { ...user.user, profilePic: response.data.data.profilePic },
+          user: { ...user.user, profilePic: updatedPic },
         };
         setUser(updatedUser);
-        setProfile((prev) => ({
-          ...prev,
-          profilePic: response.data.data.profilePic,
-        }));
-        setEditedProfile((prev) => ({
-          ...prev,
-          profilePic: response.data.data.profilePic,
-        }));
-        setProfilePicFile(null);
+        setProfile((prev) => ({ ...prev, profilePic: updatedPic }));
+        setEditedProfile((prev) => ({ ...prev, profilePic: updatedPic }));
         toast.success("Profile picture updated successfully!");
+        setProfilePicFile(null);
       }
     } catch (error) {
-      console.error("Error updating profile picture:", error);
       toast.error(
-        error.response?.data?.message || "Failed to update profile picture"
+        response?.data?.message || "Failed to update profile picture"
       );
     } finally {
       setIsUpdatingPic(false);
     }
   };
 
+  const formatDate = (date) =>
+    date
+      ? new Date(date).toLocaleDateString("en-IN", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        })
+      : "-";
+
+  const getStatusBadge = (status) => {
+    const styles = {
+      approved: "bg-green-100 text-green-700 border-green-200",
+      pending: "bg-yellow-100 text-yellow-700 border-yellow-200",
+      rejected: "bg-red-100 text-red-700 border-red-200",
+    };
+    return styles[status] || styles.pending;
+  };
+
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mx-auto mb-4"></div>
-          <p className="text-lg font-medium text-gray-700">
-            Loading profile...
-          </p>
+          <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600 font-medium">Loading profile...</p>
         </div>
       </div>
     );
   }
 
-  const formatDate = (dateString) => {
-    if (!dateString) return "-";
-    return new Date(dateString).toLocaleDateString("en-IN", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "approved":
-        return "bg-green-500/20 text-green-200";
-      case "pending":
-        return "bg-yellow-500/20 text-yellow-200";
-      case "rejected":
-        return "bg-red-500/20 text-red-200";
-      case "suspended":
-        return "bg-gray-500/20 text-gray-200";
-      default:
-        return "bg-gray-500/20 text-gray-200";
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 py-8 px-4">
-      <div className="max-w-7xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 overflow-hidden">
-          <div className="relative bg-gradient-to-r from-indigo-600 via-blue-600 to-purple-600 px-8 py-8">
-            <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex items-center gap-6 mb-6 lg:mb-0">
-                <div className="relative">
-                  <div className="bg-white/20 p-6 rounded-2xl backdrop-blur-sm shadow-lg">
-                    {profile?.profilePic ? (
-                      <img
-                        src={profile?.profilePic}
-                        alt="Profile"
-                        className="w-16 h-16 rounded-xl object-cover"
-                      />
-                    ) : (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-6 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header Card */}
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 sm:px-8 py-8">
+            <div className="flex flex-col lg:flex-row items-start lg:items-center gap-6 lg:gap-8">
+              {/* Profile Picture Section */}
+              <div className="relative flex-shrink-0">
+                <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden border-4 border-white/30 shadow-xl bg-white/10">
+                  {profile?.profilePic ? (
+                    <img
+                      src={profile.profilePic}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-white/20">
                       <User className="w-16 h-16 text-white" />
-                    )}
-                  </div>
-                  <div className="absolute -bottom-2 -right-2 bg-green-500 text-white p-2 rounded-full shadow-lg">
-                    <Shield className="w-4 h-4" />
-                  </div>
-
-                  {/* Profile Picture Upload */}
-                  <div className="mt-4">
-                    <label className="cursor-pointer bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-xl hover:bg-white/30 transition-all duration-300 flex items-center gap-2 text-sm">
-                      <Camera className="w-4 h-4" />
-                      Change Photo
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleProfilePicChange}
-                        className="hidden"
-                      />
-                    </label>
-                    {profilePicFile && (
-                      <button
-                        onClick={handleProfilePicUpdate}
-                        disabled={isUpdatingPic}
-                        className="mt-2 bg-green-500 text-white px-3 py-1 rounded-lg text-xs hover:bg-green-600 transition-colors disabled:opacity-50"
-                      >
-                        {isUpdatingPic ? "Updating..." : "Update Photo"}
-                      </button>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <h1 className="text-4xl font-bold text-white mb-2">
+                <label className="absolute bottom-0 right-0 bg-blue-500 hover:bg-blue-600 text-white p-2.5 rounded-full cursor-pointer shadow-lg transition-colors">
+                  <Camera size={18} />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleProfilePicChange}
+                  />
+                </label>
+                {profilePicFile && (
+                  <button
+                    onClick={handleProfilePicUpdate}
+                    disabled={isUpdatingPic}
+                    className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-full text-xs font-medium shadow-lg transition-colors disabled:opacity-50"
+                  >
+                    {isUpdatingPic ? (
+                      <Loader2 className="w-3 h-3 animate-spin inline" />
+                    ) : (
+                      "Update"
+                    )}
+                  </button>
+                )}
+              </div>
+
+              {/* Doctor Info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start gap-3 mb-2">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-white truncate">
                     Dr. {profile?.fullname || "Doctor"}
                   </h1>
-                  <p className="text-blue-100 text-lg">
-                    {profile?.specialization?.join(", ") || "Specialist Doctor"}
-                  </p>
-                  <div className="flex items-center gap-4 mt-2">
-                    <span className="text-blue-100 text-sm">
-                      Member since {formatDate(profile?.createdAt)}
-                    </span>
-                    <span
-                      className={`text-sm px-3 py-1 rounded-full ${getStatusColor(
-                        profile?.status
-                      )}`}
-                    >
-                      {profile?.status || "pending"}
-                    </span>
-                    <span
-                      className={`text-sm px-3 py-1 rounded-full ${
-                        profile?.isAvailable
-                          ? "bg-green-500/20 text-green-200"
-                          : "bg-red-500/20 text-red-200"
-                      }`}
-                    >
-                      {profile?.isAvailable ? "Available" : "Unavailable"}
-                    </span>
-                  </div>
+                  <Shield className="w-6 h-6 text-green-300 flex-shrink-0 mt-1" />
+                </div>
+                <p className="text-blue-100 text-base sm:text-lg mb-3">
+                  {profile?.specialization?.join(", ") || "Specialist Doctor"}
+                </p>
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                  <span className="text-blue-100 text-sm">
+                    Member since {formatDate(profile?.createdAt)}
+                  </span>
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusBadge(
+                      profile?.status
+                    )}`}
+                  >
+                    {profile?.status || "Pending"}
+                  </span>
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs font-semibold border ${
+                      profile?.isAvailable
+                        ? "bg-green-100 text-green-700 border-green-200"
+                        : "bg-red-100 text-red-700 border-red-200"
+                    }`}
+                  >
+                    {profile?.isAvailable ? "Available" : "Unavailable"}
+                  </span>
                 </div>
               </div>
 
+              {/* Action Buttons */}
               {!isEditing && (
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
                   <button
                     onClick={() => downloadDoctorReportPdf()}
-                    className="group bg-white/20 backdrop-blur-sm text-white px-6 py-3 rounded-2xl hover:bg-white/30 transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center gap-2"
+                    className="flex items-center justify-center gap-2 px-5 py-2.5 bg-white/20 hover:bg-white/30 text-white rounded-xl transition-all duration-200 backdrop-blur-sm font-medium"
                   >
-                    <FileText className="h-5 w-5" />
-                    <span className="font-semibold">Download Summary PDF</span>
+                    <FileText size={18} />
+                    <span className="hidden sm:inline">Download PDF</span>
+                    <span className="sm:hidden">PDF</span>
                   </button>
                   <button
                     onClick={handleEdit}
-                    className="group bg-white/20 backdrop-blur-sm text-white px-6 py-3 rounded-2xl hover:bg-white/30 transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center gap-2"
+                    className="flex items-center justify-center gap-2 px-5 py-2.5 bg-white text-blue-600 rounded-xl hover:bg-blue-50 transition-all duration-200 font-medium shadow-lg"
                   >
-                    <Edit className="h-5 w-5" />
-                    <span className="font-semibold">Edit Profile</span>
+                    <Edit size={18} />
+                    Edit Profile
                   </button>
                 </div>
               )}
@@ -293,435 +284,398 @@ export default function DoctorProfile() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-          {/* Left Column - Personal Info */}
-          <div className="xl:col-span-2">
-            <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 p-8 space-y-8">
-              <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-                <Info className="w-6 h-6 text-indigo-600" />
-                Doctor Information
-              </h2>
-
-              {/* Basic Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Full Name */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 uppercase tracking-wide mb-2">
-                    Full Name *
-                  </label>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      value={editedProfile?.fullname || ""}
-                      onChange={(e) =>
-                        handleInputChange("fullname", e.target.value)
-                      }
-                      className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
-                    />
-                  ) : (
-                    <p className="bg-gray-50 rounded-xl px-4 py-3 border border-gray-200 font-medium">
-                      {profile?.fullname || "-"}
-                    </p>
-                  )}
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          {/* Left Column - Personal Information */}
+          <div className="xl:col-span-2 space-y-6">
+            {/* Personal Info Card */}
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Info className="w-5 h-5 text-blue-600" />
                 </div>
+                <h2 className="text-xl font-bold text-gray-800">
+                  Personal Information
+                </h2>
+              </div>
 
-                {/* Email */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 uppercase tracking-wide mb-2">
-                    Email *
-                  </label>
-                  {isEditing ? (
-                    <input
-                      type="email"
-                      value={editedProfile?.email || ""}
-                      onChange={(e) =>
-                        handleInputChange("email", e.target.value)
-                      }
-                      className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
-                    />
-                  ) : (
-                    <p className="bg-gray-50 rounded-xl px-4 py-3 border border-gray-200 font-medium flex items-center gap-2">
+              <div className="space-y-6">
+                {/* Basic Info Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Full Name */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Full Name <span className="text-red-500">*</span>
+                    </label>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={editedProfile?.fullname || ""}
+                        onChange={(e) =>
+                          handleInputChange("fullname", e.target.value)
+                        }
+                        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                        placeholder="Enter full name"
+                      />
+                    ) : (
+                      <div className="border border-gray-200 rounded-lg px-4 py-2.5 bg-gray-50 font-medium text-gray-800">
+                        {profile?.fullname || "-"}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Email - Read Only */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Email Address
+                    </label>
+                    <div className="border border-gray-200 rounded-lg px-4 py-2.5 bg-gray-100 flex items-center gap-2">
                       <Mail className="w-4 h-4 text-gray-500" />
-                      {profile?.email || "-"}
-                    </p>
-                  )}
+                      <span className="text-gray-700 truncate">
+                        {profile?.email || "-"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Phone */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Phone Number
+                    </label>
+                    {isEditing ? (
+                      <input
+                        type="tel"
+                        value={editedProfile?.phone || ""}
+                        onChange={(e) =>
+                          handleInputChange("phone", e.target.value)
+                        }
+                        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                        placeholder="+91 XXXXX XXXXX"
+                      />
+                    ) : (
+                      <div className="border border-gray-200 rounded-lg px-4 py-2.5 bg-gray-50 flex items-center gap-2">
+                        <Phone className="w-4 h-4 text-gray-500" />
+                        <span className="text-gray-800">
+                          {profile?.phone || "-"}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Experience */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Experience (Years)
+                    </label>
+                    {isEditing ? (
+                      <input
+                        type="number"
+                        min="0"
+                        value={editedProfile?.experience || ""}
+                        onChange={(e) =>
+                          handleInputChange(
+                            "experience",
+                            parseInt(e.target.value) || 0
+                          )
+                        }
+                        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                        placeholder="Years of experience"
+                      />
+                    ) : (
+                      <div className="border border-gray-200 rounded-lg px-4 py-2.5 bg-gray-50 flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-gray-500" />
+                        <span className="text-gray-800">
+                          {profile?.experience || 0} years
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                {/* Phone */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 uppercase tracking-wide mb-2">
-                    Phone
-                  </label>
-                  {isEditing ? (
-                    <input
-                      type="tel"
-                      value={editedProfile?.phone || ""}
-                      onChange={(e) =>
-                        handleInputChange("phone", e.target.value)
-                      }
-                      className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  ) : (
-                    <p className="bg-gray-50 rounded-xl px-4 py-3 border border-gray-200 font-medium flex items-center gap-2">
-                      <Phone className="w-4 h-4 text-gray-500" />
-                      {profile?.phone || "-"}
-                    </p>
-                  )}
-                </div>
-
-                {/* Experience */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 uppercase tracking-wide mb-2">
-                    Experience (Years)
-                  </label>
-                  {isEditing ? (
-                    <input
-                      type="number"
-                      min="0"
-                      value={editedProfile?.experience || ""}
-                      onChange={(e) =>
-                        handleInputChange(
-                          "experience",
-                          parseInt(e.target.value)
-                        )
-                      }
-                      className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  ) : (
-                    <p className="bg-gray-50 rounded-xl px-4 py-3 border border-gray-200 font-medium flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-gray-500" />
-                      {profile?.experience || 0} years
-                    </p>
-                  )}
-                </div>
-
-                {/* Availability */}
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-semibold text-gray-700 uppercase tracking-wide mb-2">
+                {/* Availability Toggle */}
+                <div className="border-t border-gray-200 pt-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
                     Availability Status
                   </label>
                   {isEditing ? (
-                    <select
-                      value={editedProfile?.isAvailable || false}
-                      onChange={(e) =>
-                        handleInputChange(
-                          "isAvailable",
-                          e.target.value === "true"
-                        )
-                      }
-                      className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value={true}>Available</option>
-                      <option value={false}>Unavailable</option>
-                    </select>
+                    <div className="flex items-center gap-4">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleInputChange(
+                            "isAvailable",
+                            !editedProfile?.isAvailable
+                          )
+                        }
+                        className={`relative inline-flex h-8 w-16 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                          editedProfile?.isAvailable
+                            ? "bg-green-500"
+                            : "bg-gray-300"
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-lg transition-transform ${
+                            editedProfile?.isAvailable
+                              ? "translate-x-9"
+                              : "translate-x-1"
+                          }`}
+                        />
+                      </button>
+                      <span className="text-sm font-medium text-gray-700">
+                        {editedProfile?.isAvailable
+                          ? "Available"
+                          : "Unavailable"}
+                      </span>
+                    </div>
                   ) : (
-                    <p
-                      className={`rounded-xl px-4 py-3 border font-medium flex items-center gap-2 ${
+                    <div
+                      className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg border ${
                         profile?.isAvailable
-                          ? "bg-green-50 border-green-200 text-green-800"
-                          : "bg-red-50 border-red-200 text-red-800"
+                          ? "bg-green-50 border-green-200 text-green-700"
+                          : "bg-red-50 border-red-200 text-red-700"
                       }`}
                     >
                       <UserCheck className="w-4 h-4" />
-                      {profile?.isAvailable
-                        ? "Available for appointments"
-                        : "Currently unavailable"}
-                    </p>
+                      <span className="font-medium">
+                        {profile?.isAvailable
+                          ? "Available for appointments"
+                          : "Currently unavailable"}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* About */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    About <span className="text-red-500">*</span>
+                  </label>
+                  {isEditing ? (
+                    <textarea
+                      value={editedProfile?.about || ""}
+                      onChange={(e) =>
+                        handleInputChange("about", e.target.value)
+                      }
+                      className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none"
+                      rows={4}
+                      placeholder="Write about yourself, your expertise, and experience..."
+                    />
+                  ) : (
+                    <div className="border border-gray-200 rounded-lg px-4 py-3 bg-gray-50 text-gray-800 whitespace-pre-wrap">
+                      {profile?.about || "No information provided"}
+                    </div>
                   )}
                 </div>
               </div>
+            </div>
 
-              {/* About */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 uppercase tracking-wide mb-2">
-                  About *
-                </label>
-                {isEditing ? (
-                  <textarea
-                    value={editedProfile?.about || ""}
-                    onChange={(e) => handleInputChange("about", e.target.value)}
-                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    rows="4"
-                    required
-                  />
-                ) : (
-                  <p className="bg-gray-50 rounded-xl px-4 py-3 border border-gray-200 font-medium">
-                    {profile?.about || "-"}
-                  </p>
-                )}
+            {/* Address Card */}
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <MapPin className="w-5 h-5 text-purple-600" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-800">
+                  Address Information
+                </h3>
               </div>
 
-              {/* Address */}
-              <div>
-                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <MapPin className="w-5 h-5 text-purple-600" />
-                  Address
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Street
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {["street", "city", "state", "zip", "country"].map((field) => (
+                  <div
+                    key={field}
+                    className={field === "street" ? "sm:col-span-2" : ""}
+                  >
+                    <label className="block text-sm font-medium text-gray-700 mb-2 capitalize">
+                      {field}
                     </label>
                     {isEditing ? (
                       <input
                         type="text"
-                        value={editedProfile?.address?.street || ""}
+                        value={editedProfile?.address?.[field] || ""}
                         onChange={(e) =>
-                          handleAddressChange("street", e.target.value)
+                          handleAddressChange(field, e.target.value)
                         }
-                        className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                        placeholder={`Enter ${field}`}
                       />
                     ) : (
-                      <p className="bg-gray-50 rounded-xl px-4 py-3 border border-gray-200">
-                        {profile?.address?.street || "-"}
-                      </p>
+                      <div className="border border-gray-200 rounded-lg px-4 py-2.5 bg-gray-50 text-gray-800">
+                        {profile?.address?.[field] || "-"}
+                      </div>
                     )}
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      City
-                    </label>
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        value={editedProfile?.address?.city || ""}
-                        onChange={(e) =>
-                          handleAddressChange("city", e.target.value)
-                        }
-                        className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    ) : (
-                      <p className="bg-gray-50 rounded-xl px-4 py-3 border border-gray-200">
-                        {profile?.address?.city || "-"}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      State
-                    </label>
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        value={editedProfile?.address?.state || "Karnataka"}
-                        onChange={(e) =>
-                          handleAddressChange("state", e.target.value)
-                        }
-                        className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    ) : (
-                      <p className="bg-gray-50 rounded-xl px-4 py-3 border border-gray-200">
-                        {profile?.address?.state || "Karnataka"}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      ZIP Code
-                    </label>
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        value={editedProfile?.address?.zip || ""}
-                        onChange={(e) =>
-                          handleAddressChange("zip", e.target.value)
-                        }
-                        className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    ) : (
-                      <p className="bg-gray-50 rounded-xl px-4 py-3 border border-gray-200">
-                        {profile?.address?.zip || "-"}
-                      </p>
-                    )}
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Country
-                    </label>
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        value={editedProfile?.address?.country || "India"}
-                        onChange={(e) =>
-                          handleAddressChange("country", e.target.value)
-                        }
-                        className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    ) : (
-                      <p className="bg-gray-50 rounded-xl px-4 py-3 border border-gray-200">
-                        {profile?.address?.country || "India"}
-                      </p>
-                    )}
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
           </div>
 
           {/* Right Column - Professional Info */}
           <div className="xl:col-span-1 space-y-6">
-            {/* Status Information */}
-            <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <FileText className="w-5 h-5 text-gray-600" />
-                Status Information
-              </h3>
+            {/* Status Card */}
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-gray-100 rounded-lg">
+                  <FileText className="w-5 h-5 text-gray-600" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-800">
+                  Account Status
+                </h3>
+              </div>
+
               <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium text-gray-600">
-                    Status:
-                  </span>
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <span className="text-sm text-gray-600">Status</span>
                   <span
-                    className={`text-sm px-2 py-1 rounded-full ${
-                      profile?.status === "approved"
-                        ? "bg-green-100 text-green-800"
-                        : profile?.status === "pending"
-                        ? "bg-yellow-100 text-yellow-800"
-                        : profile?.status === "rejected"
-                        ? "bg-red-100 text-red-800"
-                        : "bg-gray-100 text-gray-800"
-                    }`}
+                    className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusBadge(
+                      profile?.status
+                    )}`}
                   >
-                    {profile?.status || "pending"}
+                    {profile?.status || "Pending"}
                   </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium text-gray-600">
-                    Approved:
-                  </span>
-                  <span
-                    className={`text-sm ${
-                      profile?.isApproved ? "text-green-600" : "text-red-600"
-                    }`}
-                  >
-                    {profile?.isApproved ? "Yes" : "No"}
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <span className="text-sm text-gray-600">Approved</span>
+                  {profile?.isApproved ? (
+                    <CheckCircle2 className="w-5 h-5 text-green-500" />
+                  ) : (
+                    <AlertCircle className="w-5 h-5 text-yellow-500" />
+                  )}
+                </div>
+                <div className="flex justify-between items-center py-2">
+                  <span className="text-sm text-gray-600">Total Patients</span>
+                  <span className="text-lg font-bold text-blue-600">
+                    {profile?.patients?.length || 0}
                   </span>
                 </div>
-                {profile?.approvedAt && (
-                  <div className="flex justify-between">
-                    <span className="text-sm font-medium text-gray-600">
-                      Approved At:
-                    </span>
-                    <span className="text-sm text-gray-800">
-                      {formatDate(profile.approvedAt)}
-                    </span>
-                  </div>
-                )}
-                {profile?.rejectionReason && (
-                  <div>
-                    <span className="text-sm font-medium text-gray-600">
-                      Rejection Reason:
-                    </span>
-                    <p className="text-sm text-red-600 mt-1">
-                      {profile.rejectionReason}
-                    </p>
-                  </div>
-                )}
               </div>
             </div>
 
-            {/* Specialization */}
-            <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <Briefcase className="w-5 h-5 text-blue-600" />
-                Specialization *
-              </h3>
+            {/* Specialization Card */}
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Briefcase className="w-5 h-5 text-blue-600" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-800">
+                  Specialization <span className="text-red-500">*</span>
+                </h3>
+              </div>
+
               {isEditing ? (
-                <textarea
-                  value={editedProfile?.specialization?.join(", ") || ""}
-                  onChange={(e) =>
-                    handleArrayChange("specialization", e.target.value)
-                  }
-                  placeholder="Enter specializations separated by commas"
-                  className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  rows="3"
-                />
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {SPECIALIZATION.map((spec) => (
+                    <label
+                      key={spec}
+                      className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:bg-blue-50 cursor-pointer transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={editedProfile?.specialization?.includes(spec)}
+                        onChange={() => handleSpecializationToggle(spec)}
+                        className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700">{spec}</span>
+                    </label>
+                  ))}
+                </div>
               ) : (
                 <div className="space-y-2">
                   {profile?.specialization?.length ? (
-                    profile?.specialization.map((s, i) => (
-                      <p
+                    profile.specialization.map((s, i) => (
+                      <div
                         key={i}
-                        className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-2 text-blue-800 font-medium"
+                        className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2 text-blue-700 font-medium"
                       >
                         {s}
-                      </p>
+                      </div>
                     ))
                   ) : (
-                    <p className="text-gray-500 italic">Not specified</p>
+                    <p className="text-gray-500 italic text-sm">
+                      Not specified
+                    </p>
                   )}
                 </div>
               )}
             </div>
 
-            {/* Qualifications */}
-            <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-indigo-600" />
-                Qualifications *
-              </h3>
+            {/* Qualifications Card */}
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-indigo-100 rounded-lg">
+                  <BookOpen className="w-5 h-5 text-indigo-600" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-800">
+                  Qualifications <span className="text-red-500">*</span>
+                </h3>
+              </div>
+
               {isEditing ? (
-                <textarea
-                  value={editedProfile?.qualifications?.join(", ") || ""}
-                  onChange={(e) =>
-                    handleArrayChange("qualifications", e.target.value)
-                  }
-                  placeholder="Enter qualifications separated by commas"
-                  className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  rows="3"
-                />
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {QUALIFICATIONS.map((qual) => (
+                    <label
+                      key={qual}
+                      className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:bg-indigo-50 cursor-pointer transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={editedProfile?.qualifications?.includes(qual)}
+                        onChange={() => handleQualificationToggle(qual)}
+                        className="w-4 h-4 text-indigo-600 rounded focus:ring-2 focus:ring-indigo-500"
+                      />
+                      <span className="text-sm text-gray-700">{qual}</span>
+                    </label>
+                  ))}
+                </div>
               ) : (
                 <div className="space-y-2">
                   {profile?.qualifications?.length ? (
-                    profile?.qualifications.map((q, i) => (
-                      <p
+                    profile.qualifications.map((q, i) => (
+                      <div
                         key={i}
-                        className="bg-indigo-50 border border-indigo-200 rounded-xl px-4 py-2 text-indigo-800 font-medium"
+                        className="bg-indigo-50 border border-indigo-200 rounded-lg px-4 py-2 text-indigo-700 font-medium"
                       >
                         {q}
-                      </p>
+                      </div>
                     ))
                   ) : (
-                    <p className="text-gray-500 italic">Not specified</p>
+                    <p className="text-gray-500 italic text-sm">
+                      Not specified
+                    </p>
                   )}
                 </div>
               )}
-            </div>
-
-            {/* Patient Count */}
-            <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <UserCheck className="w-5 h-5 text-green-600" />
-                Patients
-              </h3>
-              <div className="text-center">
-                <p className="text-3xl font-bold text-green-600">
-                  {profile?.patients?.length || 0}
-                </p>
-                <p className="text-sm text-gray-500">Total Patients</p>
-              </div>
             </div>
           </div>
         </div>
 
         {/* Action Buttons */}
         {isEditing && (
-          <div className="flex justify-end gap-4">
+          <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
             <button
               onClick={handleCancel}
-              className="bg-gray-200 text-gray-700 px-8 py-4 rounded-2xl hover:bg-gray-300 transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center gap-2 font-semibold"
+              disabled={isSaving}
+              className="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              <X className="h-5 w-5" />
+              <X size={18} />
               Cancel
             </button>
             <button
               onClick={handleSave}
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-4 rounded-2xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center gap-2 font-semibold"
+              disabled={isSaving}
+              className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg"
             >
-              <Save className="h-5 w-5" />
-              Save Changes
+              {isSaving ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save size={18} />
+                  Save Changes
+                </>
+              )}
             </button>
           </div>
         )}

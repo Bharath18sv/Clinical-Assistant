@@ -668,15 +668,15 @@ const getDoctorById = asyncHandler(async (req, res) => {
 });
 
 const updateInfo = asyncHandler(async (req, res) => {
+  console.log("req.body doctor profile update : ", req.body);
   const {
     fullname,
     email,
+    phone,
     experience,
     about,
     specialization,
     qualifications,
-    age,
-    phone,
     address,
     isAvailable,
   } = req.body;
@@ -688,7 +688,6 @@ const updateInfo = asyncHandler(async (req, res) => {
     !about ||
     !specialization ||
     !qualifications ||
-    !age ||
     !phone ||
     !address ||
     !isAvailable
@@ -711,7 +710,6 @@ const updateInfo = asyncHandler(async (req, res) => {
         about,
         specialization,
         qualifications,
-        age,
         phone,
         address,
         isAvailable,

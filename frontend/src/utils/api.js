@@ -71,6 +71,18 @@ export const downloadMyPatientReportPdf = async () => {
   triggerBrowserDownload(blob, `my-health-report.pdf`);
 };
 
+// doctor apis:
+export const updateDoctorProfile = async (data) => {
+  try {
+    const response = await API.put(`/doctors/updateInfo`, data);
+    console.log("doctor profile update response : ", response);
+    return response?.data;
+  } catch (error) {
+    console.error("❌ Error:", error);
+    return null;
+  }
+};
+
 export const fetchDoctorActiveAppointments = async () => {
   const { data } = await API.get(`/appointments/active`);
   return data?.data || [];
@@ -133,38 +145,19 @@ export const registerPatient = async (data) => {
 };
 
 export const updatePatientProfile = async (data) => {
-  const formData = new FormData();
+  const payload = {
+    fullname: data.fullname,
+    age: data.age,
+    phone: data.phone,
+    address: data.address,
+    chronicConditions: data.chronicConditions?.map((c) => c.value || c),
+    allergies: data.allergies?.map((a) => a.value || a),
+    symptoms: data.symptoms?.map((s) => s.value || s),
+  };
 
-  formData.append("fullname", data.fullname);
-  formData.append("email", data.email);
-  if (data.password) {
-    formData.append("password", data.password);
-  }
-  formData.append("phone", data.phone);
-  formData.append("age", data.age);
-  formData.append("gender", data.gender);
-  formData.append("address[street]", data.address.street);
-  formData.append("address[city]", data.address.city);
-  formData.append("address[state]", data.address.state);
-  formData.append("address[zip]", data.address.zip);
-  formData.append("address[country]", data.address.country);
-  formData.append("chronicConditions", data.chronicConditions);
-  formData.append("allergies", data.allergies);
-  formData.append("symptoms", data.symptoms);
-
-  data.chronicConditions?.forEach((c) =>
-    formData.append("chronicConditions[]", c.value || c)
-  );
-  data.allergies?.forEach((a) => formData.append("allergies[]", a.value || a));
-  data.symptoms?.forEach((s) => formData.append("symptoms[]", s.value || s));
-
-  // File
-  if (data.profilePic) {
-    formData.append("profilePic", data.profilePic);
-  }
-
+  console.log("data in api.js before update:", data);
   try {
-    const updatedPatient = await API.put("/patients/profile", formData);
+    const updatedPatient = await API.put("/patients/updateInfo", payload);
     console.log("updated patient in api.js: ", updatedPatient);
     return updatedPatient;
   } catch (error) {

@@ -338,10 +338,48 @@ const updatePassword = asyncHandler(async (req, res) => {
 });
 
 const updateInfo = asyncHandler(async (req, res) => {
-  const { fullname, gender, age, phone, address } = req.body;
+  console.log("Request body for updateInfo:", req.body);
+  const {
+    fullname,
+    age,
+    phone,
+    address,
+    allergies,
+    chronicConditions,
+    symptoms,
+  } = req.body;
 
-  if (!fullname || !gender || !age || !phone || !address) {
+  if (
+    !fullname ||
+    !age ||
+    !phone ||
+    !address ||
+    !address.street ||
+    !address.city ||
+    !address.state ||
+    !address.zip ||
+    !address.country ||
+    !allergies ||
+    !chronicConditions ||
+    !symptoms
+  ) {
     throw new ApiError(400, "All fields are required");
+  }
+
+  if (
+    phone.length < 10 ||
+    phone.length > 15 ||
+    typeof phone !== "string" ||
+    !phone.trim()
+  ) {
+    throw new ApiError(400, "Phone number is invalid");
+  }
+
+  if (
+    age &&
+    (isNaN(parseInt(age)) || parseInt(age) < 1 || parseInt(age) > 120)
+  ) {
+    throw new ApiError(400, "Age is invalid");
   }
 
   const patient = await Patient.findById(req.user?._id); //we can use findbyandUpdate also.
@@ -354,7 +392,6 @@ const updateInfo = asyncHandler(async (req, res) => {
     {
       $set: {
         fullname,
-        gender,
         age,
         phone,
         address,

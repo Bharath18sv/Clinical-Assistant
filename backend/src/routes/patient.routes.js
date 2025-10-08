@@ -28,7 +28,10 @@ router.route("/refreshToken").post(refreshAccessToken);
 
 //secured routes
 router.route("/logout").post(verifyJwt, logoutPatient);
-router.route("/updateInfo").post(verifyJwt, updateInfo);
+
+// profile update routes
+router.route("/updateInfo").put(verifyJwt, updateInfo);
+
 router.route("/updatePassword").post(verifyJwt, updatePassword);
 router
   .route("/updateProfilePic")

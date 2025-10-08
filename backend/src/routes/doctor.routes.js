@@ -38,7 +38,7 @@ router
   .route("/registerPatient")
   .post(verifyJwt, upload.single("profilePic"), addPatient);
 
-router.route("/updateInfo").post(verifyJwt, updateInfo);
+router.route("/updateInfo").put(verifyJwt, updateInfo);
 
 //get patient by id
 router.route("/patients/:patientId").get(verifyJwt, getPatientById);
