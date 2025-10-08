@@ -9,6 +9,10 @@ import { Patient } from "../models/patient.models.js";
 import { Doctor } from "../models/doctor.models.js";
 import { Appointment } from "../models/appointments.models.js";
 import jwt from "jsonwebtoken";
+import PDFDocument from "pdfkit";
+import { SymptomLog } from "../models/symptomLogs.models.js";
+import { Prescription } from "../models/prescription.models.js";
+import { Vitals } from "../models/vitals.models.js";
 
 const registerPatient = asyncHandler(async (req, res) => {
   console.log("req.body data: ", req.body);
@@ -116,7 +120,6 @@ const registerPatient = asyncHandler(async (req, res) => {
       allergies: parsedAllergies,
       symptoms: parsedSymptoms,
       doctorId: doctorId || null,
-
     });
 
     console.log("New patient created:", newPatient.fullname);
@@ -558,6 +561,114 @@ const getCompletedAppointments = asyncHandler(async (req, res) => {
     );
 });
 
+// PDF: Generate report for logged-in patient
+const generateMyReportPdf = asyncHandler(async (req, res) => {
+  const patientId = req.user?._id;
+  if (!patientId) throw new ApiError(401, "Unauthorized");
+
+  const patient = await Patient.findById(patientId).select(
+    "-password -refreshToken"
+  );
+  if (!patient) throw new ApiError(404, "Patient not found");
+
+  const [symptomLogs, prescriptions, vitals, appointments] = await Promise.all([
+    SymptomLog.find({ patientId }).sort({ date: -1 }),
+    Prescription.find({ patientId }).sort({ date: -1 }),
+    Vitals.find({ patient: patientId }).sort({ createdAt: -1 }),
+    Appointment.find({ patientId }).sort({ scheduledAt: -1 }),
+  ]);
+
+  const doc = new PDFDocument({ margin: 50 });
+  const filename = `my-health-report.pdf`;
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Content-Disposition", `attachment; filename=\"${filename}\"`);
+
+  doc.pipe(res);
+
+  doc.fontSize(20).text("My Health Report", { align: "center" });
+  doc.moveDown();
+
+  doc.fontSize(12).text(`Name: ${patient.fullname}`);
+  doc.text(`Email: ${patient.email}`);
+  doc.text(`Gender: ${patient.gender}`);
+  doc.text(`Age: ${patient.age}`);
+  doc.text(`Phone: ${patient.phone}`);
+  const addr = patient.address || {};
+  doc.text(
+    `Address: ${addr.street || ""}, ${addr.city || ""}, ${addr.state || ""} ${
+      addr.zip || ""
+    }, ${addr.country || ""}`
+  );
+  doc.moveDown();
+
+  const listOrNA = (arr) => (arr && arr.length ? arr.join(", ") : "N/A");
+  doc.text(`Allergies: ${listOrNA(patient.allergies)}`);
+  doc.text(`Chronic Conditions: ${listOrNA(patient.chronicConditions)}`);
+  doc.text(`Symptoms: ${listOrNA(patient.symptoms)}`);
+  doc.moveDown();
+
+  doc.fontSize(14).text("Appointments", { underline: true });
+  if (!appointments.length) {
+    doc.fontSize(12).text("No appointments found");
+  } else {
+    appointments.forEach((a) => {
+      doc
+        .fontSize(12)
+        .text(
+          `- ${new Date(a.scheduledAt).toLocaleString()} | ${a.status} | ${
+            a.reason || ""
+          }`
+        );
+    });
+  }
+  doc.moveDown();
+
+  doc.fontSize(14).text("Prescriptions", { underline: true });
+  if (!prescriptions.length) {
+    doc.fontSize(12).text("No prescriptions found");
+  } else {
+    prescriptions.forEach((p) => {
+      doc.fontSize(12).text(`Date: ${new Date(p.date).toLocaleDateString()}`);
+      const meds = (p.medications || []).map((m) => m.name).join(", ");
+      doc.text(`Medications: ${meds || "N/A"}`);
+      doc.moveDown(0.5);
+    });
+  }
+
+  doc.fontSize(14).text("Vitals", { underline: true });
+  if (!vitals.length) {
+    doc.fontSize(12).text("No vitals found");
+  } else {
+    vitals.forEach((v) => {
+      doc
+        .fontSize(12)
+        .text(
+          `- ${new Date(v.createdAt).toLocaleString()} | BP: ${
+            v.bloodPressure || "N/A"
+          } | Sugar: ${v.sugar || "N/A"}`
+        );
+    });
+  }
+
+  doc.addPage();
+  doc.fontSize(14).text("Symptom Logs", { underline: true });
+  if (!symptomLogs.length) {
+    doc.fontSize(12).text("No symptom logs found");
+  } else {
+    symptomLogs.forEach((s) => {
+      doc
+        .fontSize(12)
+        .text(
+          `- ${new Date(s.date).toLocaleDateString()} | ${listOrNA(
+            s.symptoms
+          )} | Notes: ${s.notes || ""}`
+        );
+    });
+  }
+
+  doc.end();
+});
+
 export {
   registerPatient,
   loginPatient,
@@ -573,4 +684,5 @@ export {
   getCompletedAppointments,
   getMyDoctors,
   getMyAppointments,
+  generateMyReportPdf,
 };

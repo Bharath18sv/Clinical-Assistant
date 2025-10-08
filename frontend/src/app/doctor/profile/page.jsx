@@ -24,6 +24,7 @@ import {
 import { AuthContext } from "@/context/AuthContext";
 import API from "@/utils/api";
 import toast from "react-hot-toast";
+import { downloadDoctorReportPdf } from "@/utils/api";
 
 export default function DoctorProfile() {
   const { user, authLoading, setUser } = useContext(AuthContext);
@@ -271,13 +272,22 @@ export default function DoctorProfile() {
               </div>
 
               {!isEditing && (
-                <button
-                  onClick={handleEdit}
-                  className="group bg-white/20 backdrop-blur-sm text-white px-6 py-3 rounded-2xl hover:bg-white/30 transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center gap-2"
-                >
-                  <Edit className="h-5 w-5" />
-                  <span className="font-semibold">Edit Profile</span>
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => downloadDoctorReportPdf()}
+                    className="group bg-white/20 backdrop-blur-sm text-white px-6 py-3 rounded-2xl hover:bg-white/30 transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center gap-2"
+                  >
+                    <FileText className="h-5 w-5" />
+                    <span className="font-semibold">Download Summary PDF</span>
+                  </button>
+                  <button
+                    onClick={handleEdit}
+                    className="group bg-white/20 backdrop-blur-sm text-white px-6 py-3 rounded-2xl hover:bg-white/30 transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center gap-2"
+                  >
+                    <Edit className="h-5 w-5" />
+                    <span className="font-semibold">Edit Profile</span>
+                  </button>
+                </div>
               )}
             </div>
           </div>

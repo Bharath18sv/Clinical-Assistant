@@ -36,6 +36,41 @@ API.interceptors.request.use(
 
 export default API;
 
+const triggerBrowserDownload = (blob, filename) => {
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.URL.revokeObjectURL(url);
+};
+
+export const downloadDoctorReportPdf = async () => {
+  const res = await API.get(`/doctors/reports/summary.pdf`, {
+    responseType: "blob",
+  });
+  const blob = new Blob([res.data], { type: "application/pdf" });
+  triggerBrowserDownload(blob, "doctor-summary.pdf");
+};
+
+export const downloadPatientReportPdfForDoctor = async (patientId) => {
+  const res = await API.get(`/doctors/patients/${patientId}/report.pdf`, {
+    responseType: "blob",
+  });
+  const blob = new Blob([res.data], { type: "application/pdf" });
+  triggerBrowserDownload(blob, `patient-${patientId}-report.pdf`);
+};
+
+export const downloadMyPatientReportPdf = async () => {
+  const res = await API.get(`/patients/reports/my.pdf`, {
+    responseType: "blob",
+  });
+  const blob = new Blob([res.data], { type: "application/pdf" });
+  triggerBrowserDownload(blob, `my-health-report.pdf`);
+};
+
 export const fetchDoctorActiveAppointments = async () => {
   const { data } = await API.get(`/appointments/active`);
   return data?.data || [];
@@ -91,6 +126,47 @@ export const registerPatient = async (data) => {
   try {
     const registeredPatient = await API.post("/patients/register", formData);
     return registerPatient;
+  } catch (error) {
+    console.error("❌ Error:", error);
+    return null;
+  }
+};
+
+export const updatePatientProfile = async (data) => {
+  const formData = new FormData();
+
+  formData.append("fullname", data.fullname);
+  formData.append("email", data.email);
+  if (data.password) {
+    formData.append("password", data.password);
+  }
+  formData.append("phone", data.phone);
+  formData.append("age", data.age);
+  formData.append("gender", data.gender);
+  formData.append("address[street]", data.address.street);
+  formData.append("address[city]", data.address.city);
+  formData.append("address[state]", data.address.state);
+  formData.append("address[zip]", data.address.zip);
+  formData.append("address[country]", data.address.country);
+  formData.append("chronicConditions", data.chronicConditions);
+  formData.append("allergies", data.allergies);
+  formData.append("symptoms", data.symptoms);
+
+  data.chronicConditions?.forEach((c) =>
+    formData.append("chronicConditions[]", c.value || c)
+  );
+  data.allergies?.forEach((a) => formData.append("allergies[]", a.value || a));
+  data.symptoms?.forEach((s) => formData.append("symptoms[]", s.value || s));
+
+  // File
+  if (data.profilePic) {
+    formData.append("profilePic", data.profilePic);
+  }
+
+  try {
+    const updatedPatient = await API.put("/patients/profile", formData);
+    console.log("updated patient in api.js: ", updatedPatient);
+    return updatedPatient;
   } catch (error) {
     console.error("❌ Error:", error);
     return null;

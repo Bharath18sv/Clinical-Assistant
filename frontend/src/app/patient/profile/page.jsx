@@ -14,43 +14,137 @@ import {
   AlertTriangle,
   Activity,
   Shield,
+  CheckCircle,
+  Loader2,
 } from "lucide-react";
 import { AuthContext } from "@/context/AuthContext";
+import { updatePatientProfile } from "@/utils/api";
 
 export default function PatientProfile() {
-  const { user, authLoading } = useContext(AuthContext);
-
-  const [profile, setProfile] = useState(null); // current profile
-  const [editedProfile, setEditedProfile] = useState(null); // copy for editing
+  const { user, authLoading, setUser } = useContext(AuthContext);
+  const [profile, setProfile] = useState(null);
+  const [editedProfile, setEditedProfile] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [updateError, setUpdateError] = useState(null);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
   // Load patient data when user is available
   useEffect(() => {
-    if (!authLoading && user?.user) {
-      setProfile(user?.user);
-      setEditedProfile(user?.user);
+    if (!authLoading && user?.data?.user) {
+      const userData = user.data.user;
+      setProfile(userData);
+      setEditedProfile(userData);
     }
   }, [user, authLoading]);
 
   const handleEdit = () => {
     setEditedProfile({ ...profile });
     setIsEditing(true);
+    setUpdateError(null);
+    setShowSuccessMessage(false);
   };
 
-  const handleSave = () => {
-    setProfile(editedProfile);
-    setIsEditing(false);
-    alert("Profile updated successfully!");
-    // TODO: send `editedProfile` to backend using API.put/post
+  const handleSave = async () => {
+    setIsSaving(true);
+    setUpdateError(null);
+
+    try {
+      // Validate required fields
+      if (!editedProfile.fullname?.trim()) {
+        setUpdateError("Full name is required");
+        setIsSaving(false);
+        return;
+      }
+
+      if (!editedProfile.email?.trim()) {
+        setUpdateError("Email is required");
+        setIsSaving(false);
+        return;
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(editedProfile.email)) {
+        setUpdateError("Please enter a valid email address");
+        setIsSaving(false);
+        return;
+      }
+
+      // Clean up the data before sending
+      const dataToUpdate = {
+        fullname: editedProfile.fullname.trim(),
+        email: editedProfile.email.trim(),
+        phone: editedProfile.phone?.trim() || "",
+        age: editedProfile.age || null,
+        gender: editedProfile.gender || "",
+        address: {
+          street: editedProfile.address?.street?.trim() || "",
+          city: editedProfile.address?.city?.trim() || "",
+          state: editedProfile.address?.state?.trim() || "",
+          zip: editedProfile.address?.zip?.trim() || "",
+          country: editedProfile.address?.country?.trim() || "",
+        },
+        allergies: editedProfile.allergies || [],
+        chronicConditions: editedProfile.chronicConditions || [],
+        symptoms: editedProfile.symptoms || [],
+      };
+
+      console.log("Updating profile with data:", dataToUpdate);
+
+      const response = await updatePatientProfile(dataToUpdate);
+
+      console.log("Update response:", response);
+
+      if (response.success) {
+        // Update local state with the response data
+        const updatedUser = response.data?.user || editedProfile;
+        setProfile(updatedUser);
+        setEditedProfile(updatedUser);
+
+        // Update the auth context with new user data
+        if (setUser) {
+          setUser({
+            ...user,
+            data: {
+              ...user.data,
+              user: updatedUser,
+            },
+          });
+        }
+
+        setIsEditing(false);
+        setShowSuccessMessage(true);
+
+        // Hide success message after 5 seconds
+        setTimeout(() => {
+          setShowSuccessMessage(false);
+        }, 5000);
+      } else {
+        setUpdateError(response.message || "Failed to update profile");
+      }
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      setUpdateError(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to update profile. Please try again."
+      );
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCancel = () => {
     setEditedProfile({ ...profile });
     setIsEditing(false);
+    setUpdateError(null);
+    setShowSuccessMessage(false);
   };
 
   const handleInputChange = (field, value) => {
     setEditedProfile((prev) => ({ ...prev, [field]: value }));
+    setUpdateError(null);
   };
 
   const handleAddressChange = (field, value) => {
@@ -58,6 +152,7 @@ export default function PatientProfile() {
       ...prev,
       address: { ...prev.address, [field]: value },
     }));
+    setUpdateError(null);
   };
 
   const handleArrayChange = (field, value) => {
@@ -66,20 +161,8 @@ export default function PatientProfile() {
       .map((item) => item.trim())
       .filter((item) => item);
     setEditedProfile((prev) => ({ ...prev, [field]: items }));
+    setUpdateError(null);
   };
-
-  if (authLoading || !profile) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mx-auto mb-4"></div>
-          <p className="text-lg font-medium text-gray-700">
-            Loading profile...
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   const formatDate = (dateString) => {
     if (!dateString) return "-";
@@ -90,9 +173,66 @@ export default function PatientProfile() {
     });
   };
 
+  if (authLoading || !profile) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="animate-spin h-12 w-12 text-blue-600 mx-auto mb-4" />
+          <p className="text-lg font-medium text-gray-700">
+            Loading profile...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 py-8 px-4">
       <div className="max-w-7xl mx-auto space-y-8">
+        {/* Success Message */}
+        {showSuccessMessage && (
+          <div className="bg-green-50 border-2 border-green-200 rounded-xl p-4 flex items-center justify-between animate-fade-in">
+            <div className="flex items-center gap-3">
+              <div className="bg-green-500 p-2 rounded-full">
+                <CheckCircle className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <p className="text-green-800 font-semibold">
+                  Profile Updated Successfully!
+                </p>
+                <p className="text-green-600 text-sm">
+                  Your changes have been saved.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowSuccessMessage(false)}
+              className="text-green-600 hover:text-green-800"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+        )}
+
+        {/* Error Message */}
+        {updateError && (
+          <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="h-5 w-5 text-red-600" />
+              <div>
+                <p className="text-red-800 font-semibold">Update Failed</p>
+                <p className="text-red-600 text-sm">{updateError}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setUpdateError(null)}
+              className="text-red-600 hover:text-red-800"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+        )}
+
         {/* Header */}
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 overflow-hidden">
           <div className="relative bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 px-8 py-8">
@@ -104,7 +244,7 @@ export default function PatientProfile() {
                   <div className="bg-white/20 p-6 rounded-2xl backdrop-blur-sm shadow-lg">
                     {profile?.profilePic ? (
                       <img
-                        src={profile?.profilePic}
+                        src={profile.profilePic}
                         alt="Profile"
                         className="w-16 h-16 rounded-xl object-cover"
                       />
@@ -118,7 +258,6 @@ export default function PatientProfile() {
                 </div>
                 <div>
                   <h1 className="text-4xl font-bold text-white mb-2">
-                    {console.log("profile : ", profile)}
                     {profile.fullname}
                   </h1>
                   <p className="text-blue-100 text-lg">
@@ -163,7 +302,7 @@ export default function PatientProfile() {
                 {/* Full Name */}
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-gray-700 uppercase tracking-wide">
-                    Full Name
+                    Full Name <span className="text-red-500">*</span>
                   </label>
                   {isEditing ? (
                     <input
@@ -173,6 +312,7 @@ export default function PatientProfile() {
                         handleInputChange("fullname", e.target.value)
                       }
                       className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                      placeholder="Enter your full name"
                     />
                   ) : (
                     <div className="bg-gray-50 rounded-xl px-4 py-3 border border-gray-200">
@@ -186,7 +326,7 @@ export default function PatientProfile() {
                 {/* Email */}
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-gray-700 uppercase tracking-wide">
-                    Email Address
+                    Email Address <span className="text-red-500">*</span>
                   </label>
                   {isEditing ? (
                     <input
@@ -196,6 +336,7 @@ export default function PatientProfile() {
                         handleInputChange("email", e.target.value)
                       }
                       className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                      placeholder="your@email.com"
                     />
                   ) : (
                     <div className="bg-gray-50 rounded-xl px-4 py-3 border border-gray-200 flex items-center gap-3">
@@ -220,6 +361,7 @@ export default function PatientProfile() {
                         handleInputChange("phone", e.target.value)
                       }
                       className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                      placeholder="+91 XXXXX XXXXX"
                     />
                   ) : (
                     <div className="bg-gray-50 rounded-xl px-4 py-3 border border-gray-200 flex items-center gap-3">
@@ -239,11 +381,17 @@ export default function PatientProfile() {
                   {isEditing ? (
                     <input
                       type="number"
+                      min="0"
+                      max="150"
                       value={editedProfile.age || ""}
                       onChange={(e) =>
-                        handleInputChange("age", parseInt(e.target.value))
+                        handleInputChange(
+                          "age",
+                          parseInt(e.target.value) || null
+                        )
                       }
                       className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                      placeholder="Enter your age"
                     />
                   ) : (
                     <div className="bg-gray-50 rounded-xl px-4 py-3 border border-gray-200 flex items-center gap-3">
@@ -304,6 +452,7 @@ export default function PatientProfile() {
                           handleAddressChange("street", e.target.value)
                         }
                         className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                        placeholder="Street address"
                       />
                     ) : (
                       <div className="bg-gray-50 rounded-xl px-4 py-3 border border-gray-200">
@@ -327,6 +476,7 @@ export default function PatientProfile() {
                           handleAddressChange("city", e.target.value)
                         }
                         className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                        placeholder="City"
                       />
                     ) : (
                       <div className="bg-gray-50 rounded-xl px-4 py-3 border border-gray-200">
@@ -350,6 +500,7 @@ export default function PatientProfile() {
                           handleAddressChange("state", e.target.value)
                         }
                         className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                        placeholder="State"
                       />
                     ) : (
                       <div className="bg-gray-50 rounded-xl px-4 py-3 border border-gray-200">
@@ -373,6 +524,7 @@ export default function PatientProfile() {
                           handleAddressChange("zip", e.target.value)
                         }
                         className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                        placeholder="ZIP code"
                       />
                     ) : (
                       <div className="bg-gray-50 rounded-xl px-4 py-3 border border-gray-200">
@@ -396,6 +548,7 @@ export default function PatientProfile() {
                           handleAddressChange("country", e.target.value)
                         }
                         className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                        placeholder="Country"
                       />
                     ) : (
                       <div className="bg-gray-50 rounded-xl px-4 py-3 border border-gray-200 inline-block">
@@ -421,15 +574,20 @@ export default function PatientProfile() {
                 Allergies
               </h3>
               {isEditing ? (
-                <textarea
-                  value={editedProfile.allergies?.join(", ") || ""}
-                  onChange={(e) =>
-                    handleArrayChange("allergies", e.target.value)
-                  }
-                  placeholder="Enter allergies separated by commas"
-                  className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
-                  rows="3"
-                />
+                <div className="space-y-2">
+                  <textarea
+                    value={editedProfile.allergies?.join(", ") || ""}
+                    onChange={(e) =>
+                      handleArrayChange("allergies", e.target.value)
+                    }
+                    placeholder="Enter allergies separated by commas"
+                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
+                    rows="3"
+                  />
+                  <p className="text-xs text-gray-500">
+                    Separate multiple items with commas
+                  </p>
+                </div>
               ) : (
                 <div className="space-y-3">
                   {profile.allergies && profile.allergies.length > 0 ? (
@@ -457,15 +615,20 @@ export default function PatientProfile() {
                 Chronic Conditions
               </h3>
               {isEditing ? (
-                <textarea
-                  value={editedProfile.chronicConditions?.join(", ") || ""}
-                  onChange={(e) =>
-                    handleArrayChange("chronicConditions", e.target.value)
-                  }
-                  placeholder="Enter conditions separated by commas"
-                  className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
-                  rows="3"
-                />
+                <div className="space-y-2">
+                  <textarea
+                    value={editedProfile.chronicConditions?.join(", ") || ""}
+                    onChange={(e) =>
+                      handleArrayChange("chronicConditions", e.target.value)
+                    }
+                    placeholder="Enter conditions separated by commas"
+                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
+                    rows="3"
+                  />
+                  <p className="text-xs text-gray-500">
+                    Separate multiple items with commas
+                  </p>
+                </div>
               ) : (
                 <div className="space-y-3">
                   {profile.chronicConditions &&
@@ -498,15 +661,20 @@ export default function PatientProfile() {
                 Current Symptoms
               </h3>
               {isEditing ? (
-                <textarea
-                  value={editedProfile.symptoms?.join(", ") || ""}
-                  onChange={(e) =>
-                    handleArrayChange("symptoms", e.target.value)
-                  }
-                  placeholder="Enter symptoms separated by commas"
-                  className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                  rows="3"
-                />
+                <div className="space-y-2">
+                  <textarea
+                    value={editedProfile.symptoms?.join(", ") || ""}
+                    onChange={(e) =>
+                      handleArrayChange("symptoms", e.target.value)
+                    }
+                    placeholder="Enter symptoms separated by commas"
+                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                    rows="3"
+                  />
+                  <p className="text-xs text-gray-500">
+                    Separate multiple items with commas
+                  </p>
+                </div>
               ) : (
                 <div className="space-y-3">
                   {profile.symptoms && profile.symptoms.length > 0 ? (
@@ -532,17 +700,28 @@ export default function PatientProfile() {
           <div className="flex justify-end gap-4">
             <button
               onClick={handleCancel}
-              className="bg-gray-200 text-gray-700 px-8 py-4 rounded-2xl hover:bg-gray-300 transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center gap-2 font-semibold"
+              disabled={isSaving}
+              className="bg-gray-200 text-gray-700 px-8 py-4 rounded-2xl hover:bg-gray-300 transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center gap-2 font-semibold disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
             >
               <X className="h-5 w-5" />
               Cancel
             </button>
             <button
               onClick={handleSave}
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-4 rounded-2xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center gap-2 font-semibold"
+              disabled={isSaving}
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-4 rounded-2xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center gap-2 font-semibold disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
             >
-              <Save className="h-5 w-5" />
-              Save Changes
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="h-5 w-5" />
+                  Save Changes
+                </>
+              )}
             </button>
           </div>
         )}

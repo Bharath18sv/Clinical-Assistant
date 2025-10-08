@@ -15,7 +15,9 @@ import {
   getDoctorById,
   updateInfo,
   updateProfilePic,
-  getPatientById
+  getPatientById,
+  generatePatientReportPdf,
+  generateDoctorReportPdf,
 } from "../controllers/doctor.controller.js";
 import { verifyJwt } from "../middlewares/auth.middleware.js";
 import { getAllDoctors } from "../controllers/admin.controllers.js";
@@ -68,5 +70,11 @@ router
 router.route("/appointments/:appointmentId/end").put(verifyJwt, endAppointment);
 
 router.route("/patients/:patientId/summary").get(verifyJwt, getPatientSummary);
+
+// PDF report routes
+router
+  .route("/patients/:patientId/report.pdf")
+  .get(verifyJwt, generatePatientReportPdf);
+router.route("/reports/summary.pdf").get(verifyJwt, generateDoctorReportPdf);
 
 export default router;

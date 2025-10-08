@@ -96,7 +96,7 @@ export default function PrescriptionDetailPage() {
       const response = await getMedicationLogs(prescriptionId);
       console.log("medication logs response", response);
 
-      if (response.data.length > 0) {
+      if (response?.data?.length > 0) {
         setMedicationLogs(response.data);
       }
     } catch (err) {
@@ -370,51 +370,59 @@ export default function PrescriptionDetailPage() {
                 <h2 className="text-xl font-semibold text-gray-900">
                   Recent Activity
                 </h2>
-                <button
-                  onClick={() => setActiveTab("logs")}
-                  className="text-purple-600 hover:text-purple-700 text-sm font-medium"
-                >
-                  View All
-                </button>
-              </div>
-              <div className="space-y-3">
-                {medicationLogs.slice(0, 3).map((log) => (
-                  <div
-                    key={log._id}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                {medicationLogs.length > 0 && (
+                  <button
+                    onClick={() => setActiveTab("logs")}
+                    className="text-purple-600 hover:text-purple-700 text-sm font-medium"
                   >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`p-1 rounded-full ${
-                          log.status === "taken" ? "bg-green-100" : "bg-red-100"
-                        }`}
-                      >
-                        {log.status === "taken" ? (
-                          <CheckCircle className="h-4 w-4 text-green-600" />
-                        ) : (
-                          <XCircle className="h-4 w-4 text-red-600" />
-                        )}
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900">
-                          {log.medicationName}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          {log.timeOfDay} •{" "}
-                          {new Date(log.date).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                        log.status
-                      )}`}
-                    >
-                      {log.status}
-                    </span>
-                  </div>
-                ))}
+                    View All
+                  </button>
+                )}
               </div>
+              {medicationLogs.length === 0 ? (
+                <p className="text-gray-600">No medication logs yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {medicationLogs?.slice(0, 3).map((log) => (
+                    <div
+                      key={log._id}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`p-1 rounded-full ${
+                            log.status === "taken"
+                              ? "bg-green-100"
+                              : "bg-red-100"
+                          }`}
+                        >
+                          {log.status === "taken" ? (
+                            <CheckCircle className="h-4 w-4 text-green-600" />
+                          ) : (
+                            <XCircle className="h-4 w-4 text-red-600" />
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">
+                            {log.medicationName}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            {log.timeOfDay} •{" "}
+                            {new Date(log.date).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                          log.status
+                        )}`}
+                      >
+                        {log.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

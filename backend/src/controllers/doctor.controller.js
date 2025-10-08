@@ -14,6 +14,7 @@ import { Vitals } from "../models/vitals.models.js";
 import { Appointment } from "../models/appointments.models.js";
 import mongoose from "mongoose";
 import app from "../app.js";
+import PDFDocument from "pdfkit";
 
 const registerDoctor = asyncHandler(async (req, res) => {
   const { email, password, fullname, gender, age, phone, address } = req.body;
@@ -770,6 +771,216 @@ const updateProfilePic = asyncHandler(async (req, res) => {
     );
 });
 
+// PDF: Generate Patient Report
+const generatePatientReportPdf = asyncHandler(async (req, res) => {
+  const doctorId = req.user?._id || req.user?.id;
+  const { patientId } = req.params;
+  if (!doctorId) throw new ApiError(401, "Unauthorized");
+  if (!patientId) throw new ApiError(400, "patientId required");
+
+  // Fetch data
+  const patient = await Patient.findOne({ _id: patientId, doctorId }).select(
+    "-password -refreshToken"
+  );
+  if (!patient) throw new ApiError(404, "Patient not found");
+
+  const [symptomLogs, prescriptions, vitals, appointments] = await Promise.all([
+    SymptomLog.find({ patientId }).sort({ date: -1 }),
+    Prescription.find({ patientId, doctorId }).sort({ date: -1 }),
+    Vitals.find({ patient: patientId }).sort({ createdAt: -1 }),
+    Appointment.find({ patientId, doctorId }).sort({ scheduledAt: -1 }),
+  ]);
+
+  // Setup PDF
+  const doc = new PDFDocument({ margin: 50 });
+  const filename = `patient-${String(patient._id)}-report.pdf`;
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Content-Disposition", `attachment; filename=\"${filename}\"`);
+
+  doc.pipe(res);
+
+  // Title
+  doc.fontSize(20).text("Patient Health Report", { align: "center" });
+  doc.moveDown();
+
+  // Patient Info
+  doc.fontSize(12).text(`Patient: ${patient.fullname}`);
+  doc.text(`Email: ${patient.email}`);
+  doc.text(`Gender: ${patient.gender}`);
+  doc.text(`Age: ${patient.age}`);
+  doc.text(`Phone: ${patient.phone}`);
+  const addr = patient.address || {};
+  doc.text(
+    `Address: ${addr.street || ""}, ${addr.city || ""}, ${addr.state || ""} ${
+      addr.zip || ""
+    }, ${addr.country || ""}`
+  );
+  doc.moveDown();
+
+  // Allergies / Conditions / Symptoms
+  const listOrNA = (arr) => (arr && arr.length ? arr.join(", ") : "N/A");
+  doc.text(`Allergies: ${listOrNA(patient.allergies)}`);
+  doc.text(`Chronic Conditions: ${listOrNA(patient.chronicConditions)}`);
+  doc.text(`Symptoms: ${listOrNA(patient.symptoms)}`);
+  doc.moveDown();
+
+  // Appointments
+  doc.fontSize(14).text("Appointments", { underline: true });
+  if (!appointments.length) {
+    doc.fontSize(12).text("No appointments found");
+  } else {
+    appointments.forEach((a) => {
+      doc
+        .fontSize(12)
+        .text(
+          `- ${new Date(a.scheduledAt).toLocaleString()} | ${a.status} | ${
+            a.reason || ""
+          }`
+        );
+    });
+  }
+  doc.moveDown();
+
+  // Prescriptions
+  doc.fontSize(14).text("Prescriptions", { underline: true });
+  if (!prescriptions.length) {
+    doc.fontSize(12).text("No prescriptions found");
+  } else {
+    prescriptions.forEach((p) => {
+      doc.fontSize(12).text(`Date: ${new Date(p.date).toLocaleDateString()}`);
+      const meds = (p.medications || []).map((m) => m.name).join(", ");
+      doc.text(`Medications: ${meds || "N/A"}`);
+      doc.moveDown(0.5);
+    });
+  }
+
+  // Vitals
+  doc.fontSize(14).text("Vitals", { underline: true });
+  if (!vitals.length) {
+    doc.fontSize(12).text("No vitals found");
+  } else {
+    vitals.forEach((v) => {
+      doc
+        .fontSize(12)
+        .text(
+          `- ${new Date(v.createdAt).toLocaleString()} | BP: ${
+            v.bloodPressure || "N/A"
+          } | Sugar: ${v.sugar || "N/A"}`
+        );
+    });
+  }
+
+  // Symptom Logs
+  doc.addPage();
+  doc.fontSize(14).text("Symptom Logs", { underline: true });
+  if (!symptomLogs.length) {
+    doc.fontSize(12).text("No symptom logs found");
+  } else {
+    symptomLogs.forEach((s) => {
+      doc
+        .fontSize(12)
+        .text(
+          `- ${new Date(s.date).toLocaleDateString()} | ${listOrNA(
+            s.symptoms
+          )} | Notes: ${s.notes || ""}`
+        );
+    });
+  }
+
+  doc.end();
+});
+
+// PDF: Generate Doctor Summary Report
+const generateDoctorReportPdf = asyncHandler(async (req, res) => {
+  const doctorId = req.user?._id || req.user?.id;
+  if (!doctorId) throw new ApiError(401, "Unauthorized");
+
+  // Aggregate overview
+  const [doctor, apptStats] = await Promise.all([
+    Doctor.findById(doctorId).select("-password -refreshToken"),
+    Appointment.aggregate([
+      { $match: { doctorId: new mongoose.Types.ObjectId(doctorId) } },
+      {
+        $group: {
+          _id: "$status",
+          count: { $sum: 1 },
+        },
+      },
+    ]),
+  ]);
+
+  if (!doctor) throw new ApiError(404, "Doctor not found");
+
+  // Unique patients count
+  const uniquePatients = await Appointment.distinct("patientId", {
+    doctorId: new mongoose.Types.ObjectId(doctorId),
+  });
+
+  // Setup PDF
+  const doc = new PDFDocument({ margin: 50 });
+  const filename = `doctor-${String(doctor._id)}-summary.pdf`;
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Content-Disposition", `attachment; filename=\"${filename}\"`);
+
+  doc.pipe(res);
+
+  // Title
+  doc.fontSize(20).text("Doctor Summary Report", { align: "center" });
+  doc.moveDown();
+
+  // Doctor info
+  doc.fontSize(12).text(`Doctor: ${doctor.fullname}`);
+  doc.text(`Email: ${doctor.email}`);
+  if (doctor.specialization)
+    doc.text(`Specialization: ${doctor.specialization}`);
+  if (doctor.experience) doc.text(`Experience: ${doctor.experience}`);
+  if (doctor.phone) doc.text(`Phone: ${doctor.phone}`);
+  doc.moveDown();
+
+  // Statistics
+  doc.fontSize(14).text("Overview", { underline: true });
+  doc.fontSize(12).text(`Unique patients: ${uniquePatients.length}`);
+  const statusToCount = apptStats.reduce((acc, s) => {
+    acc[s._id] = s.count;
+    return acc;
+  }, {});
+  const allStatuses = [
+    "pending",
+    "approved",
+    "active",
+    "completed",
+    "cancelled",
+  ];
+  allStatuses.forEach((st) => {
+    doc.text(`${st}: ${statusToCount[st] || 0}`);
+  });
+
+  // Recent appointments
+  const recentAppts = await Appointment.find({ doctorId })
+    .populate("patientId", "fullname email")
+    .sort({ scheduledAt: -1 })
+    .limit(20);
+
+  doc.moveDown();
+  doc.fontSize(14).text("Recent Appointments", { underline: true });
+  if (!recentAppts.length) {
+    doc.fontSize(12).text("No appointments found");
+  } else {
+    recentAppts.forEach((a) => {
+      const patientName = a.patientId?.fullname || String(a.patientId);
+      doc
+        .fontSize(12)
+        .text(
+          `- ${new Date(a.scheduledAt).toLocaleString()} | ${
+            a.status
+          } | ${patientName} | ${a.reason || ""}`
+        );
+    });
+  }
+
+  doc.end();
+});
+
 export {
   registerDoctor,
   loginDoctor,
@@ -787,4 +998,6 @@ export {
   updateInfo,
   updateProfilePic,
   getPatientById,
+  generatePatientReportPdf,
+  generateDoctorReportPdf,
 };

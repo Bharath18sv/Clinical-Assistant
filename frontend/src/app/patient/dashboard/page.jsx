@@ -20,6 +20,7 @@ import {
   getLatestVitals,
 } from "@/utils/api";
 import { AuthContext } from "@/context/AuthContext";
+import { downloadMyPatientReportPdf } from "@/utils/api";
 
 export default function PatientDashboard() {
   const { user, authLoading } = useContext(AuthContext);
@@ -338,6 +339,23 @@ export default function PatientDashboard() {
                 <p className="text-sm text-gray-500">
                   Record how you're feeling
                 </p>
+              </div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => downloadMyPatientReportPdf()}
+            className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left transition-colors"
+          >
+            <div className="flex items-center">
+              <div className="icon-container icon-blue mr-3">
+                <Calendar className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="font-medium text-gray-900">
+                  Download My Report
+                </h3>
+                <p className="text-sm text-gray-500">PDF of your health data</p>
               </div>
             </div>
           </button>

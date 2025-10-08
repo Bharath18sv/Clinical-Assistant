@@ -27,7 +27,12 @@ import {
   Download,
   BarChart3,
 } from "lucide-react";
-import { getPatientById, getMedicationLogs, getAllMedicationLogs } from "@/utils/api";
+import {
+  getPatientById,
+  getMedicationLogs,
+  getAllMedicationLogs,
+} from "@/utils/api";
+import { downloadPatientReportPdfForDoctor } from "@/utils/api";
 import BookAppointment from "@/components/BookAppointment";
 import AddPrescription from "@/components/AddPrescription";
 import AddVitals from "@/components/AddVitals";
@@ -35,7 +40,6 @@ import SymptomsLog from "@/components/SymptomsLog";
 import ADRalerts from "@/components/ADRalerts";
 import VitalsCard from "@/components/VitalsCard";
 import PrescriptionCard from "@/components/PrescriptionCard";
-
 
 export default function PatientDetailPage() {
   const router = useRouter();
@@ -337,13 +341,13 @@ export default function PatientDetailPage() {
                 </div>
               </div>
             </div>
-            {/* <button
-              onClick={handleViewAppointments}
+            <button
+              onClick={() => downloadPatientReportPdfForDoctor(patientId)}
               className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
             >
-              <Eye className="w-4 h-4" />
-              View Appointments
-            </button> */}
+              <Download className="w-4 h-4" />
+              Download Report
+            </button>
           </div>
         </div>
       </div>
@@ -561,7 +565,7 @@ export default function PatientDetailPage() {
               {/* Allergies */}
               <div className="bg-white rounded-xl shadow-sm border p-6">
                 <div className="flex items-center gap-2 mb-4">
-                  <Shield className="w-5 w-5 text-red-500" />
+                  <Shield className="w-5 text-red-500" />
                   <h3 className="text-lg font-semibold text-gray-900">
                     Allergies
                   </h3>

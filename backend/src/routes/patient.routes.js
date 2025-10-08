@@ -14,6 +14,7 @@ import {
   getCompletedAppointments,
   getMyDoctors,
   getMyAppointments,
+  generateMyReportPdf,
 } from "../controllers/patient.controllers.js";
 import { verifyJwt } from "../middlewares/auth.middleware.js";
 import { upload } from "../middlewares/multer.middlewares.js";
@@ -40,6 +41,9 @@ router.route("/appointments/active").get(verifyJwt, getActiveAppointments);
 router
   .route("/appointments/completed")
   .get(verifyJwt, getCompletedAppointments);
+
+// PDF report for logged-in patient
+router.route("/reports/my.pdf").get(verifyJwt, generateMyReportPdf);
 
 //admin routes
 router.route("/recent").get(getRecentPatients);

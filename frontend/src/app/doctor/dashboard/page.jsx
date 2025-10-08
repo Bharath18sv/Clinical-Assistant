@@ -3,7 +3,7 @@
 import { useState, useEffect, useContext } from "react";
 import { useRouter } from "next/navigation";
 import { AuthContext } from "@/context/AuthContext";
-import API, { getDoctorAppointments, viewMyPatients } from "@/utils/api";
+import { getDoctorAppointments, viewMyPatients } from "@/utils/api";
 import Navbar from "@/components/Navbar";
 import {
   Calendar,
@@ -56,7 +56,7 @@ export default function DoctorDashboardPage() {
     setLoading((prev) => ({ ...prev, appointments: true }));
     try {
       const response = await getDoctorAppointments();
-      console.log("appointment response.data :", response);
+      // console.log("appointment response.data :", response);
       setAppointments(response || []);
     } catch (error) {
       console.error("Error fetching appointments:", error);
@@ -65,36 +65,39 @@ export default function DoctorDashboardPage() {
     }
   };
 
-  const formatAddress = (address) =>
-    address
-      ? `${address.street}, ${address.city}, ${address.state} ${address.zip}`
-      : "Address not available";
+  const ongoingAppointments = appointments.filter(
+    (appt) => appt.status?.toLowerCase() === "active"
+  );
+  // const formatAddress = (address) =>
+  //   address
+  //     ? `${address.street}, ${address.city}, ${address.state} ${address.zip}`
+  //     : "Address not available";
 
-  const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case "confirmed":
-        return "status-confirmed";
-      case "pending":
-        return "status-pending";
-      case "cancelled":
-        return "status-cancelled";
-      default:
-        return "status-inactive";
-    }
-  };
+  // const getStatusColor = (status) => {
+  //   switch (status?.toLowerCase()) {
+  //     case "confirmed":
+  //       return "status-confirmed";
+  //     case "pending":
+  //       return "status-pending";
+  //     case "cancelled":
+  //       return "status-cancelled";
+  //     default:
+  //       return "status-inactive";
+  //   }
+  // };
 
-  const formatDateTime = (dateString) => {
-    if (!dateString) return "N/A";
-    const date = new Date(dateString);
+  // const formatDateTime = (dateString) => {
+  //   if (!dateString) return "N/A";
+  //   const date = new Date(dateString);
 
-    const optionsDate = { year: "numeric", month: "short", day: "numeric" };
-    const optionsTime = { hour: "2-digit", minute: "2-digit" };
+  //   const optionsDate = { year: "numeric", month: "short", day: "numeric" };
+  //   const optionsTime = { hour: "2-digit", minute: "2-digit" };
 
-    const apptDate = date.toLocaleDateString("en-US", optionsDate);
-    const apptTime = date.toLocaleTimeString("en-US", optionsTime);
+  //   const apptDate = date.toLocaleDateString("en-US", optionsDate);
+  //   const apptTime = date.toLocaleTimeString("en-US", optionsTime);
 
-    return `${apptDate} at ${apptTime}`;
-  };
+  //   return `${apptDate} at ${apptTime}`;
+  // };
 
   if (authLoading || !doctorData) {
     return (
@@ -137,7 +140,7 @@ export default function DoctorDashboardPage() {
             <HealthCard
               icon={TrendingUp}
               title="Active Cases"
-              value={patients.filter((p) => p.symptoms?.length > 0).length}
+              value={ongoingAppointments.length}
               color="purple"
             />
             <HealthCard
