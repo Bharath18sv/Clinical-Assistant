@@ -74,11 +74,23 @@ export const downloadMyPatientReportPdf = async () => {
 // doctor apis:
 export const updateDoctorProfile = async (data) => {
   try {
+    console.log("Doctor profile update data is api.js", data);
     const response = await API.put(`/doctors/updateInfo`, data);
     console.log("doctor profile update response : ", response);
     return response?.data;
   } catch (error) {
     console.error("❌ Error:", error);
+    return null;
+  }
+};
+
+export const getDoctorById = async (doctorId) => {
+  try {
+    const res = await API.get(`/doctors/${doctorId}`);
+    console.log("response of doctor by id in api.js", res);
+    return res.data.data;
+  } catch (error) {
+    console.log(error);
     return null;
   }
 };
@@ -473,12 +485,69 @@ export const addMedicationLog = async (logData, prescriptionId) => {
 
 export const getAllMedicationLogs = async () => {
   try {
-    const response = await API.get(`/medicationLogs/`);
+    const response = await API.get(`/medicationLogs/doctor`);
     console.log("Fetched all medication logs response:", response.data);
     return response.data;
   } catch (error) {
     console.error("Error fetching all medication logs:", error);
     throw error;
+  }
+};
+
+export const getPatientPendingMedicationLogs = async () => {
+  try {
+    const response = await API.get(`/medicationLogs/patient/pending`);
+    console.log(
+      "Fetched patient pending medication logs response:",
+      response.data
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching patient pending medication logs:", error);
+    throw error;
+  }
+};
+
+export const updateMedicationLogStatus = async (logId, statusData) => {
+  try {
+    const response = await API.put(
+      `/medicationLogs/${logId}/status`,
+      statusData
+    );
+    console.log("Updated medication log status response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error updating medication log status:", error);
+    throw error;
+  }
+};
+
+export const getPatientMedicationLogs = async ({
+  page = 1,
+  limit = 20,
+  startDate,
+  endDate,
+  medicationName,
+  status,
+  timeOfDay,
+} = {}) => {
+  try {
+    const params = {
+      page,
+      limit,
+      ...(startDate && { startDate }),
+      ...(endDate && { endDate }),
+      ...(medicationName && { medicationName }),
+      ...(status && { status }),
+      ...(timeOfDay && { timeOfDay }),
+    };
+
+    const response = await API.get("/medicationLogs/patient", { params });
+    console.log("✅ Medication logs fetched:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("❌ Error fetching medication logs:", error);
+    return null;
   }
 };
 

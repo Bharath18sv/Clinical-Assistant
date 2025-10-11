@@ -40,7 +40,7 @@ const MedicationLogSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ["taken", "missed", "skipped"], // Added "skipped" option
+      enum: ["pending", "taken", "missed", "skipped"], // Added "pending" for scheduled logs
       required: true,
     },
     takenAt: {

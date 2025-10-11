@@ -12,8 +12,72 @@
 
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { Prescription } from "../models/prescription.models.js";
+import { MedicationLog } from "../models/medicationLogs.models.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+
+// Helper function to create scheduled medication logs
+const createScheduledMedicationLogs = async (prescription) => {
+  const logs = [];
+  const startDate = new Date();
+  const endDate = new Date();
+
+  // Calculate end date based on the longest medication duration
+  const maxDuration = Math.max(
+    ...prescription.medications.map((med) => parseInt(med.duration) || 30)
+  );
+  endDate.setDate(startDate.getDate() + maxDuration);
+
+  for (const medication of prescription.medications) {
+    if (
+      medication.status === "active" &&
+      medication.schedule &&
+      medication.schedule.length > 0
+    ) {
+      const duration = parseInt(medication.duration) || 30;
+
+      // Create logs for each day in the duration
+      for (let dayOffset = 0; dayOffset < duration; dayOffset++) {
+        const logDate = new Date(startDate);
+        logDate.setDate(startDate.getDate() + dayOffset);
+
+        // Create a log for each scheduled time of day
+        for (const timeOfDay of medication.schedule) {
+          const existingLog = await MedicationLog.findOne({
+            prescriptionId: prescription._id,
+            medicationName: medication.name,
+            date: logDate.toISOString().split("T")[0],
+            timeOfDay: timeOfDay,
+          });
+
+          // Only create if log doesn't already exist
+          if (!existingLog) {
+            const log = new MedicationLog({
+              prescriptionId: prescription._id,
+              patientId: prescription.patientId,
+              doctorId: prescription.doctorId,
+              medicationName: medication.name,
+              dosage: parseInt(medication.dosage) || 0,
+              date: logDate,
+              timeOfDay: timeOfDay,
+              status: "pending", // Set as pending initially
+            });
+
+            logs.push(log);
+          }
+        }
+      }
+    }
+  }
+
+  // Bulk insert all logs
+  if (logs.length > 0) {
+    await MedicationLog.insertMany(logs);
+    console.log(`Created ${logs.length} scheduled medication logs`);
+  }
+
+  return logs;
+};
 
 export const createPrescription = asyncHandler(async (req, res) => {
   console.log("prescription data in controller:", req.body);
@@ -32,6 +96,14 @@ export const createPrescription = asyncHandler(async (req, res) => {
   });
 
   const savedPrescription = await newPrescription.save();
+
+  // Automatically create scheduled medication logs
+  try {
+    await createScheduledMedicationLogs(savedPrescription);
+  } catch (error) {
+    console.error("Error creating scheduled medication logs:", error);
+    // Don't fail the prescription creation if log creation fails
+  }
 
   return res
     .status(201)

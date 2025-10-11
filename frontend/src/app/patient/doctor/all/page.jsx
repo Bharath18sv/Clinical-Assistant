@@ -115,7 +115,7 @@ export default function PatientAllDoctors() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-40 backdrop-blur-sm bg-white/90">
+      <div className="border-b border-gray-200 sticky top-0 z-40 backdrop-blur-sm bg-white/90">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             {/* Title Section */}
@@ -308,7 +308,7 @@ export default function PatientAllDoctors() {
                       onClick={(e) => {
                         e.stopPropagation();
                         router.push(
-                          `/patient/doctor/${doctor._id}/appointment`
+                          `/patient/appointment`
                         );
                       }}
                       className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white py-3 px-4 rounded-xl font-semibold hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-md"

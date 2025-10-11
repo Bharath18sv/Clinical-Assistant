@@ -26,7 +26,7 @@ import toast from "react-hot-toast";
 import { SPECIALIZATION, QUALIFICATIONS } from "@/data/constant";
 
 export default function DoctorProfile() {
-  const { user, authLoading, setUser } = useContext(AuthContext);
+  const { user, authLoading } = useContext(AuthContext);
   const [profile, setProfile] = useState(null);
   const [editedProfile, setEditedProfile] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -36,8 +36,8 @@ export default function DoctorProfile() {
 
   useEffect(() => {
     if (!authLoading && user?.user) {
-      setProfile(user?.user);
-      setEditedProfile(user?.user);
+      setProfile(user.user);
+      setEditedProfile(user.user);
     }
   }, [user, authLoading]);
 
@@ -78,11 +78,25 @@ export default function DoctorProfile() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
+      let experienceValue = editedProfile?.experience;
+      // Only set experience if it's a valid number string, else fallback
+      if (
+        experienceValue === "" ||
+        experienceValue === undefined ||
+        experienceValue === null
+      ) {
+        experienceValue = profile?.experience || 0;
+      } else if (!isNaN(Number(experienceValue))) {
+        experienceValue = Number(experienceValue);
+      } else {
+        experienceValue = profile?.experience || 0;
+      }
+
       const updateData = {
         fullname: editedProfile.fullname,
         email: editedProfile.email,
         phone: editedProfile.phone,
-        experience: editedProfile.experience,
+        experience: experienceValue,
         about: editedProfile.about,
         specialization: editedProfile.specialization,
         qualifications: editedProfile.qualifications,
@@ -91,16 +105,16 @@ export default function DoctorProfile() {
       };
 
       const response = await updateDoctorProfile(updateData);
-      console.log("response in page : ", response);
       if (response.success) {
+        const updatedProfile = response.data || editedProfile;
+        setProfile(updatedProfile);
+        setEditedProfile(updatedProfile);
         setIsEditing(false);
-        setProfile(editedProfile);
-        setUser({ ...user, user: editedProfile });
         toast.success("Profile updated successfully!");
       }
     } catch (error) {
       console.error(error);
-      toast.error(error?.message || "Failed to update profile");
+      toast.error(error.response?.data?.message || "Failed to update profile");
     } finally {
       setIsSaving(false);
     }
@@ -132,11 +146,6 @@ export default function DoctorProfile() {
       });
       if (response.data.success) {
         const updatedPic = response.data.data.profilePic;
-        const updatedUser = {
-          ...user,
-          user: { ...user.user, profilePic: updatedPic },
-        };
-        setUser(updatedUser);
         setProfile((prev) => ({ ...prev, profilePic: updatedPic }));
         setEditedProfile((prev) => ({ ...prev, profilePic: updatedPic }));
         toast.success("Profile picture updated successfully!");
@@ -144,7 +153,7 @@ export default function DoctorProfile() {
       }
     } catch (error) {
       toast.error(
-        response?.data?.message || "Failed to update profile picture"
+        error.response?.data?.message || "Failed to update profile picture"
       );
     } finally {
       setIsUpdatingPic(false);
@@ -368,15 +377,18 @@ export default function DoctorProfile() {
                       Experience (Years)
                     </label>
                     {isEditing ? (
+                      // Experience input (edit mode)
                       <input
                         type="number"
                         min="0"
-                        value={editedProfile?.experience || ""}
+                        // Always store the string from user input
+                        value={
+                          editedProfile?.experience === undefined
+                            ? ""
+                            : editedProfile?.experience
+                        }
                         onChange={(e) =>
-                          handleInputChange(
-                            "experience",
-                            parseInt(e.target.value) || 0
-                          )
+                          handleInputChange("experience", e.target.value)
                         }
                         className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                         placeholder="Years of experience"
@@ -542,12 +554,12 @@ export default function DoctorProfile() {
                     <AlertCircle className="w-5 h-5 text-yellow-500" />
                   )}
                 </div>
-                <div className="flex justify-between items-center py-2">
+                {/* <div className="flex justify-between items-center py-2">
                   <span className="text-sm text-gray-600">Total Patients</span>
                   <span className="text-lg font-bold text-blue-600">
                     {profile?.patients?.length || 0}
                   </span>
-                </div>
+                </div> */}
               </div>
             </div>
 

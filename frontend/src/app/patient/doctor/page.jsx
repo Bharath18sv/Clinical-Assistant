@@ -3,7 +3,7 @@
 import { useState, useEffect, useContext } from "react";
 import { useRouter } from "next/navigation";
 import { AuthContext } from "@/context/AuthContext";
-import { getMyDoctors } from "@/utils/api";
+import { getMyDoctors, fetchMyAppointments } from "@/utils/api";
 import {
   User,
   Calendar,
@@ -28,6 +28,7 @@ export default function PatientDoctorsPage() {
   const { user, authLoading } = useContext(AuthContext);
   const router = useRouter();
   const [doctors, setDoctors] = useState([]);
+  const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [specializationFilter, setSpecializationFilter] = useState("all");
@@ -39,19 +40,41 @@ export default function PatientDoctorsPage() {
     const fetchDoctors = async () => {
       try {
         const myDocs = await getMyDoctors();
-        setDoctors(myDocs);
+        setDoctors(myDocs || []);
       } catch (err) {
+        setDoctors([]);
         console.error("Error fetching doctors:", err);
       } finally {
         setLoading(false);
       }
     };
     fetchDoctors();
+    getAppointments();
   }, [patientId, authLoading]);
 
-  const handleBookAppointment = (doctorId, e) => {
+  const getAppointments = async () => {
+    try {
+      const appts = await fetchMyAppointments();
+      setAppointments(appts || []);
+    } catch (error) {
+      setAppointments([]);
+      console.error("Error fetching appointments:", error);
+    }
+  };
+
+  const hasAppointment = (doctorId) =>
+    appointments.some((appt) => appt.doctorId?._id === doctorId);
+
+  const handleBookAppointment = (doctorId, isAvailable, e) => {
     e.stopPropagation();
-    router.push(`/patient/appointment/${doctorId}`);
+    if (isAvailable) {
+      router.push(`/patient/appointment/${doctorId}`);
+    }
+  };
+
+  const handleViewAppointment = (doctorId, e) => {
+    e.stopPropagation();
+    router.push(`/patient/appointments`);
   };
 
   const handleDoctorClick = (doctorId) => {
@@ -74,7 +97,9 @@ export default function PatientDoctorsPage() {
   // Get unique specializations
   const specializations = [
     "all",
-    ...new Set(doctors.flatMap((doctor) => doctor.specialization || [])),
+    ...Array.from(
+      new Set(doctors.flatMap((doctor) => doctor.specialization || []))
+    ),
   ];
 
   const LoadingSkeleton = () => (
@@ -195,7 +220,6 @@ export default function PatientDoctorsPage() {
                     className="w-full pl-10 pr-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm"
                   />
                 </div>
-
                 <select
                   value={specializationFilter}
                   onChange={(e) => setSpecializationFilter(e.target.value)}
@@ -210,7 +234,6 @@ export default function PatientDoctorsPage() {
               </div>
             )}
           </div>
-
           {/* Results count */}
           {doctors.length > 0 && (
             <div className="mt-6 text-sm text-gray-600">
@@ -253,7 +276,6 @@ export default function PatientDoctorsPage() {
                         <div className="w-2 h-2 bg-white rounded-full"></div>
                       </div>
                     </div>
-
                     <div className="flex-1 min-w-0">
                       <h3 className="text-xl font-bold text-white truncate group-hover:text-blue-100 transition-colors">
                         Dr. {doctor.fullname}
@@ -287,7 +309,6 @@ export default function PatientDoctorsPage() {
                       {doctor.about}
                     </p>
                   )}
-
                   {/* Qualifications */}
                   {doctor.qualifications?.length > 0 && (
                     <div className="flex items-start gap-2 mb-4">
@@ -297,17 +318,16 @@ export default function PatientDoctorsPage() {
                       </p>
                     </div>
                   )}
-
                   {/* Experience */}
-                  {doctor.experience && (
-                    <div className="flex items-center gap-2 mb-4">
-                      <Clock className="h-4 w-4 text-blue-500" />
-                      <span className="text-sm text-gray-600">
-                        {doctor.experience} years experience
-                      </span>
-                    </div>
-                  )}
-
+                  {typeof doctor.experience === "number" &&
+                    doctor.experience > 0 && (
+                      <div className="flex items-center gap-2 mb-4">
+                        <Clock className="h-4 w-4 text-blue-500" />
+                        <span className="text-sm text-gray-600">
+                          {doctor.experience} years experience
+                        </span>
+                      </div>
+                    )}
                   {/* Contact Info */}
                   <div className="space-y-2 mb-6">
                     {doctor.email && (
@@ -333,7 +353,6 @@ export default function PatientDoctorsPage() {
                       </div>
                     )}
                   </div>
-
                   {/* Member since */}
                   {doctor.createdAt && (
                     <div className="text-xs text-gray-500 mb-4 pb-4 border-b border-gray-100">
@@ -345,7 +364,6 @@ export default function PatientDoctorsPage() {
                     </div>
                   )}
                 </div>
-
                 {/* Actions */}
                 <div className="px-6 pb-6 flex gap-3">
                   <button
@@ -358,19 +376,29 @@ export default function PatientDoctorsPage() {
                     <MessageCircle className="h-4 w-4" />
                     View Profile
                   </button>
-                  <button
-                    onClick={(e) => handleBookAppointment(doctor._id, e)}
-                    className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-3 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 font-semibold text-sm flex items-center justify-center gap-2 shadow-md"
-                  >
-                    <Calendar className="h-4 w-4" />
-                    Book Now
-                  </button>
+                  {hasAppointment(doctor._id) ? (
+                    <button
+                      onClick={(e) => handleViewAppointment(doctor._id, e)}
+                      className="flex-1 bg-gradient-to-r from-green-600 to-green-700 text-white py-4 px-6 rounded-xl font-semibold hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-md"
+                    >
+                      View Appointment
+                    </button>
+                  ) : (
+                    <button
+                      onClick={(e) =>
+                        handleBookAppointment(doctor._id, doctor.isAvailable, e)
+                      }
+                      disabled={!doctor.isAvailable}
+                      className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 px-6 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md"
+                    >
+                      Book Appointment
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
           </div>
         )}
-
         {/* Quick Actions */}
         {doctors.length > 0 && (
           <div className="mt-12 bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
@@ -393,7 +421,6 @@ export default function PatientDoctorsPage() {
                 </div>
                 <ChevronRight className="h-5 w-5 text-gray-400 ml-auto" />
               </button>
-
               <button
                 onClick={() => router.push("/patient/appointment")}
                 className="flex items-center gap-3 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl hover:from-green-100 hover:to-emerald-100 transition-colors text-left"
@@ -407,7 +434,6 @@ export default function PatientDoctorsPage() {
                 </div>
                 <ChevronRight className="h-5 w-5 text-gray-400 ml-auto" />
               </button>
-
               <button
                 onClick={() => router.push("/patient/health-records")}
                 className="flex items-center gap-3 p-4 bg-gradient-to-r from-purple-50 to-violet-50 rounded-xl hover:from-purple-100 hover:to-violet-100 transition-colors text-left"

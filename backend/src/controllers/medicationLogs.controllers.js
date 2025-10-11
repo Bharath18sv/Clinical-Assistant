@@ -104,6 +104,201 @@ export const addMedicationLog = async (req, res) => {
   }
 };
 
+export const createMedicationLog = async (req, res) => {
+  try {
+    const { prescriptionId, medicationName, timeOfDay } = req.body;
+
+    const date = new Date().toISOString().split("T")[0];
+
+    // Verify prescription belongs to the patient
+    const prescription = await Prescription.findById(prescriptionId);
+    if (!prescription) {
+      return res.status(404).json({
+        success: false,
+        message: "Prescription not found",
+      });
+    }
+
+    if (prescription.patientId.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Not your prescription",
+      });
+    }
+
+    // Find the specific medication in the prescription
+    const medication = prescription.medications.find(
+      (med) => med.name === medicationName
+    );
+    if (!medication) {
+      return res.status(404).json({
+        success: false,
+        message: "Medication not found in prescription",
+      });
+    }
+
+    // Check if log already exists for this date and time
+    const existingLog = await MedicationLog.findOne({
+      prescriptionId,
+      medicationName,
+      date: new Date(date).toISOString().split("T")[0],
+      timeOfDay,
+    });
+
+    if (existingLog) {
+      return res.status(400).json({
+        success: false,
+        message: "Log entry already exists for this medication at this time",
+      });
+    }
+
+    const medicationLog = new MedicationLog({
+      prescriptionId,
+      patientId: req.user.id,
+      doctorId: prescription.doctorId,
+      medicationName,
+      dosage: medication.dosage,
+      date: new Date(date),
+      timeOfDay,
+      status: "pending",
+      takenAt: null,
+      notes: null,
+      sideEffects: null,
+    });
+
+    await medicationLog.save();
+
+    res.status(201).json({
+      success: true,
+      message: "Medication log added successfully",
+      data: medicationLog,
+    });
+  } catch (error) {
+    console.error("Add medication log error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Patient views their pending medication logs (for today and upcoming)
+ * GET /api/medication-logs/patient/pending
+ * Auth: Patient
+ */
+export const getPatientPendingMedicationLogs = async (req, res) => {
+  try {
+    const { page = 1, limit = 50 } = req.query;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Get pending logs for today and future dates
+    const filter = {
+      patientId: req.user.id,
+      status: "pending",
+      date: { $gte: today },
+    };
+
+    const skip = (page - 1) * limit;
+
+    const logs = await MedicationLog.find(filter)
+      .populate("prescriptionId", "title status")
+      .sort({ date: 1, timeOfDay: 1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    const totalLogs = await MedicationLog.countDocuments(filter);
+
+    // Group logs by date for better organization
+    const logsByDate = {};
+    logs.forEach((log) => {
+      const dateKey = log.date.toISOString().split("T")[0];
+      if (!logsByDate[dateKey]) {
+        logsByDate[dateKey] = [];
+      }
+      logsByDate[dateKey].push(log);
+    });
+
+    res.json({
+      success: true,
+      data: {
+        logs,
+        logsByDate,
+        pagination: {
+          currentPage: parseInt(page),
+          totalPages: Math.ceil(totalLogs / limit),
+          totalLogs,
+          hasNextPage: page < Math.ceil(totalLogs / limit),
+          hasPrevPage: page > 1,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Get patient pending medication logs error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+/**
+ * Patient updates medication log status
+ * PUT /api/medication-logs/:id/status
+ * Auth: Patient
+ */
+export const updateMedicationLogStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, notes, sideEffects } = req.body;
+
+    if (!status || !["taken", "missed", "skipped"].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Valid status (taken, missed, skipped) is required",
+      });
+    }
+
+    const log = await MedicationLog.findById(id);
+    if (!log) {
+      return res.status(404).json({
+        success: false,
+        message: "Medication log not found",
+      });
+    }
+
+    // Verify ownership
+    if (log.patientId.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Not your medication log",
+      });
+    }
+
+    // Update the log
+    log.status = status;
+    log.takenAt = status === "taken" ? new Date() : null;
+    if (notes !== undefined) log.notes = notes;
+    if (sideEffects !== undefined) log.sideEffects = sideEffects;
+
+    await log.save();
+
+    res.json({
+      success: true,
+      message: "Medication log updated successfully",
+      data: log,
+    });
+  } catch (error) {
+    console.error("Update medication log status error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
 /**
  * Patient views their medication logs
  * GET /api/medication-logs/patient

@@ -8,7 +8,7 @@ import { AuthContext } from "@/context/AuthContext";
 
 export default function AppointmentPage() {
   const { user, authLoading } = useContext(AuthContext);
-  const { id } = useParams(); // doctorId from URL
+  const { id } = useParams();
   const [appointment, setAppointment] = useState(null);
   const [apptDate, setApptDate] = useState(null);
   const [apptTime, setApptTime] = useState(null);
@@ -22,41 +22,42 @@ export default function AppointmentPage() {
 
   const patientId = user?.data?.user?._id;
 
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const resAppt = await fetchDPAppointment(id);
+      console.log("appointment response in page: ", resAppt);
+      if (resAppt) {
+        const dateObj = new Date(resAppt.scheduledAt);
+        const date = dateObj.toLocaleDateString("en-IN", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+        const time = dateObj.toLocaleTimeString("en-IN", {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+        setApptDate(date);
+        setApptTime(time);
+        setAppointment(resAppt);
+      }
+    } catch (err) {
+      console.error("Error loading appointment:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
   // Fetch appointment
   useEffect(() => {
-    if (!patientId || authLoading) return;
-
-    const fetchData = async () => {
-      try {
-        const resAppt = await fetchDPAppointment(id);
-        console.log("Appointment response: ", resAppt);
-        if (resAppt) {
-          const dateObj = new Date(resAppt.scheduledAt);
-          const date = dateObj.toLocaleDateString("en-IN", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          });
-          const time = dateObj.toLocaleTimeString("en-IN", {
-            hour: "2-digit",
-            minute: "2-digit",
-          });
-          setApptDate(date);
-          setApptTime(time);
-          setAppointment(resAppt);
-        }
-      } catch (err) {
-        console.error("Error loading appointment:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (!patientId) return;
     fetchData();
-  }, [id, patientId, authLoading]);
+  }, [id, patientId]);
 
   // Book Appointment
   const handleBook = async (e) => {
     e.preventDefault();
+    setLoading(true);
     try {
       const scheduledAt = new Date(`${formDate}T${formTime}`);
       const { data } = await API.post("/appointments", {
@@ -65,20 +66,58 @@ export default function AppointmentPage() {
         scheduledAt,
         reason,
       });
+      fetchData();
       setAppointment(data.data);
+
+      if (data.data?.scheduledAt) {
+        const dateObj = new Date(data.data.scheduledAt);
+        setApptDate(
+          dateObj.toLocaleDateString("en-IN", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          })
+        );
+        setApptTime(
+          dateObj.toLocaleTimeString("en-IN", {
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        );
+      }
     } catch (err) {
       console.error("Booking failed:", err);
+    } finally {
+      // Only set loading false after states set
+      setLoading(false);
     }
   };
 
   // Delete Appointment
   const handleDelete = async () => {
+    setLoading(true);
     try {
       await API.delete(`/appointments/${appointment._id}`);
       setAppointment(null);
       setShowConfirm(false);
     } catch (err) {
       console.error("Delete failed:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Helper for status badge styles
+  const getStatusBadgeStyle = (status) => {
+    switch (status) {
+      case "pending":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "confirmed":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "cancelled":
+        return "bg-red-100 text-red-800 border-red-200";
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
 
@@ -302,6 +341,20 @@ export default function AppointmentPage() {
                   </div>
                 )}
 
+                {/* Appointment Status */}
+                {appointment?.status && (
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`px-4 py-2 rounded-full font-semibold border text-sm ${getStatusBadgeStyle(
+                        appointment.status
+                      )}`}
+                    >
+                      {appointment.status.charAt(0).toUpperCase() +
+                        appointment.status.slice(1)}
+                    </span>
+                  </div>
+                )}
+
                 {/* Appointment Info */}
                 <div className="grid md:grid-cols-2 gap-6">
                   {/* Date */}
@@ -328,7 +381,6 @@ export default function AppointmentPage() {
                       {apptDate}
                     </p>
                   </div>
-
                   {/* Time */}
                   <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-6 rounded-xl border border-purple-100">
                     <div className="flex items-center gap-3 mb-3">
@@ -354,7 +406,6 @@ export default function AppointmentPage() {
                     </p>
                   </div>
                 </div>
-
                 {/* Reason for Visit */}
                 {appointment.reason && (
                   <div className="bg-gradient-to-br from-orange-50 to-amber-50 p-6 rounded-xl border border-orange-100">
@@ -409,7 +460,7 @@ export default function AppointmentPage() {
               </button>
             </div>
 
-            {/* Enhanced Confirmation Dialog */}
+            {/* Confirmation Dialog */}
             {showConfirm && (
               <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 p-4">
                 <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all">
@@ -435,13 +486,11 @@ export default function AppointmentPage() {
                       </h4>
                     </div>
                   </div>
-
                   <div className="p-6 space-y-4">
                     <p className="text-gray-600 leading-relaxed">
                       Are you sure you want to cancel this appointment? This
                       action cannot be undone.
                     </p>
-
                     <div className="bg-gray-50 p-4 rounded-xl">
                       <p className="text-sm text-gray-600 mb-1">
                         Appointment Details:
@@ -450,7 +499,6 @@ export default function AppointmentPage() {
                         {apptDate} at {apptTime}
                       </p>
                     </div>
-
                     <div className="flex gap-3 pt-2">
                       <button
                         onClick={() => setShowConfirm(false)}

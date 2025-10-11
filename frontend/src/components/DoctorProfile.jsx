@@ -27,11 +27,16 @@ import {
   Activity,
 } from "lucide-react";
 
-export default function DoctorProfilePage() {
+export default function DoctorProfilePage({ doctorId }) {
   const { user, authLoading } = useContext(AuthContext);
   const router = useRouter();
   const params = useParams();
-  const doctorId = params?.id;
+  let doctorId;
+  if (doctorId) {
+    doctorId = doctorId;
+  } else {
+    doctorId = params?.id;
+  }
 
   const [doctor, setDoctor] = useState(null);
   const [appointments, setAppointments] = useState([]);
@@ -71,7 +76,7 @@ export default function DoctorProfilePage() {
   };
 
   const handleViewAppointments = () => {
-    router.push("/patient/appointment");
+    router.push("/patient/appointments");
   };
 
   if (loading) {
@@ -406,6 +411,9 @@ export default function DoctorProfilePage() {
 
           {/* Action Buttons */}
           <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+            <h3 className="text-lg font-bold text-gray-800 mb-4">
+              Book an Appointment
+            </h3>
             <div className="flex flex-col sm:flex-row gap-4">
               {hasAppointment ? (
                 <button
@@ -425,13 +433,13 @@ export default function DoctorProfilePage() {
                     <Calendar className="w-5 h-5" />
                     Book Appointment
                   </button>
-                  {/* <button
+                  <button
                     className="px-6 py-4 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-medium flex items-center justify-center gap-2"
                     disabled={!doctor.isAvailable}
                   >
                     <MessageCircle className="w-5 h-5" />
                     Contact Doctor
-                  </button> */}
+                  </button>
                 </>
               )}
             </div>

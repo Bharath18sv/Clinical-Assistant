@@ -16,6 +16,7 @@ import {
   UserCheck,
   LogOut,
   X,
+  Pill,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { AuthContext } from "@/context/AuthContext";
@@ -68,6 +69,7 @@ export default function PatientSidebar() {
 
   const mainLinks = [
     { name: "Dashboard", href: "/patient/dashboard", icon: LayoutDashboard },
+    { name: "Medications", href: "/patient/medications", icon: Pill },
     { name: "Appointments", href: "/patient/appointment", icon: Calendar },
     { name: "Prescriptions", href: "/patient/prescriptions", icon: FileText },
     { name: "Symptoms", href: "/patient/symptoms", icon: Activity },

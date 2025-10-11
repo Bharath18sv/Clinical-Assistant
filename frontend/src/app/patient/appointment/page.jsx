@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { Calendar, Plus } from "lucide-react";
+import { Calendar, Link, Plus, User } from "lucide-react";
 import AppointmentCard from "@/components/AppointmentCard";
 import { fetchMyAppointments, completeAppointment } from "@/utils/api";
 import { useRouter } from "next/navigation";
@@ -19,11 +19,10 @@ export default function PatientAppointments() {
     (async () => {
       try {
         const res = await fetchMyAppointments();
-        console.log("my appts :", res);
         if (!mounted) return;
-        setAppointments(res);
+        setAppointments(res || []);
       } catch (e) {
-        console.error(e);
+        console.error("Failed to fetch appointments:", e);
       } finally {
         if (mounted) setLoading(false);
       }
@@ -36,16 +35,17 @@ export default function PatientAppointments() {
   const handleEndAppointment = async (appointmentId) => {
     try {
       const appt = await completeAppointment(appointmentId);
+      // Defensive: appt may be in data property
+      const updatedAppt = appt?.data || appt;
       setAppointments((prev) =>
-        prev.map((a) => (a._id === appt._id ? appt : a))
+        prev.map((a) => (a._id === updatedAppt._id ? updatedAppt : a))
       );
-      if (selected?._id === appt._id) setSelected(appt);
+      if (selected?._id === updatedAppt._id) setSelected(updatedAppt);
     } catch (e) {
-      console.error(e);
+      console.error("Failed to complete appointment:", e);
     }
   };
 
-  // Filtered appointments based on status
   const filteredAppointments = useMemo(() => {
     if (statusFilter === "all") return appointments;
     return appointments.filter((appt) => appt.status === statusFilter);
@@ -103,68 +103,26 @@ export default function PatientAppointments() {
                 filteredAppointments.map((appointment) => (
                   <div
                     key={appointment._id}
-                    onClick={() => setSelected(appointment)}
+                    onClick={() =>
+                      router.push(`/appointment/${appointment._id}`)
+                    }
                     className="cursor-pointer hover:bg-gray-50 rounded-lg"
                   >
-                    <AppointmentCard
-                      appointment={{
-                        id: appointment._id,
-                        userDetails: appointment?.doctorId,
-                        reason: appointment.reason || "Consultation",
-                        time: appointment.scheduledAt,
-                        status: appointment.status,
-                      }}
-                    />
+                    <Link href={`/patient/appointment/${appointment._id}`}>
+                      <AppointmentCard
+                        appointment={{
+                          id: appointment._id,
+                          userDetails: appointment?.doctorId || {},
+                          reason: appointment.reason || "Consultation",
+                          time: appointment.scheduledAt,
+                          status: appointment.status,
+                        }}
+                      />
+                    </Link>
                   </div>
                 ))
               )}
             </div>
-          </div>
-        </div>
-
-        {/* Appointment Details */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              Appointment Details
-            </h2>
-            {!selected ? (
-              <p className="text-gray-500 text-center py-8">
-                Select an appointment to view details
-              </p>
-            ) : (
-              <div className="space-y-4">
-                <div className="flex items-center">
-                  <Calendar className="h-5 w-5 text-blue-600 mr-2" />
-                  <span className="text-sm text-gray-600">
-                    {new Date(selected.scheduledAt).toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex items-center">
-                  <span className="text-sm text-gray-600">
-                    Doctor Specialization:{" "}
-                    {selected.doctorId.specialization.join(", ")}
-                  </span>
-                </div>
-                <div className="pt-4 border-t border-gray-200">
-                  <h3 className="font-medium text-gray-900 mb-2">Reason</h3>
-                  <p className="text-sm text-gray-600">
-                    {selected.reason || "-"}
-                  </p>
-                </div>
-
-                {selected.status === "active" && (
-                  <div className="pt-4 border-t border-gray-200">
-                    <button
-                      onClick={() => handleEndAppointment(selected._id)}
-                      className="w-full bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors"
-                    >
-                      End Appointment
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         </div>
       </div>

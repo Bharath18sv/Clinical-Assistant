@@ -14,6 +14,7 @@ import {
 import HealthCard from "@/components/HealthCard";
 import AppointmentCard from "@/components/AppointmentCard";
 import MedicationList from "@/components/MedicationList";
+import PendingMedicationLogs from "@/components/PendingMedicationLogs";
 import {
   fetchMyAppointments,
   getPatientPrescriptions,
@@ -240,6 +241,9 @@ export default function PatientDashboard() {
           </p>
         </div>
       )}
+
+      {/* Pending Medication Logs */}
+      <PendingMedicationLogs />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Upcoming Appointments */}
