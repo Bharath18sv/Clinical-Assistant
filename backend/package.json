@@ -8,7 +8,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
-    "create-admin": "node src/scripts/createAdmin.js"
+    "create-admin": "node src/scripts/createAdmin.js",
+    "medication-logs": "node src/cron/medicationLogs.js"
   },
   "keywords": [
     "node.js",
@@ -29,6 +30,7 @@
     "mongoose-paginate-v2": "^1.9.1",
     "multer": "^2.0.2",
     "node-cron": "^4.2.1",
+    "nodemailer": "^6.10.1",
     "nodemon": "^3.1.10",
     "pdfkit": "^0.17.2"
   }

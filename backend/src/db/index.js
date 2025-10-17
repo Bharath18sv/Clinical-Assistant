@@ -1,4 +1,4 @@
-  import mongoose from "mongoose";
+import mongoose from "mongoose";
 
 const connectDB = async () => {
   try {
@@ -8,6 +8,7 @@ const connectDB = async () => {
     console.log(
       `Connected to MongoDB: DB host: ${connectInstance.connection.host}`
     );
+    console.log("Mongodb uri: ", process.env.MONGODB_URI);
   } catch (error) {
     console.log("MongoDB connection error");
     process.exit(1);

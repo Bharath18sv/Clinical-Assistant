@@ -1,5 +1,8 @@
 import { Prescription } from "../models/prescription.models.js";
 import { MedicationLog } from "../models/medicationLogs.models.js";
+import { Patient } from "../models/patient.models.js";
+import { sendEmail } from "../utils/email.js";
+import { medicationReminderTemplate } from "../utils/emailTemplates.js";
 
 const TIME_WINDOWS = {
   morning: { startHour: 6, endHour: 10 },
@@ -81,6 +84,30 @@ export const createMedicationLogsForCurrentPeriod = async () => {
       console.log(
         `Medication log created for patient ${prescription.patientId} medication ${medication.name} for time ${currentTimeOfDay}`
       );
+
+      // Send email reminder (guarded by env flag)
+      try {
+        if (process.env.EMAIL_NOTIFICATIONS_ENABLED !== "false") {
+          const patient = await Patient.findById(prescription.patientId);
+          if (patient && patient.email) {
+            const html = medicationReminderTemplate({
+              patientName: patient.fullname,
+              medicationName: medication.name,
+              dosage: medication.dosage,
+              dateISO: today.toISOString(),
+              timeOfDay: currentTimeOfDay,
+              appUrl: process.env.APP_URL,
+            });
+            await sendEmail({
+              to: patient.email,
+              subject: `Medication reminder: ${medication.name} (${currentTimeOfDay})`,
+              html,
+            });
+          }
+        }
+      } catch (emailErr) {
+        console.error("Failed to send medication reminder email:", emailErr);
+      }
     }
   }
 };
