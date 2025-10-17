@@ -15,6 +15,8 @@ import {
   getMyDoctors,
   getMyAppointments,
   generateMyReportPdf,
+  resendVerificationCode,
+  verifyEmail,
 } from "../controllers/patient.controllers.js";
 import { verifyJwt } from "../middlewares/auth.middleware.js";
 import { upload } from "../middlewares/multer.middlewares.js";
@@ -25,6 +27,10 @@ const router = Router();
 router.route("/register").post(upload.single("profilePic"), registerPatient);
 router.route("/login").post(loginPatient);
 router.route("/refreshToken").post(refreshAccessToken);
+
+// for email verification
+router.route("/verify-email").post(verifyEmail);
+router.route("/resend-verification").post(resendVerificationCode);
 
 //secured routes
 router.route("/logout").post(verifyJwt, logoutPatient);

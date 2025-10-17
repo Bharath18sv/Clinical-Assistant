@@ -57,3 +57,23 @@ export const adrAlertTemplate = ({
     </div>
   `;
 };
+
+export const verificationCodeTemplate = ({ name, code, appUrl }) => {
+  return `
+    <div style="font-family: Arial, sans-serif; line-height:1.6; color:#111;">
+      <h2 style="margin:0 0 12px;">Verify your email</h2>
+      <p>Hello ${name || "there"},</p>
+      <p>Use the following code to verify your email address:</p>
+      <div style="font-size:28px; font-weight:700; letter-spacing:4px; background:#f5f5f5; padding:12px 16px; display:inline-block;">
+        ${code}
+      </div>
+      <p style="margin-top:12px;">This code will expire in 10 minutes.</p>
+      ${
+        appUrl
+          ? `<p>You can also verify in the app: <a href="${appUrl}" target="_blank">Open app</a></p>`
+          : ""
+      }
+      <p style="margin-top:16px; color:#666; font-size:12px;">If you didn't request this, you can safely ignore this email.</p>
+    </div>
+  `;
+};

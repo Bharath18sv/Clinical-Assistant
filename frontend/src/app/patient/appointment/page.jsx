@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { Calendar, Link, Plus, User } from "lucide-react";
+import { Calendar, Plus, User } from "lucide-react";
+import Link from "next/link";
 import AppointmentCard from "@/components/AppointmentCard";
 import { fetchMyAppointments, completeAppointment } from "@/utils/api";
 import { useRouter } from "next/navigation";
@@ -103,9 +104,6 @@ export default function PatientAppointments() {
                 filteredAppointments.map((appointment) => (
                   <div
                     key={appointment._id}
-                    onClick={() =>
-                      router.push(`/appointment/${appointment._id}`)
-                    }
                     className="cursor-pointer hover:bg-gray-50 rounded-lg"
                   >
                     <Link href={`/patient/appointment/${appointment._id}`}>

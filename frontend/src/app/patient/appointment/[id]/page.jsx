@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { fetchAppointmentById, completeAppointment } from "@/utils/api";
+import { Calendar } from "lucide-react";
 
 export default function PatientAppointmentDetail() {
   const params = useParams();

@@ -74,7 +74,7 @@ export default function PatientDoctorsPage() {
 
   const handleViewAppointment = (doctorId, e) => {
     e.stopPropagation();
-    router.push(`/patient/appointments`);
+    router.push(`/patient/appointment`);
   };
 
   const handleDoctorClick = (doctorId) => {

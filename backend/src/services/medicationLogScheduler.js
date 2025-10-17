@@ -99,7 +99,7 @@ export const createMedicationLogsForCurrentPeriod = async () => {
               appUrl: process.env.APP_URL,
             });
             await sendEmail({
-              to: patient.email,
+              to: "svbharath2005@gmail.com", //change this to patient.email
               subject: `Medication reminder: ${medication.name} (${currentTimeOfDay})`,
               html,
             });
@@ -111,3 +111,83 @@ export const createMedicationLogsForCurrentPeriod = async () => {
     }
   }
 };
+
+// export const createMedicationLogsForCurrentPeriod = async () => {
+//   const currentTimeOfDay = getCurrentTimeOfDay();
+
+//   const now = new Date();
+//   const today = new Date();
+//   today.setHours(0, 0, 0, 0);
+
+//   const currentMinute = now.getMinutes();
+//   const currentHour = now.getHours();
+
+//   // Find all active prescriptions (no need for schedule filter)
+//   const prescriptions = await Prescription.find({
+//     status: "active",
+//     "medications.status": "active",
+//     date: { $lte: today },
+//   });
+
+//   for (const prescription of prescriptions) {
+//     for (const medication of prescription.medications) {
+//       if (medication.status !== "active") continue;
+
+//       // Check if log already exists for this exact minute
+//       // const existingLog = await MedicationLog.findOne({
+//       //   prescriptionId: prescription._id,
+//       //   medicationName: medication.name,
+//       //   date: today,
+//       //   logHour: currentHour,
+//       //   logMinute: currentMinute,
+//       // });
+
+//       // if (existingLog) continue;
+
+//       const log = new MedicationLog({
+//         prescriptionId: prescription._id,
+//         patientId: prescription.patientId,
+//         doctorId: prescription.doctorId,
+//         medicationName: medication.name,
+//         dosage: medication.dosage,
+//         date: today,
+//         timeOfDay: currentTimeOfDay,
+//         status: "pending",
+//         takenAt: null,
+//         notes: null,
+//         sideEffects: null,
+//       });
+
+//       await log.save();
+//       console.log(
+//         `✅ Medication log created for ${medication.name} at ${currentHour}:${currentMinute}`
+//       );
+
+//       // Optional: send email every minute (usually you'd disable this)
+//       try {
+//         if (process.env.EMAIL_NOTIFICATIONS_ENABLED !== "false") {
+//           const patient = await Patient.findById(prescription.patientId);
+//           if (patient && patient.email) {
+//             console.log("Patient email in services", patient.email);
+//             const html = medicationReminderTemplate({
+//               patientName: patient.fullname,
+//               medicationName: medication.name,
+//               dosage: medication.dosage,
+//               dateISO: today.toISOString(),
+//               timeOfDay: `${currentHour}:${currentMinute}`,
+//               appUrl: process.env.APP_URL,
+//             });
+//             await sendEmail({
+//               to: patient.email,
+//               subject: `Medication reminder: ${medication.name} (${currentHour}:${currentMinute})`,
+//               html,
+//             });
+//             console.log("Email sent to the patient");
+//           }
+//         }
+//       } catch (emailErr) {
+//         console.error("❌ Failed to send medication reminder:", emailErr);
+//       }
+//     }
+//   }
+// };
