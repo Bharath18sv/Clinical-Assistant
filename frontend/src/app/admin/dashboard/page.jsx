@@ -264,7 +264,11 @@ export default function AdminDashboardPage() {
                           </p>
                         </div>
                       </div>
-                      <span className={`status-badge ${getStatusColor(doctor.status)}`}>
+                      <span
+                        className={`status-badge ${getStatusColor(
+                          doctor.status
+                        )}`}
+                      >
                         {doctor.status || "Active"}
                       </span>
                     </div>

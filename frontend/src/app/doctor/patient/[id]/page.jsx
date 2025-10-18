@@ -34,8 +34,8 @@ import {
 } from "@/utils/api";
 import { downloadPatientReportPdfForDoctor } from "@/utils/api";
 import BookAppointment from "@/components/BookAppointment";
-import AddPrescription from "@/components/AddPrescription";
-import AddVitals from "@/components/AddVitals";
+import AddPrescription from "@/components/forms/AddPrescription";
+import AddVitals from "@/components/forms/AddVitals";
 import SymptomsLog from "@/components/SymptomsLog";
 import ADRalerts from "@/components/ADRalerts";
 import VitalsCard from "@/components/VitalsCard";

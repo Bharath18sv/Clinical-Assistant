@@ -15,6 +15,9 @@ import { Appointment } from "../models/appointments.models.js";
 import mongoose from "mongoose";
 import app from "../app.js";
 import PDFDocument from "pdfkit";
+import crypto from "crypto";
+import { sendEmail } from "../utils/email.js";
+import { verificationCodeTemplate } from "../utils/emailTemplates.js";
 
 const registerDoctor = asyncHandler(async (req, res) => {
   const { email, password, fullname, gender, age, phone, address } = req.body;
@@ -71,6 +74,30 @@ const registerDoctor = asyncHandler(async (req, res) => {
       phone,
       address,
     });
+
+    // Generate verification code and email it
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const codeHash = crypto.createHash("sha256").update(code).digest("hex");
+    const codeExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    newDoctor.emailVerificationCodeHash = codeHash;
+    newDoctor.emailVerificationExpiresAt = codeExpiry;
+    await newDoctor.save({ validateBeforeSave: false });
+
+    try {
+      const html = verificationCodeTemplate({
+        name: newDoctor.fullname,
+        code,
+        appUrl: process.env.APP_URL,
+      });
+      await sendEmail({
+        to: newDoctor.email,
+        subject: "Verify your email",
+        html,
+      });
+    } catch (emailErr) {
+      console.error("Failed to send verification email:", emailErr);
+    }
 
     const createdDoctor = await Doctor.findById(newDoctor.id).select(
       "-password -refreshToken"
@@ -150,6 +177,15 @@ const loginDoctor = asyncHandler(async (req, res) => {
     console.log("Password doesn't match");
     throw new ApiError(400, "Password doesn't match");
   }
+
+  // Block login if email not verified
+  if (!doctor.emailVerified) {
+    throw new ApiError(
+      401,
+      "Email not verified. Please verify your email to continue."
+    );
+  }
+
   const { refreshToken, accessToken } = await generateAccessRefreshToken(
     doctor._id
   );
@@ -979,6 +1015,80 @@ const generateDoctorReportPdf = asyncHandler(async (req, res) => {
   doc.end();
 });
 
+// =============
+// Email Verify
+// =============
+const resendDoctorVerificationCode = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  if (!email) throw new ApiError(400, "Email is required");
+
+  const doctor = await Doctor.findOne({ email });
+  if (!doctor) throw new ApiError(404, "No account found for this email");
+  if (doctor.emailVerified) {
+    return res
+      .status(200)
+      .json(new ApiResponse(200, {}, "Email already verified"));
+  }
+
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  const codeHash = crypto.createHash("sha256").update(code).digest("hex");
+  const codeExpiry = new Date(Date.now() + 10 * 60 * 1000);
+
+  doctor.emailVerificationCodeHash = codeHash;
+  doctor.emailVerificationExpiresAt = codeExpiry;
+  await doctor.save({ validateBeforeSave: false });
+
+  try {
+    const html = verificationCodeTemplate({
+      name: doctor.fullname,
+      code,
+      appUrl: process.env.APP_URL,
+    });
+    await sendEmail({ to: doctor.email, subject: "Verify your email", html });
+  } catch (emailErr) {
+    console.error("Failed to send verification email:", emailErr);
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Verification code sent"));
+});
+
+const verifyDoctorEmail = asyncHandler(async (req, res) => {
+  const { email, code } = req.body;
+  if (!email || !code) throw new ApiError(400, "Email and code are required");
+
+  const codeHash = crypto.createHash("sha256").update(code).digest("hex");
+  const doctor = await Doctor.findOne({ email }).select(
+    "+emailVerificationCodeHash +emailVerificationExpiresAt"
+  );
+  if (!doctor) throw new ApiError(404, "No account found for this email");
+
+  if (doctor.emailVerified) {
+    return res
+      .status(200)
+      .json(new ApiResponse(200, {}, "Email already verified"));
+  }
+
+  if (
+    !doctor.emailVerificationCodeHash ||
+    !doctor.emailVerificationExpiresAt ||
+    doctor.emailVerificationCodeHash !== codeHash ||
+    new Date() > new Date(doctor.emailVerificationExpiresAt)
+  ) {
+    throw new ApiError(400, "Invalid or expired verification code");
+  }
+
+  doctor.emailVerified = true;
+  doctor.emailVerificationCodeHash = null;
+  doctor.emailVerificationExpiresAt = null;
+  await doctor.save({ validateBeforeSave: false });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Email verified successfully"));
+});
+
 export {
   registerDoctor,
   loginDoctor,
@@ -998,4 +1108,6 @@ export {
   getPatientById,
   generatePatientReportPdf,
   generateDoctorReportPdf,
+  resendDoctorVerificationCode,
+  verifyDoctorEmail,
 };

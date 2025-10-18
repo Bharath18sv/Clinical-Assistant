@@ -17,6 +17,7 @@ export const AuthProvider = ({ children }) => {
     if (storedUser) {
       try {
         const userData = JSON.parse(storedUser);
+
         // Check if token is expired before setting user
         if (userData.accessToken) {
           const tokenExpired = isTokenExpired(userData.accessToken);

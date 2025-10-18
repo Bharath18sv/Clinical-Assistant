@@ -18,6 +18,7 @@ export default function LoginPage() {
   // Universal login: if already logged in via localStorage, redirect immediately
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
+    console.log("stored user in local storage:", storedUser);
     if (storedUser) {
       const userData = JSON.parse(storedUser);
       if (userData.role === "patient") {
@@ -36,6 +37,7 @@ export default function LoginPage() {
     setError("");
 
     try {
+      console.log("Hitting route");
       const res = await API.post("/patients/login", {
         email,
         password,
@@ -49,6 +51,7 @@ export default function LoginPage() {
       router.push("/patient/dashboard");
       console.log("User logged in");
     } catch (err: any) {
+      console.log(err.message);
       setError(err.message || "Login failed. Please check your credentials.");
     } finally {
       setIsLoading(false);
@@ -353,17 +356,14 @@ export default function LoginPage() {
           {/* Footer */}
           <div className="mt-8 text-center text-sm text-gray-500">
             <p>
-              By signing in, you agree to our{" "}
-              <Link href="/terms" className="text-blue-600 hover:text-blue-700">
-                Terms of Service
-              </Link>{" "}
-              and{" "}
+              If your Email is not verified{" "}
               <Link
-                href="/privacy"
+                href="/patient/verify-email"
                 className="text-blue-600 hover:text-blue-700"
               >
-                Privacy Policy
-              </Link>
+                click here
+              </Link>{" "}
+              to verify your email.
             </p>
           </div>
         </div>

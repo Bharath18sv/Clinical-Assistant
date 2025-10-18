@@ -184,9 +184,9 @@ export const fetchMyAppointments = async () => {
   return data?.data || [];
 };
 
-export const fetchPatientAppointments = async() =>{
-  const {data} = await API.get(``)
-}
+export const fetchPatientAppointments = async () => {
+  const { data } = await API.get(``);
+};
 
 export const fetchAppointmentById = async (id) => {
   const { data } = await API.get(`/appointments/${id}`);

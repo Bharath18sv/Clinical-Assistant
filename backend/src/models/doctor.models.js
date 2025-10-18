@@ -94,6 +94,22 @@ const doctorSchema = new Schema(
     refreshToken: {
       type: String,
     },
+    // for email verification
+    emailVerified: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    emailVerificationCodeHash: {
+      type: String,
+      default: null,
+      select: false,
+    },
+    emailVerificationExpiresAt: {
+      type: Date,
+      default: null,
+      index: true,
+    },
   },
   { timestamps: true }
 );

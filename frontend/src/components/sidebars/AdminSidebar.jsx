@@ -16,10 +16,11 @@ import {
   XCircle,
   Clock,
   X,
-  LogOut
+  LogOut,
 } from "lucide-react";
 import { usePathname } from "next/navigation"; // <-- usePathname instead of router
 import { AuthContext } from "@/context/AuthContext";
+import toast from "react-hot-toast";
 
 export default function AdminSidebar() {
   const { user, authLoading, logout: contextLogout } = useContext(AuthContext);

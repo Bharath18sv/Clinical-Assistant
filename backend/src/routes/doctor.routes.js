@@ -18,6 +18,8 @@ import {
   getPatientById,
   generatePatientReportPdf,
   generateDoctorReportPdf,
+  resendDoctorVerificationCode,
+  verifyDoctorEmail,
 } from "../controllers/doctor.controller.js";
 import { verifyJwt } from "../middlewares/auth.middleware.js";
 import { getAllDoctors } from "../controllers/admin.controllers.js";
@@ -31,6 +33,10 @@ router.route("/refreshToken").post(refreshAccessToken);
 router.route("/recent").get(getRecentDoctors);
 router.route("/all").get(getAllDoctors);
 router.route("/:id").get(getDoctorById);
+
+// for email verification
+router.route("/verify-email").post(verifyDoctorEmail);
+router.route("/resend-verification").post(resendDoctorVerificationCode);
 
 //secured routes
 //add patient by doctor

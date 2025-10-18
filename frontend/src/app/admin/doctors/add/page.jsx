@@ -182,9 +182,12 @@ export default function AddDoctorPage() {
       console.log("doctor data being submitted", doctorData);
       const response = await addDoctor(doctorData);
 
-      setSuccess("Doctor added successfully!");
-      toast.success("Doctor added successfully!");
+      setSuccess("Doctor added successfully! Please verify their email.");
+      toast.success("Doctor added successfully! Please verify their email.");
       console.log("Add doctor response:", response.data);
+
+      // Store email for verification
+      localStorage.setItem("pendingDoctorVerificationEmail", formData.email);
 
       // Reset form
       setFormData({
@@ -199,9 +202,11 @@ export default function AddDoctorPage() {
         phone: "",
       });
 
-      // Redirect to doctors list after 2 seconds
+      // Redirect to verification page
       setTimeout(() => {
-        router.push("/admin/doctors");
+        router.push(
+          `/doctor/verify-email?email=${encodeURIComponent(formData.email)}`
+        );
       }, 2000);
     } catch (err) {
       // Handle validation errors specifically

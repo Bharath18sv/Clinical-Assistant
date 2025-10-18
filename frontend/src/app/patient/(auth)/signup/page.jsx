@@ -158,11 +158,16 @@ export default function PatientSignupPage() {
       const res = await registerPatient(formattedData);
       setMessage("Patient registered successfully!");
       const userData = res.data;
+
+      // Store user data and email for verification
       localStorage.setItem("user", JSON.stringify(userData));
+      localStorage.setItem("pendingVerificationEmail", formattedData.email);
       login(userData); // Update context
       reset();
-      toast.success("Registration successful! Redirecting...");
-      router.push("/patient/login");
+      toast.success("Registration successful! Please verify your email.");
+      router.push(
+        `/patient/verify-email?email=${encodeURIComponent(formattedData.email)}`
+      );
     } catch (error) {
       console.error(error);
       setMessage(error.message || "Registration failed. Please try again.");
@@ -372,6 +377,8 @@ export default function PatientSignupPage() {
                 <MemoizedInput
                   label="ZIP Code"
                   placeholder="Enter your ZIP code"
+                  minLength={6}
+                  maxLength={6}
                   error={!!errors.address?.zip}
                   errorMessage={errors.address?.zip?.message}
                   {...register("address.zip", {
