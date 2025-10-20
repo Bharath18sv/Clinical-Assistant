@@ -8,10 +8,12 @@ const API = axios.create({
 });
 
 API.interceptors.request.use(
-  (req) => {
+  async (req) => {
     //  Add Authorization header if token exists and valid
-    const userData = JSON.parse(localStorage.getItem("user"));
-    const token = userData?.accessToken;
+    const userData = await JSON.parse(localStorage.getItem("user"));
+    console.log("local storage user data: ", userData);
+    const token = userData?.accessToken || userData?.data?.accessToken;
+    console.log("access token is local storage: ", token);
     if (token) {
       if (isTokenExpired(token)) {
         // Token expired → clear storage + redirect
@@ -29,6 +31,7 @@ API.interceptors.request.use(
         req.headers.Authorization = `Bearer ${token}`;
       }
     }
+    // console.log("request data before api req: ", req);
     return req;
   },
   (error) => Promise.reject(error)

@@ -448,11 +448,11 @@ export default function PatientDetailPage() {
                             <p className="text-gray-900 font-medium">
                               {typeof patient.address === "string"
                                 ? patient.address
-                                : `${patient.address.street || ""}, ${
-                                    patient.address.city || ""
-                                  }, ${patient.address.state || ""} ${
-                                    patient.address.zip || ""
-                                  }, ${patient.address.country || ""}`
+                                : `${patient?.address?.street || ""}, ${
+                                    patient?.address?.city || ""
+                                  }, ${patient?.address?.state || ""} ${
+                                    patient?.address?.zip || ""
+                                  }, ${patient?.address?.country || ""}`
                                     .replace(/,\s*,/g, ",")
                                     .replace(/^,\s*|,\s*$/g, "")
                                     .trim()}

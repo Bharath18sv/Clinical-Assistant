@@ -1,41 +1,38 @@
 import mongoose, { Schema } from "mongoose";
-import { Vitals } from "./vitals.models.js";
+import { SYMPTOMS } from "../constants.js";
 
-const SymptomLogSchema = new mongoose.Schema({
-  patientId: {
-    type: Schema.Types.ObjectId,
-    ref: "Patient",
-    required: true,
-  },
-  doctorId: {
-    type: Schema.Types.ObjectId,
-    ref: "Doctor",
-  },
-  date: {
-    type: Date,
-    default: Date.now, // auto-set when not provided
-  },
-  symptoms: {
-    type: [
-      {
-        type: String,
-        trim: true,
-        lowercase: true,
-        required: [true, "Symptom is required"],
+const SymptomLogSchema = new Schema(
+  {
+    patientId: {
+      type: Schema.Types.ObjectId,
+      ref: "Patient",
+      required: true,
+    },
+    doctorId: {
+      type: Schema.Types.ObjectId,
+      ref: "Doctor",
+      default: null,
+    },
+    symptoms: {
+      type: [String], // pure array of strings
+      required: true,
+      enum: SYMPTOMS,
+      validate: {
+        validator: (arr) => Array.isArray(arr) && arr.length > 0,
+        message: "At least one symptom is required",
       },
-    ],
-    validate: {
-      validator: (arr) => arr.length > 0,
-      message: "At least one symptom is required",
+      set: (arr) => arr.map((s) => s.trim()), // normalize input
+    },
+    vitals: {
+      type: Schema.Types.ObjectId,
+      ref: "Vitals",
+      default: null,
     },
   },
-  vitals: {
-    type: Schema.Types.ObjectId,
-    ref: Vitals,
-  },
-});
+  { timestamps: true }
+);
 
-// helpful for queries like "get patient logs sorted by date"
-SymptomLogSchema.index({ patientId: 1, date: -1 });
+// helpful for reverse-chronological patient history
+SymptomLogSchema.index({ patientId: 1, createdAt: -1 });
 
 export const SymptomLog = mongoose.model("SymptomLog", SymptomLogSchema);

@@ -807,8 +807,9 @@ const updateProfilePic = asyncHandler(async (req, res) => {
 
 // PDF: Generate Patient Report
 const generatePatientReportPdf = asyncHandler(async (req, res) => {
-  const doctorId = req.user?._id || req.user?.id;
+  const doctorId = req.user?._id.toString() || req.user?.id;
   const { patientId } = req.params;
+  console.log("patient id: ", doctorId, patientId);
   if (!doctorId) throw new ApiError(401, "Unauthorized");
   if (!patientId) throw new ApiError(400, "patientId required");
 
@@ -816,6 +817,7 @@ const generatePatientReportPdf = asyncHandler(async (req, res) => {
   const patient = await Patient.findOne({ _id: patientId, doctorId }).select(
     "-password -refreshToken"
   );
+  console.log("patient :", patient);
   if (!patient) throw new ApiError(404, "Patient not found");
 
   const [symptomLogs, prescriptions, vitals, appointments] = await Promise.all([
@@ -1019,7 +1021,9 @@ const generateDoctorReportPdf = asyncHandler(async (req, res) => {
 // Email Verify
 // =============
 const resendDoctorVerificationCode = asyncHandler(async (req, res) => {
-  const { email } = req.body;
+  const email = req.body.email;
+  console.log("req body in resend: ", req.body);
+  console.log("email in resend code: ", email);
   if (!email) throw new ApiError(400, "Email is required");
 
   const doctor = await Doctor.findOne({ email });
@@ -1055,6 +1059,7 @@ const resendDoctorVerificationCode = asyncHandler(async (req, res) => {
 });
 
 const verifyDoctorEmail = asyncHandler(async (req, res) => {
+  console.log("req.body : ", req.body);
   const { email, code } = req.body;
   if (!email || !code) throw new ApiError(400, "Email and code are required");
 

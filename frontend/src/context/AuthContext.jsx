@@ -11,16 +11,15 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true); // Add loading state
 
-  // Load user from localStorage on app start
-  useEffect(() => {
+  const checkTokenValidity = async () => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
       try {
         const userData = JSON.parse(storedUser);
 
         // Check if token is expired before setting user
-        if (userData.accessToken) {
-          const tokenExpired = isTokenExpired(userData.accessToken);
+        if (userData?.accessToken) {
+          const tokenExpired = isTokenExpired(userData?.accessToken);
           if (tokenExpired) {
             // Clear expired data
             localStorage.removeItem("user");
@@ -40,6 +39,11 @@ export const AuthProvider = ({ children }) => {
       }
     }
     setAuthLoading(false); // Set loading to false after checking localStorage
+  };
+
+  // Load user from localStorage on app start
+  useEffect(() => {
+    checkTokenValidity();
   }, []);
 
   // Helper function to check token expiration

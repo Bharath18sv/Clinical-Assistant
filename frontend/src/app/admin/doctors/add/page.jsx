@@ -36,36 +36,155 @@ export default function AddDoctorPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const router = useRouter();
 
   useEffect(() => {
     console.log("loading page.....");
     setLoading(true);
     const user = JSON.parse(localStorage.getItem("user"));
-    // console.log("user data from local storage", user);
     if (!user) {
-      // console.log("no user found, redirecting to login...");
       router.push("/admin/login");
       setLoading(false);
       return;
     }
     console.log("user role", user.role);
     if (user && user.role !== "admin") {
-      // console.log(
-      //   "non-admin user detected, redirecting them to landing page..."
-      // );
       router.push("/");
       setLoading(false);
     }
     setLoading(false);
   }, []);
 
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const validatePhone = (phone) => {
+    if (!phone) return true; // Optional field
+    const phoneRegex = /^[0-9]{10}$/;
+    return phoneRegex.test(phone);
+  };
+
+  const validateZip = (zip) => {
+    if (!zip) return true; // Optional field
+    const zipRegex = /^[0-9]{6}$/;
+    return zipRegex.test(zip);
+  };
+
+  const validateForm = () => {
+    const errors = {};
+
+    // Full Name validation
+    if (!formData.fullname.trim()) {
+      errors.fullname = "Full name is required";
+    } else if (formData.fullname.trim().length < 2) {
+      errors.fullname = "Full name must be at least 2 characters";
+    } else if (formData.fullname.trim().length > 100) {
+      errors.fullname = "Full name must not exceed 100 characters";
+    }
+
+    // Email validation
+    if (!formData.email.trim()) {
+      errors.email = "Email is required";
+    } else if (!validateEmail(formData.email)) {
+      errors.email = "Please enter a valid email address";
+    }
+
+    // Password validation
+    if (!formData.password.trim()) {
+      errors.password = "Password is required";
+    } else if (formData.password.length < 6) {
+      errors.password = "Password must be at least 6 characters long";
+    } else if (formData.password.length > 50) {
+      errors.password = "Password must not exceed 50 characters";
+    }
+
+    // Phone validation (optional but must be valid if provided)
+    if (formData.phone && !validatePhone(formData.phone)) {
+      errors.phone = "Phone number must be exactly 10 digits";
+    }
+
+    // Age validation
+    if (!formData.age || formData.age <= 0) {
+      errors.age = "Age is required and must be greater than 0";
+    } else if (formData.age < 18) {
+      errors.age = "Age must be at least 18 years";
+    } else if (formData.age > 120) {
+      errors.age = "Please enter a valid age";
+    }
+
+    // Experience validation
+    if (!formData.experience || formData.experience === "") {
+      errors.experience = "Years of experience is required";
+    } else if (parseInt(formData.experience) < 0) {
+      errors.experience = "Experience cannot be negative";
+    } else if (parseInt(formData.experience) > 70) {
+      errors.experience = "Please enter a valid experience";
+    }
+
+    // Gender validation
+    if (!formData.gender) {
+      errors.gender = "Gender is required";
+    }
+
+    // Specialization validation
+    if (!formData.specialization || formData.specialization.length === 0) {
+      errors.specialization = "At least one specialization is required";
+    }
+
+    // Qualifications validation
+    if (!formData.qualifications || formData.qualifications.length === 0) {
+      errors.qualifications = "At least one qualification is required";
+    }
+
+    // About validation
+    if (!formData.about.trim()) {
+      errors.about = "About section is required";
+    } else if (formData.about.trim().length < 20) {
+      errors.about = "About section must be at least 20 characters";
+    } else if (formData.about.trim().length > 1000) {
+      errors.about = "About section must not exceed 1000 characters";
+    }
+
+    // Address validation (all fields required)
+    if (!formData.address.street.trim()) {
+      errors.street = "Street address is required";
+    }
+    if (!formData.address.city.trim()) {
+      errors.city = "City is required";
+    }
+    if (!formData.address.state.trim()) {
+      errors.state = "State is required";
+    }
+    if (!formData.address.zip.trim()) {
+      errors.zip = "ZIP code is required";
+    } else if (!validateZip(formData.address.zip)) {
+      errors.zip = "ZIP code must be exactly 6 digits";
+    }
+    if (!formData.address.country.trim()) {
+      errors.country = "Country is required";
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
 
+    // Clear field error when user starts typing
+    if (fieldErrors[name] || fieldErrors[name.split(".")[1]]) {
+      const newErrors = { ...fieldErrors };
+      delete newErrors[name];
+      delete newErrors[name.split(".")[1]];
+      setFieldErrors(newErrors);
+    }
+
     // Handle nested address fields
     if (name.startsWith("address.")) {
-      const field = name.split(".")[1]; // e.g., "street"
+      const field = name.split(".")[1];
       setFormData((prev) => ({
         ...prev,
         address: {
@@ -74,7 +193,6 @@ export default function AddDoctorPage() {
         },
       }));
     } else {
-      // Normal fields
       setFormData((prev) => ({
         ...prev,
         [name]: value,
@@ -88,12 +206,14 @@ export default function AddDoctorPage() {
       // Validate file type
       if (!file.type.startsWith("image/")) {
         setError("Please select a valid image file");
+        toast.error("Please select a valid image file");
         return;
       }
 
       // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         setError("Profile picture must be less than 5MB");
+        toast.error("Profile picture must be less than 5MB");
         return;
       }
 
@@ -105,7 +225,7 @@ export default function AddDoctorPage() {
         setProfilePicturePreview(e.target?.result);
       };
       reader.readAsDataURL(file);
-      setError(""); // Clear any previous errors
+      setError("");
     }
   };
 
@@ -118,6 +238,14 @@ export default function AddDoctorPage() {
     const values = selectedOptions
       ? selectedOptions.map((option) => option.value)
       : [];
+
+    // Clear specialization error
+    if (fieldErrors.specialization) {
+      const newErrors = { ...fieldErrors };
+      delete newErrors.specialization;
+      setFieldErrors(newErrors);
+    }
+
     setFormData((prev) => ({
       ...prev,
       specialization: values,
@@ -128,6 +256,14 @@ export default function AddDoctorPage() {
     const values = selectedOptions
       ? selectedOptions.map((option) => option.value)
       : [];
+
+    // Clear qualifications error
+    if (fieldErrors.qualifications) {
+      const newErrors = { ...fieldErrors };
+      delete newErrors.qualifications;
+      setFieldErrors(newErrors);
+    }
+
     setFormData((prev) => ({
       ...prev,
       qualifications: values,
@@ -139,44 +275,21 @@ export default function AddDoctorPage() {
     setLoading(true);
     setError("");
     setSuccess("");
+    setFieldErrors({});
 
-    // Form validation
-    if (!formData.fullname.trim()) {
-      setError("Full name is required");
-      setLoading(false);
-      return;
-    }
-    if (!formData.email.trim()) {
-      setError("Email is required");
-      setLoading(false);
-      return;
-    }
-    if (!formData.password.trim()) {
-      setError("Password is required");
-      setLoading(false);
-      return;
-    }
-    if (formData.specialization.length === 0) {
-      setError("At least one specialization is required");
-      setLoading(false);
-      return;
-    }
-    if (formData.qualifications.length === 0) {
-      setError("At least one qualification is required");
-      setLoading(false);
-      return;
-    }
-    if (!formData.about.trim()) {
-      setError("About section is required");
+    // Validate form
+    if (!validateForm()) {
+      setError("Please fix all errors before submitting");
+      toast.error("Please fix all errors before submitting");
       setLoading(false);
       return;
     }
 
     try {
-      //send form data along with profile picture
       const doctorData = {
         ...formData,
         age: parseInt(formData.age),
+        experience: parseInt(formData.experience),
         profilePic,
       };
       console.log("doctor data being submitted", doctorData);
@@ -194,13 +307,23 @@ export default function AddDoctorPage() {
         email: "",
         password: "",
         fullname: "",
+        gender: "Male",
         age: 0,
         specialization: [],
         qualifications: [],
         experience: "",
         about: "",
         phone: "",
+        address: {
+          street: "",
+          city: "",
+          state: "",
+          zip: "",
+          country: "India",
+        },
       });
+      setProfilePicture(null);
+      setProfilePicturePreview("");
 
       // Redirect to verification page
       setTimeout(() => {
@@ -209,7 +332,7 @@ export default function AddDoctorPage() {
         );
       }, 2000);
     } catch (err) {
-      // Handle validation errors specifically
+      console.error("Error adding doctor:", err);
       if (err.message && err.message.includes("validation failed")) {
         const validationErrors = [];
         if (err.message.includes("specialization")) {
@@ -223,15 +346,17 @@ export default function AddDoctorPage() {
           );
         }
         setError(validationErrors.join(" "));
+        toast.error(validationErrors.join(" "));
       } else {
-        setError(err.message || "Failed to add doctor");
+        setError(err.message || "Failed to add doctor. Please try again.");
+        toast.error(err.message || "Failed to add doctor. Please try again.");
       }
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) {
+  if (loading && authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
@@ -345,10 +470,17 @@ export default function AddDoctorPage() {
                   name="fullname"
                   value={formData.fullname}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200"
+                  className={`w-full px-4 py-3 border ${
+                    fieldErrors.fullname ? "border-red-500" : "border-gray-300"
+                  } rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200`}
                   placeholder="Enter name without any titles, e.g. John Doe"
                   required
                 />
+                {fieldErrors.fullname && (
+                  <p className="text-xs text-red-500 mt-1">
+                    {fieldErrors.fullname}
+                  </p>
+                )}
               </div>
 
               {/* Email */}
@@ -365,10 +497,17 @@ export default function AddDoctorPage() {
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200"
+                  className={`w-full px-4 py-3 border ${
+                    fieldErrors.email ? "border-red-500" : "border-gray-300"
+                  } rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200`}
                   placeholder="doctor@example.com"
                   required
                 />
+                {fieldErrors.email && (
+                  <p className="text-xs text-red-500 mt-1">
+                    {fieldErrors.email}
+                  </p>
+                )}
               </div>
 
               {/* Password */}
@@ -385,10 +524,17 @@ export default function AddDoctorPage() {
                   name="password"
                   value={formData.password}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200"
-                  placeholder="Enter password"
+                  className={`w-full px-4 py-3 border ${
+                    fieldErrors.password ? "border-red-500" : "border-gray-300"
+                  } rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200`}
+                  placeholder="Enter password (min 6 characters)"
                   required
                 />
+                {fieldErrors.password && (
+                  <p className="text-xs text-red-500 mt-1">
+                    {fieldErrors.password}
+                  </p>
+                )}
               </div>
 
               {/* Phone */}
@@ -397,7 +543,7 @@ export default function AddDoctorPage() {
                   htmlFor="phone"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
-                  Phone Number
+                  Phone Number (Optional)
                 </label>
                 <input
                   type="tel"
@@ -406,13 +552,21 @@ export default function AddDoctorPage() {
                   maxLength={10}
                   value={formData.phone}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200"
-                  placeholder="+1234567890"
+                  className={`w-full px-4 py-3 border ${
+                    fieldErrors.phone ? "border-red-500" : "border-gray-300"
+                  } rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200`}
+                  placeholder="10 digit phone number"
                 />
+                {fieldErrors.phone && (
+                  <p className="text-xs text-red-500 mt-1">
+                    {fieldErrors.phone}
+                  </p>
+                )}
               </div>
 
+              {/* Age */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Age *
                 </label>
                 <input
@@ -421,12 +575,16 @@ export default function AddDoctorPage() {
                   value={formData.age}
                   onChange={handleInputChange}
                   required
-                  maxLength={3}
                   min="1"
                   max="120"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className={`w-full px-4 py-3 border ${
+                    fieldErrors.age ? "border-red-500" : "border-gray-300"
+                  } rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200`}
                   placeholder="Enter age"
                 />
+                {fieldErrors.age && (
+                  <p className="text-xs text-red-500 mt-1">{fieldErrors.age}</p>
+                )}
               </div>
 
               {/* Experience */}
@@ -435,7 +593,7 @@ export default function AddDoctorPage() {
                   htmlFor="experience"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
-                  Years of Experience
+                  Years of Experience *
                 </label>
                 <input
                   type="number"
@@ -443,16 +601,27 @@ export default function AddDoctorPage() {
                   name="experience"
                   value={formData.experience}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200"
+                  className={`w-full px-4 py-3 border ${
+                    fieldErrors.experience
+                      ? "border-red-500"
+                      : "border-gray-300"
+                  } rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200`}
                   placeholder="0"
                   min="0"
+                  required
                 />
+                {fieldErrors.experience && (
+                  <p className="text-xs text-red-500 mt-1">
+                    {fieldErrors.experience}
+                  </p>
+                )}
               </div>
+
               {/* Gender */}
               <div>
                 <label
                   htmlFor="gender"
-                  className="block text-sm font-medium text-gray-700 mb-3"
+                  className="block text-sm font-medium text-gray-700 mb-2"
                 >
                   Gender *
                 </label>
@@ -461,12 +630,19 @@ export default function AddDoctorPage() {
                   value={formData.gender}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200"
+                  className={`w-full px-4 py-3 border ${
+                    fieldErrors.gender ? "border-red-500" : "border-gray-300"
+                  } rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200`}
                 >
                   <option value="Male">Male</option>
                   <option value="Female">Female</option>
                   <option value="Other">Other</option>
                 </select>
+                {fieldErrors.gender && (
+                  <p className="text-xs text-red-500 mt-1">
+                    {fieldErrors.gender}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -497,12 +673,16 @@ export default function AddDoctorPage() {
                 styles={{
                   control: (provided) => ({
                     ...provided,
-                    border: "1px solid #d1d5db",
+                    border: `1px solid ${
+                      fieldErrors.specialization ? "#ef4444" : "#d1d5db"
+                    }`,
                     borderRadius: "12px",
                     padding: "4px",
                     minHeight: "48px",
                     "&:hover": {
-                      borderColor: "#3b82f6",
+                      borderColor: fieldErrors.specialization
+                        ? "#ef4444"
+                        : "#3b82f6",
                     },
                   }),
                   option: (provided, state) => ({
@@ -529,9 +709,15 @@ export default function AddDoctorPage() {
                   }),
                 }}
               />
-              <p className="text-xs text-gray-500 mt-1">
-                Select one or more specializations
-              </p>
+              {fieldErrors.specialization ? (
+                <p className="text-xs text-red-500 mt-1">
+                  {fieldErrors.specialization}
+                </p>
+              ) : (
+                <p className="text-xs text-gray-500 mt-1">
+                  Select one or more specializations
+                </p>
+              )}
             </div>
 
             {/* Qualifications */}
@@ -561,12 +747,16 @@ export default function AddDoctorPage() {
                 styles={{
                   control: (provided) => ({
                     ...provided,
-                    border: "1px solid #d1d5db",
+                    border: `1px solid ${
+                      fieldErrors.qualifications ? "#ef4444" : "#d1d5db"
+                    }`,
                     borderRadius: "12px",
                     padding: "4px",
                     minHeight: "48px",
                     "&:hover": {
-                      borderColor: "#3b82f6",
+                      borderColor: fieldErrors.qualifications
+                        ? "#ef4444"
+                        : "#3b82f6",
                     },
                   }),
                   option: (provided, state) => ({
@@ -593,9 +783,15 @@ export default function AddDoctorPage() {
                   }),
                 }}
               />
-              <p className="text-xs text-gray-500 mt-1">
-                Select one or more qualifications
-              </p>
+              {fieldErrors.qualifications ? (
+                <p className="text-xs text-red-500 mt-1">
+                  {fieldErrors.qualifications}
+                </p>
+              ) : (
+                <p className="text-xs text-gray-500 mt-1">
+                  Select one or more qualifications
+                </p>
+              )}
             </div>
 
             {/* About */}
@@ -612,64 +808,97 @@ export default function AddDoctorPage() {
                 value={formData.about}
                 onChange={handleInputChange}
                 rows={4}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200"
-                placeholder="Brief description about the doctor's expertise, experience, and approach to patient care..."
+                className={`w-full px-4 py-3 border ${
+                  fieldErrors.about ? "border-red-500" : "border-gray-300"
+                } rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200`}
+                placeholder="Brief description about the doctor's expertise, experience, and approach to patient care (min 20 characters)..."
                 required
               />
+              {fieldErrors.about && (
+                <p className="text-xs text-red-500 mt-1">{fieldErrors.about}</p>
+              )}
+              <p className="text-xs text-gray-500 mt-1">
+                {formData.about.length}/1000 characters
+              </p>
             </div>
+
             {/* Address Information */}
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                 <MapPin className="h-5 w-5 text-blue-600 mr-2" />
-                Address Information
+                Address Information *
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Street Address
+                    Street Address *
                   </label>
                   <input
                     type="text"
                     name="address.street"
                     value={formData.address.street}
                     onChange={handleInputChange}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                    className={`w-full px-4 py-3 border ${
+                      fieldErrors.street ? "border-red-500" : "border-gray-300"
+                    } rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200`}
                     placeholder="Enter street address"
                   />
+                  {fieldErrors.street && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {fieldErrors.street}
+                    </p>
+                  )}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    City
+                    City *
                   </label>
                   <input
                     type="text"
                     name="address.city"
                     value={formData.address.city}
                     onChange={handleInputChange}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                    className={`w-full px-4 py-3 border ${
+                      fieldErrors.city ? "border-red-500" : "border-gray-300"
+                    } rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200`}
                     placeholder="Enter city"
                   />
+                  {fieldErrors.city && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {fieldErrors.city}
+                    </p>
+                  )}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    State
+                    State *
                   </label>
                   <input
                     type="text"
                     name="address.state"
                     value={formData.address.state}
                     onChange={handleInputChange}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                    className={`w-full px-4 py-3 border ${
+                      fieldErrors.state ? "border-red-500" : "border-gray-300"
+                    } rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200`}
                     placeholder="Enter state"
                   />
+                  {fieldErrors.state && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {fieldErrors.state}
+                    </p>
+                  )}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    ZIP Code
+                    ZIP Code *
                   </label>
                   <input
                     type="text"
@@ -678,23 +907,39 @@ export default function AddDoctorPage() {
                     maxLength={6}
                     minLength={6}
                     onChange={handleInputChange}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Enter ZIP code"
+                    required
+                    className={`w-full px-4 py-3 border ${
+                      fieldErrors.zip ? "border-red-500" : "border-gray-300"
+                    } rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200`}
+                    placeholder="Enter 6 digit ZIP code"
                   />
+                  {fieldErrors.zip && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {fieldErrors.zip}
+                    </p>
+                  )}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Country
+                    Country *
                   </label>
                   <input
                     type="text"
                     name="address.country"
                     value={formData.address.country}
                     onChange={handleInputChange}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                    className={`w-full px-4 py-3 border ${
+                      fieldErrors.country ? "border-red-500" : "border-gray-300"
+                    } rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200`}
                     placeholder="Enter country"
                   />
+                  {fieldErrors.country && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {fieldErrors.country}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -705,7 +950,7 @@ export default function AddDoctorPage() {
                 htmlFor="profile-picture"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                Profile Picture
+                Profile Picture (Optional)
               </label>
               <div className="flex items-center space-x-4">
                 <div className="w-24 h-24 rounded-full overflow-hidden border border-gray-300">
@@ -742,22 +987,24 @@ export default function AddDoctorPage() {
                     onChange={handleProfilePictureChange}
                     className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    PNG, JPG up to 5MB
+                  </p>
                   {profilePic && (
                     <button
                       type="button"
                       onClick={removeProfilePicture}
-                      className="mt-2 px-3 py-1 bg-red-500 text-white rounded-md text-xs"
+                      className="mt-2 px-3 py-1 bg-red-500 text-white rounded-md text-xs hover:bg-red-600 transition-colors"
                     >
                       Remove Picture
                     </button>
                   )}
                 </div>
               </div>
-              {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
             </div>
 
             {/* Submit Button */}
-            <div className="flex justify-end space-x-4">
+            <div className="flex justify-end space-x-4 pt-4">
               <Link
                 href="/admin/dashboard"
                 className="px-6 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors duration-200"
@@ -767,9 +1014,35 @@ export default function AddDoctorPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
               >
-                {loading ? "Adding Doctor..." : "Add Doctor"}
+                {loading ? (
+                  <>
+                    <svg
+                      className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    Adding Doctor...
+                  </>
+                ) : (
+                  "Add Doctor"
+                )}
               </button>
             </div>
           </form>

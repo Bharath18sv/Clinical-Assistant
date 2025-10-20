@@ -6,7 +6,8 @@ import { Patient } from "../models/patient.models.js";
 
 export const verifyJwt = asyncHandler(async (req, res, next) => {
   // Check token in cookies or headers
-  // console.log("verify jwt called");
+  // console.log("req.cookies: ", req.cookies);
+  // console.log("req.headers: ", req.headers);
   const authHeader = req.header("Authorization");
   const token =
     req.cookies?.accessToken ||

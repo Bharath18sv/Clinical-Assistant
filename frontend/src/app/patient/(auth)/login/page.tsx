@@ -18,15 +18,12 @@ export default function LoginPage() {
   // Universal login: if already logged in via localStorage, redirect immediately
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
-    console.log("stored user in local storage:", storedUser);
     if (storedUser) {
-      const userData = JSON.parse(storedUser);
-      if (userData.role === "patient") {
+      const parsed = JSON.parse(storedUser);
+      const role = parsed?.role ?? parsed?.data?.role;
+      if (role === "patient") {
         toast.success("Already logged in. Redirecting to dashboard...");
         router.replace("/patient/dashboard");
-      } else {
-        toast.error("Unauthorized access. Redirecting...");
-        router.replace("/"); // Redirect to a default page if role is not patient
       }
     }
   }, [router]);
@@ -42,10 +39,11 @@ export default function LoginPage() {
         email,
         password,
       });
-      const data = res.data;
-      console.log("Login response data:", data);
-      localStorage.setItem("user", JSON.stringify(data));
-      login(data); // Update context
+      const apiResponse = res.data;
+      const session = apiResponse?.data ?? apiResponse;
+      // Persist only the session object that includes role/tokens/user
+      localStorage.setItem("user", JSON.stringify(session));
+      login(session); // Update context
       // Success toast
       toast.success("Login successful! Redirecting...");
       router.push("/patient/dashboard");

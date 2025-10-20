@@ -38,11 +38,11 @@ import patientRouter from "./routes/patient.routes.js";
 import doctorRouter from "./routes/doctor.routes.js";
 import adminRouter from "./routes/admin.routes.js";
 import authRouter from "./routes/auth.routes.js";
-import appointmentRouter from "./routes/appointment.routes.js"
+import appointmentRouter from "./routes/appointment.routes.js";
 import prescriptionRouter from "./routes/prescription.routes.js";
 import vitalsRouter from "./routes/vitals.routes.js";
 import medicationLogsRouter from "./routes/medicationLogs.routes.js";
-
+import symptomsRouter from "./routes/symptoms.routes.js";
 
 //routes
 app.use("/api/patients", patientRouter); //routes should always start with /
@@ -53,5 +53,6 @@ app.use("/api/appointments", appointmentRouter);
 app.use("/api/prescriptions", prescriptionRouter);
 app.use("/api/vitals", vitalsRouter);
 app.use("/api/medicationLogs", medicationLogsRouter);
+app.use("/api/symptoms", symptomsRouter);
 
 export default app;

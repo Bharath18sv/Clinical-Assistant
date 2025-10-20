@@ -4,6 +4,11 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "react-hot-toast";
 import { Mail, ArrowLeft, RefreshCw } from "lucide-react";
+import API from "@/utils/api";
+import {
+  resendDoctorVerification,
+  verifyDoctorEmail,
+} from "@/utils/api/emailApi";
 
 export default function DoctorEmailVerificationPage() {
   const [code, setCode] = useState("");
@@ -47,20 +52,11 @@ export default function DoctorEmailVerificationPage() {
 
     setLoading(true);
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/doctors/verify-email`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ email, code }),
-        }
-      );
+      const response = await verifyDoctorEmail(email, code);
 
-      const data = await response.json();
+      const data = response.data;
 
-      if (response.ok) {
+      if (response.success) {
         toast.success("Email verified successfully!");
         localStorage.removeItem("pendingDoctorVerificationEmail");
         router.push("/doctor/login");
@@ -80,20 +76,10 @@ export default function DoctorEmailVerificationPage() {
 
     setResendLoading(true);
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/doctors/resend-verification`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ email }),
-        }
-      );
+      const res = await resendDoctorVerification(email);
+      const data = res.data;
 
-      const data = await response.json();
-
-      if (response.ok) {
+      if (res.success) {
         toast.success("Verification code sent!");
         setCountdown(60); // 60 second cooldown
       } else {

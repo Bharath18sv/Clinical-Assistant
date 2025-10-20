@@ -5,9 +5,9 @@ export const isTokenExpired = (token) => {
 
   try {
     const decoded = jwtDecode(token);
-    const currentTime = Date.now() / 1000;
-
-    return decoded.exp < currentTime;
+    const currentTimeSeconds = Math.floor(Date.now() / 1000);
+    if (typeof decoded?.exp !== "number") return true;
+    return decoded.exp <= currentTimeSeconds;
   } catch (error) {
     console.error("Error decoding token:", error);
     return true;

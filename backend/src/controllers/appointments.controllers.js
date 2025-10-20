@@ -78,6 +78,8 @@ const getUserAppointments = asyncHandler(async (req, res) => {
     );
 });
 
+
+
 const getDPAppointment = asyncHandler(async (req, res) => {
   const userOne = req.user._id; //maybe doctor or patient
   // console.log("user one: ", userOne);
