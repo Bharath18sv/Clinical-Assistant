@@ -16,7 +16,6 @@ const getStatusColor = (status) => {
 };
 
 export default function AppointmentCard({ appointment }) {
-  console.log("appointments in card : ", appointment);
   const user = appointment.userDetails;
 
   const formatDate = (scheduledAt) => {

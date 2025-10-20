@@ -254,7 +254,7 @@ export default function AdminDashboardPage() {
                         </div>
                         <div>
                           <h3 className="font-medium text-gray-900">
-                            {doctor.fullname}
+                            Dr. {doctor.fullname}
                           </h3>
                           <p className="text-sm text-gray-500">
                             {doctor.specialization?.join(", ") || "General"}

@@ -17,7 +17,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 
 // Helper function to create scheduled medication logs
-const createScheduledMedicationLogs = async (prescription) => {
+export const createScheduledMedicationLogs = async (prescription) => {
   const logs = [];
   const startDate = new Date();
   const endDate = new Date();
@@ -117,8 +117,9 @@ export const createPrescription = asyncHandler(async (req, res) => {
 });
 
 export const getPrescriptionsByPatient = asyncHandler(async (req, res) => {
-  const { patientId } = req.params;
-  console.log("patientId in server:", patientId);
+  const { patientId } = req?.params;
+  console.log("prescription request:", req.params, req.body);
+  console.log("patientId in prescription :", patientId);
 
   if (!patientId) {
     throw new ApiError(400, "Patient ID is required");
@@ -131,9 +132,9 @@ export const getPrescriptionsByPatient = asyncHandler(async (req, res) => {
 
   if (!prescriptions || prescriptions.length === 0) {
     return res
-      .status(204)
+      .status(200)
       .json(
-        new ApiResponse(204, null, "No prescriptions found for this patient")
+        new ApiResponse(200, [], "No prescriptions found for this patient")
       );
   }
   return res
@@ -158,10 +159,8 @@ export const getPrescriptionsByDoctor = asyncHandler(async (req, res) => {
 
   if (!prescriptions || prescriptions.length === 0) {
     return res
-      .status(204)
-      .json(
-        new ApiResponse(204, null, "No prescriptions found for this doctor")
-      );
+      .status(200)
+      .json(new ApiResponse(200, [], "No prescriptions found for this doctor"));
   }
 
   return res
@@ -188,9 +187,9 @@ export const getLatestPrescription = asyncHandler(async (req, res) => {
 
   if (!latestPrescription) {
     return res
-      .status(204)
+      .status(200)
       .json(
-        new ApiResponse(204, null, "No prescriptions found for this patient")
+        new ApiResponse(200, null, "No prescriptions found for this patient")
       );
   }
 

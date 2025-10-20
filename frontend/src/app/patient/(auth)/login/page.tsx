@@ -40,10 +40,14 @@ export default function LoginPage() {
         password,
       });
       const apiResponse = res.data;
-      const session = apiResponse?.data ?? apiResponse;
+      // Store the same shape as doctor login: { user, accessToken, refreshToken, role }
+      const session = apiResponse?.data;
+      console.log("API Response:", apiResponse);
+      console.log("Session data:", session);
       // Persist only the session object that includes role/tokens/user
       localStorage.setItem("user", JSON.stringify(session));
       login(session); // Update context
+      console.log("Login function called, user should be set now");
       // Success toast
       toast.success("Login successful! Redirecting...");
       router.push("/patient/dashboard");

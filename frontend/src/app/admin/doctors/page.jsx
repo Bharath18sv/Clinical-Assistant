@@ -248,7 +248,7 @@ export default function AdminDoctorsPage() {
 
                             <div>
                               <div className="text-sm font-medium text-gray-900">
-                                {doctor.fullname}
+                                Dr. {doctor.fullname}
                               </div>
                               <div className="text-sm text-gray-500">
                                 {doctor.email}

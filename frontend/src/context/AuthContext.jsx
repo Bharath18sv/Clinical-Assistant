@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useState, useEffect } from "react";
+import { isTokenExpired } from "@/utils/auth";
 
 export const AuthContext = createContext();
 
@@ -12,24 +13,24 @@ export const AuthProvider = ({ children }) => {
   const [authLoading, setAuthLoading] = useState(true); // Add loading state
 
   const checkTokenValidity = async () => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
+    const storedUserStr = localStorage.getItem("user");
+    if (storedUserStr) {
       try {
-        const userData = JSON.parse(storedUser);
+        const storedUser = JSON.parse(storedUserStr);
+        console.log("stored user: ", storedUser);
 
-        // Check if token is expired before setting user
-        if (userData?.accessToken) {
-          const tokenExpired = isTokenExpired(userData?.accessToken);
+        if (storedUser?.accessToken) {
+          const tokenExpired = isTokenExpired(storedUser.accessToken);
           if (tokenExpired) {
             // Clear expired data
             localStorage.removeItem("user");
             localStorage.removeItem("token");
             setUser(null);
           } else {
-            setUser(userData);
+            setUser(storedUser);
           }
         } else {
-          setUser(userData);
+          setUser(storedUser);
         }
       } catch (error) {
         console.error("Error parsing stored user data:", error);
@@ -46,24 +47,12 @@ export const AuthProvider = ({ children }) => {
     checkTokenValidity();
   }, []);
 
-  // Helper function to check token expiration
-  const isTokenExpired = (token) => {
-    if (!token) return true;
-
-    try {
-      const decoded = JSON.parse(atob(token.split(".")[1]));
-      const currentTime = Date.now() / 1000;
-      return decoded.exp < currentTime;
-    } catch (error) {
-      console.error("Error decoding token:", error);
-      return true;
-    }
-  };
-
   // Login function (save to localStorage + state)
   const login = (userData) => {
+    console.log("AuthContext login called with:", userData);
     localStorage.setItem("user", JSON.stringify(userData));
     setUser(userData);
+    console.log("AuthContext user set to:", userData);
   };
 
   // Logout function

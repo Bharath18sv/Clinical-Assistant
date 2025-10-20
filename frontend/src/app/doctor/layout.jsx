@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 export default function DoctorLayout({ children }) {
   const path = usePathname();
-  const hidePaths = path === "/doctor/login";
+  const hidePaths = path === "/doctor/login" || path === "/doctor/verify-email";
   return (
     <div className="flex h-screen">
       {!hidePaths && <DoctorSidebar />}

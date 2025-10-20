@@ -6,7 +6,6 @@ import { AuthContext } from "@/context/AuthContext";
 import API from "@/utils/api";
 import toast from "react-hot-toast";
 
-
 // Doctor Login Page
 // - Handles doctor authentication via AuthContext
 // - Supports "Remember me" (stores email + role locally)
@@ -221,6 +220,18 @@ export default function DoctorLoginPage() {
                 {isLoading ? "Signing in..." : "Access Doctor Panel"}
               </button>
             </form>
+          </div>
+          <div className="mt-8 text-center text-sm text-gray-500">
+            <p>
+              If your Email is not verified{" "}
+              <Link
+                href="/doctor/verify-email"
+                className="text-blue-600 hover:text-blue-700"
+              >
+                click here
+              </Link>{" "}
+              to verify your email.
+            </p>
           </div>
         </div>
       </div>

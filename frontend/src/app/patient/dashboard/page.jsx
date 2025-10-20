@@ -25,8 +25,8 @@ import { downloadMyPatientReportPdf } from "@/utils/api";
 
 export default function PatientDashboard() {
   const { user, authLoading } = useContext(AuthContext);
-  console.log("user : ", user);
-  const patientId = user?.data?.user?._id;
+  console.log("user in dashboard: ", user);
+  const [patientId, setPatientId] = useState(user?.user?._id);
   const [appointments, setAppointments] = useState([]);
   const [prescriptions, setPrescriptions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -45,7 +45,12 @@ export default function PatientDashboard() {
 
   const fetchVitals = async () => {
     try {
-      const vitals = await getLatestVitals(patientId);
+      const id = fetchPatientId();
+      if (!id) {
+        console.log("No patient id");
+        return;
+      }
+      const vitals = await getLatestVitals(id);
       console.log("Fetched vitals:", vitals);
       setHealthStats(vitals.data || {});
     } catch (error) {
@@ -55,6 +60,7 @@ export default function PatientDashboard() {
 
   const fetchPatientPrescriptions = async () => {
     try {
+      console.log("patient id in dashboard before api call: ", patientId);
       const res = await getPatientPrescriptions(patientId);
       setPrescriptions(res.data || []);
     } catch (error) {
@@ -65,11 +71,17 @@ export default function PatientDashboard() {
   const loadAppointments = async () => {
     try {
       const appts = await fetchMyAppointments();
-      console.log("appts : ", appts);
+      // console.log("appts : ", appts);
       setAppointments(appts || []);
     } catch (error) {
       console.error("Error fetching appointments:", error);
     }
+  };
+
+  const fetchPatientId = () => {
+    setPatientId(user?.user?._id);
+    console.log("Patient ID set to:", user?.user?._id);
+    return user?.user?._id;
   };
 
   useEffect(() => {
@@ -77,6 +89,7 @@ export default function PatientDashboard() {
       if (!authLoading && user) {
         setLoading(true);
         await Promise.all([
+          fetchPatientId(),
           loadAppointments(),
           fetchPatientPrescriptions(),
           fetchVitals(),
@@ -211,8 +224,8 @@ export default function PatientDashboard() {
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Patient Dashboard</h1>
         <p className="text-gray-600 mt-2">
-          Welcome back, {user?.data?.user?.fullname || "Patient"}! Here's your
-          health overview.
+          Welcome back, {user?.user?.fullname || "Patient"}! Here's your health
+          overview.
         </p>
       </div>
 
