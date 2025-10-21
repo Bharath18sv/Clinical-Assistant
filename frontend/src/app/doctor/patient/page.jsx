@@ -32,6 +32,7 @@ export default function DoctorPatientsPage({ params }) {
       try {
         const patients = await viewMyPatients();
         console.log("my patients :", patients);
+        console.log("first patient profile pic:", patients[0]?.patientDetails?.profilePic);
         if (patients) {
           setPatients(patients || []);
         }
@@ -167,11 +168,9 @@ export default function DoctorPatientsPage({ params }) {
                                   }}
                                 />
                               ) : null}
-                              Fallback icon - shown when no profilePic or image
-                              fails to load
                               <div
                                 className={`h-full w-full bg-blue-100 rounded-full flex items-center justify-center ${
-                                  patient.profilePic ? "hidden" : "flex"
+                                  patient.patientDetails.profilePic ? "hidden" : "flex"
                                 }`}
                               >
                                 <User className="h-5 w-5 text-blue-600" />
@@ -249,7 +248,7 @@ export default function DoctorPatientsPage({ params }) {
                                       Current Symptoms
                                     </p>
                                     <p className="text-xs text-gray-600">
-                                      {patient.patientDetails.allergies.join(
+                                      {patient.patientDetails.symptoms.join(
                                         ", "
                                       )}
                                     </p>
@@ -273,13 +272,30 @@ export default function DoctorPatientsPage({ params }) {
                 <div
                   key={patient._id}
                   className="bg-white rounded-xl shadow-sm border p-6 cursor-pointer hover:shadow-md transition-shadow group"
-                  onClick={() => handlePatientClick(patient._id)}
+                  onClick={() => handlePatientClick(patient.patientDetails._id)}
                 >
                   {/* Patient Header */}
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center">
-                      <div className="flex-shrink-0 h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center">
-                        <User className="h-6 w-6 text-blue-600" />
+                      <div className="flex-shrink-0 h-12 w-12 rounded-full overflow-hidden">
+                        {patient.patientDetails.profilePic ? (
+                          <img
+                            src={patient.patientDetails.profilePic}
+                            alt={`${patient.patientDetails.fullname}'s profile`}
+                            className="h-full w-full object-cover"
+                            onError={(e) => {
+                              e.target.style.display = "none";
+                              e.target.nextSibling.style.display = "flex";
+                            }}
+                          />
+                        ) : null}
+                        <div
+                          className={`h-full w-full bg-blue-100 rounded-full flex items-center justify-center ${
+                            patient.patientDetails.profilePic ? "hidden" : "flex"
+                          }`}
+                        >
+                          <User className="h-6 w-6 text-blue-600" />
+                        </div>
                       </div>
                       <div className="ml-4">
                         <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">

@@ -1,10 +1,11 @@
 //admin login page
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import API from "@/utils/api";
 import toast from "react-hot-toast";
+import { AuthContext } from "@/context/AuthContext";
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
@@ -12,23 +13,16 @@ export default function AdminLoginPage() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const { login, user } = useContext(AuthContext);
   const router = useRouter();
 
   useEffect(() => {
-    try {
-      const userExist = localStorage.getItem("user");
-      console.log("user data in localStorage:", userExist);
-      if (!userExist) return;
-      const user = JSON.parse(userExist);
-      if (user?.data?.role === "admin" || user?.data?.role === "super_admin") {
-        console.log("Admin already logged in, redirecting to dashboard...");
-        router.replace("/admin/dashboard");
-        toast.success("Welcome back, Admin!");
-      }
-    } catch (error) {
-      console.error("Error loading auth data:", error);
+    if (user && (user.role === "admin" || user.role === "super_admin")) {
+      console.log("Admin already logged in, redirecting to dashboard...");
+      router.replace("/admin/dashboard");
+      toast.success("Welcome back, Admin!");
     }
-  }, []);
+  }, [user, router]);
 
   //login logic
   const handleLogin = async (e) => {
@@ -37,14 +31,13 @@ export default function AdminLoginPage() {
     setError("");
 
     try {
-      // Perform admin login via AuthContext; this sets tokens and user role
       const response = await API.post("/admin/login", { email, password });
       const data = response.data;
       console.log("Login response data:", data);
-      console.log("user data inside data object", data.data);
-      localStorage.setItem("user", JSON.stringify(data.data));
+      
+      // Use AuthContext login function
+      login(data.data);
       toast.success("Login successful! Redirecting...");
-      // Navigate to dashboard on success
       router.replace("/admin/dashboard");
     } catch (err) {
       setError(err.message || "Login failed. Please check your credentials.");
@@ -276,7 +269,7 @@ export default function AdminLoginPage() {
             </h3>
             <div className="text-xs text-blue-700 space-y-1">
               <p>
-                <strong>Email:</strong> admin@smartcare.com
+                <strong>Email:</strong> admin@sca.com
               </p>
               <p>
                 <strong>Password:</strong> admin123
