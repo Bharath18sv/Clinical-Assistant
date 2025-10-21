@@ -65,6 +65,9 @@ adminSchema.methods.isPasswordCorrect = function (password) {
 
 // Method for generating access token
 adminSchema.methods.generateAccessToken = async function () {
+  if (!process.env.ACCESS_TOKEN_SECRET) {
+    throw new Error("ACCESS_TOKEN_SECRET is not defined in environment variables");
+  }
   return jwt.sign(
     {
       _id: this._id,
@@ -74,20 +77,23 @@ adminSchema.methods.generateAccessToken = async function () {
     },
     process.env.ACCESS_TOKEN_SECRET,
     {
-      expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
+      expiresIn: process.env.ACCESS_TOKEN_EXPIRY || "1d",
     }
   );
 };
 
 // Method for generating refresh token
 adminSchema.methods.generateRefreshToken = async function () {
+  if (!process.env.REFRESH_TOKEN_SECRET) {
+    throw new Error("REFRESH_TOKEN_SECRET is not defined in environment variables");
+  }
   return jwt.sign(
     {
       _id: this._id,
     },
     process.env.REFRESH_TOKEN_SECRET,
     {
-      expiresIn: process.env.REFRESH_TOKEN_EXPIRY,
+      expiresIn: process.env.REFRESH_TOKEN_EXPIRY || "10d",
     }
   );
 };
