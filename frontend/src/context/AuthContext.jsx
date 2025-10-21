@@ -14,13 +14,15 @@ export const AuthProvider = ({ children }) => {
 
   const checkTokenValidity = async () => {
     const storedUserStr = localStorage.getItem("user");
+    console.log("stored user json: ", storedUserStr);
     if (storedUserStr) {
       try {
-        const storedUser = JSON.parse(storedUserStr);
-        console.log("stored user: ", storedUser);
+        const storedUser = await JSON.parse(storedUserStr);
+        console.log("stored user string: ", storedUser);
 
         if (storedUser?.accessToken) {
-          const tokenExpired = isTokenExpired(storedUser.accessToken);
+          const tokenExpired = isTokenExpired(storedUser?.accessToken);
+          console.log("is token expired? : ", tokenExpired);
           if (tokenExpired) {
             // Clear expired data
             localStorage.removeItem("user");

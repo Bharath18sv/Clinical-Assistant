@@ -1,12 +1,14 @@
 //admin login page
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import API from "@/utils/api";
 import toast from "react-hot-toast";
+import { AuthContext } from "@/context/AuthContext";
 
 export default function AdminLoginPage() {
+  const { user, login } = useContext(AuthContext);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -43,6 +45,7 @@ export default function AdminLoginPage() {
       console.log("Login response data:", data);
       console.log("user data inside data object", data.data);
       localStorage.setItem("user", JSON.stringify(data.data));
+      login(data.data);
       toast.success("Login successful! Redirecting...");
       // Navigate to dashboard on success
       router.replace("/admin/dashboard");

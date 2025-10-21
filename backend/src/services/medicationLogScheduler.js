@@ -99,7 +99,7 @@ export const createMedicationLogsForCurrentPeriod = async () => {
               appUrl: process.env.APP_URL,
             });
             await sendEmail({
-              to: "svbharath2005@gmail.com", //change this to patient.email
+              to: `${patient.email}`, //change this to patient.email
               subject: `Medication reminder: ${medication.name} (${currentTimeOfDay})`,
               html,
             });

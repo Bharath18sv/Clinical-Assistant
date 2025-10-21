@@ -22,11 +22,10 @@ import { SYMPTOMS } from "@/data/constant";
 export default function PatientSymptoms() {
   const { user } = useContext(AuthContext);
   console.log("user", user);
-  const [patientId, setPatientId] = useState(user?.data?.user?._id);
+  const [patientId, setPatientId] = useState(user?.user?._id);
   const params = useParams();
   const router = useRouter();
   const doctorId = params?.id;
-  console.log("doctorId", doctorId);
   const [symptoms, setSymptoms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -61,8 +60,9 @@ export default function PatientSymptoms() {
     try {
       setLoading(true);
       setError("");
+      console.log("doctorId: ", doctorId);
       const response = await getSymptomLogOfDoctorByPatient(doctorId);
-      console.log("response gslefee: ", response.data);
+      console.log("response gslefee: ", response);
       if (response?.data) {
         // Format symptoms for display
         const formattedSymptoms =

@@ -723,7 +723,7 @@ const generateMyReportPdf = asyncHandler(async (req, res) => {
     Vitals.find({ patient: patientId }).sort({ createdAt: -1 }),
     Appointment.find({ patientId }).sort({ scheduledAt: -1 }),
   ]);
-
+  // console.log("vitals data for report: ", vitals);
   const doc = new PDFDocument({ margin: 50 });
   const filename = `my-health-report.pdf`;
   res.setHeader("Content-Type", "application/pdf");
@@ -789,14 +789,16 @@ const generateMyReportPdf = asyncHandler(async (req, res) => {
       doc
         .fontSize(12)
         .text(
-          `- ${new Date(v.createdAt).toLocaleString()} | BP: ${
+          `- ${new Date(v.takenAt).toLocaleString()} | BP: ${
             v.bloodPressure || "N/A"
           } | Sugar: ${v.sugar || "N/A"}`
         );
     });
   }
 
-  doc.addPage();
+  // doc.addPage();
+  doc.moveDown(0.5);
+  console.log("symptom logs: ", symptomLogs);
   doc.fontSize(14).text("Symptom Logs", { underline: true });
   if (!symptomLogs.length) {
     doc.fontSize(12).text("No symptom logs found");
@@ -805,9 +807,9 @@ const generateMyReportPdf = asyncHandler(async (req, res) => {
       doc
         .fontSize(12)
         .text(
-          `- ${new Date(s.date).toLocaleDateString()} | ${listOrNA(
+          `- ${new Date(s.createdAt).toLocaleDateString()} | ${listOrNA(
             s.symptoms
-          )} | Notes: ${s.notes || ""}`
+          )} | Notes: ${s.notes || "N/A"}`
         );
     });
   }

@@ -19,7 +19,8 @@ import { AuthContext } from "@/context/AuthContext";
 export default function PatientPrescriptions() {
   const router = useRouter();
   const { user } = useContext(AuthContext);
-  const patient = user?.data?.user;
+  const patient = user?.user;
+  console.log("patient in prescription: ", patient?._id);
   const patientId = patient?._id;
 
   const [prescriptions, setPrescriptions] = useState([]);
