@@ -228,7 +228,7 @@ const loginPatient = asyncHandler(async (req, res) => {
   // Block login if email not verified
   if (!patient.emailVerified) {
     throw new ApiError(
-      201, //change this to 401
+      401,
       "Email not verified. Please verify your email to continue."
     );
   }
