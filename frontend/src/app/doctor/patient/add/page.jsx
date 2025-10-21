@@ -155,9 +155,13 @@ export default function AddPatientPage() {
       const newPatient = await addPatient(patientData);
       console.log("Patient data being submitted:", patientData);
 
-      setSuccess("Patient added successfully!");
-
-      router.push("/doctor/patient");
+      setSuccess("Patient added successfully! A verification email has been sent to the patient's email address.");
+      
+      // Store patient email for verification redirect
+      localStorage.setItem("pendingVerificationEmail", formData.email);
+      
+      // Redirect to success page
+      router.push("/doctor/patient/add/success");
 
       // Reset form
       setFormData({
@@ -182,7 +186,9 @@ export default function AddPatientPage() {
       setProfilePicture(null);
       setProfilePicturePreview("");
     } catch (err) {
-      setError(err.message || "Failed to add patient");
+      console.error("Error adding patient:", err);
+      const errorMessage = err.response?.data?.message || err.message || "Failed to add patient";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
