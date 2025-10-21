@@ -327,7 +327,9 @@ export const addPatient = async (patientData) => {
     return response.data;
   } catch (error) {
     console.error("Error creating patient:", error);
-    throw error;
+    console.error("Error response:", error.response?.data);
+    const errorMessage = error.response?.data?.message || error.message || "Failed to create patient";
+    throw new Error(errorMessage);
   }
 };
 export const viewMyPatients = async () => {

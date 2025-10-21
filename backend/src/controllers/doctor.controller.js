@@ -369,10 +369,12 @@ const addPatient = asyncHandler(async (req, res) => {
 
   // Profile picture
   const profilePicLocalPath = req.file?.path;
+  console.log("Profile pic local path:", profilePicLocalPath);
   let profilePic;
   if (profilePicLocalPath) {
     try {
       profilePic = await uploadOnCloudinary(profilePicLocalPath);
+      console.log("Profile pic uploaded:", profilePic?.secure_url || profilePic?.url);
     } catch (error) {
       console.log("Profile pic upload failed", error);
       throw new ApiError(500, "Failed to upload Profile picture");
@@ -396,6 +398,33 @@ const addPatient = asyncHandler(async (req, res) => {
       symptoms: parsedSymptoms,
       doctorId,
     });
+
+    // Generate verification code and email it to patient
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const codeHash = crypto.createHash("sha256").update(code).digest("hex");
+    const codeExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    createdPatient.emailVerificationCodeHash = codeHash;
+    createdPatient.emailVerificationExpiresAt = codeExpiry;
+    await createdPatient.save({ validateBeforeSave: false });
+
+    try {
+      console.log("Sending verification email to:", createdPatient.email);
+      const html = verificationCodeTemplate({
+        name: createdPatient.fullname,
+        code,
+        appUrl: process.env.APP_URL,
+      });
+      const emailResult = await sendEmail({
+        to: createdPatient.email,
+        subject: "Verify your email - Smart Care Assistant",
+        html,
+      });
+      console.log("Email sent successfully:", emailResult);
+    } catch (emailErr) {
+      console.error("Failed to send verification email to patient:", emailErr);
+      console.error("Email error details:", emailErr.message);
+    }
 
     // Create appointment
     const createdAppointment = await Appointment.create({
