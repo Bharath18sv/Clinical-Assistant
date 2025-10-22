@@ -13,24 +13,26 @@ export const AuthProvider = ({ children }) => {
   const [authLoading, setAuthLoading] = useState(true); // Add loading state
 
   const checkTokenValidity = async () => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
+    const storedUserStr = localStorage.getItem("user");
+    console.log("stored user json: ", storedUserStr);
+    if (storedUserStr) {
       try {
-        const userData = JSON.parse(storedUser);
+        const storedUser = await JSON.parse(storedUserStr);
+        console.log("stored user string: ", storedUser);
 
-        // Check if token is expired before setting user
-        if (userData?.accessToken) {
-          const tokenExpired = isTokenExpired(userData?.accessToken);
+        if (storedUser?.accessToken) {
+          const tokenExpired = isTokenExpired(storedUser?.accessToken);
+          console.log("is token expired? : ", tokenExpired);
           if (tokenExpired) {
             // Clear expired data
             localStorage.removeItem("user");
             localStorage.removeItem("token");
             setUser(null);
           } else {
-            setUser(userData);
+            setUser(storedUser);
           }
         } else {
-          setUser(userData);
+          setUser(storedUser);
         }
       } catch (error) {
         console.error("Error parsing stored user data:", error);
@@ -47,12 +49,12 @@ export const AuthProvider = ({ children }) => {
     checkTokenValidity();
   }, []);
 
-
-
   // Login function (save to localStorage + state)
   const login = (userData) => {
+    console.log("AuthContext login called with:", userData);
     localStorage.setItem("user", JSON.stringify(userData));
     setUser(userData);
+    console.log("AuthContext user set to:", userData);
   };
 
   // Logout function

@@ -416,6 +416,11 @@ export const addPrescription = async (prescriptionData) => {
 };
 
 export const getPatientPrescriptions = async (patientId) => {
+  // patientId is required
+  if (!patientId) {
+    console.error("patientID is required");
+    return null;
+  }
   console.log("PatientID in api.js:", patientId);
   try {
     const response = await API.get(`/prescriptions/patient/${patientId}/`);
@@ -597,7 +602,7 @@ export const getLatestVitals = async (patientId) => {
 
   try {
     const res = await API.get(`/vitals/latest/${patientId}`);
-    console.log("latest vitals response:", res.data);
+    // console.log("latest vitals response:", res.data);
     return res.data;
   } catch (error) {
     console.error("Error fetching latest vitals : ", error);

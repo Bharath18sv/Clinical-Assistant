@@ -8,6 +8,7 @@ import toast from "react-hot-toast";
 import { AuthContext } from "@/context/AuthContext";
 
 export default function AdminLoginPage() {
+  const { user, login } = useContext(AuthContext);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -44,10 +45,10 @@ export default function AdminLoginPage() {
       const data = response.data;
       console.log("Login response data:", data);
       console.log("user data inside data object", data.data);
-      
-      // Use AuthContext login method for proper state management
+
+      localStorage.setItem("user", JSON.stringify(data.data));
       login(data.data);
-      
+       upstream/main
       toast.success("Login successful! Redirecting...");
       // Navigate to dashboard on success
       router.replace("/admin/dashboard");

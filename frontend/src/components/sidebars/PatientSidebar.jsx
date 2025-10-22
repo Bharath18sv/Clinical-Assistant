@@ -23,6 +23,7 @@ import { AuthContext } from "@/context/AuthContext";
 
 export default function PatientSidebar() {
   const { user, authLoading, logout: contextLogout } = useContext(AuthContext);
+  // console.log("user in profile", user);
   const [patientData, setPatientData] = useState(null);
   const [isOpen, setIsOpen] = useState(true);
   const [expandedMenus, setExpandedMenus] = useState({ doctors: false });
@@ -31,6 +32,7 @@ export default function PatientSidebar() {
 
   useEffect(() => {
     if (!authLoading && user) {
+
       console.log('Full user object in patient sidebar:', user);
       console.log('user.role:', user.role);
       console.log('user.user:', user.user);
@@ -39,6 +41,7 @@ export default function PatientSidebar() {
       // Patient login API returns: { user: patientData, accessToken, refreshToken, role }
       const userData = user.user || user.data?.user || user;
       console.log('Final extracted userData:', userData);
+
       setPatientData(userData);
     } else if (!authLoading && !user) {
       setPatientData(null);

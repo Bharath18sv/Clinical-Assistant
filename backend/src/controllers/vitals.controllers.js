@@ -24,8 +24,8 @@ const getVitalsById = asyncHandler(async (req, res) => {
 
   if (!vitals || vitals.length === 0) {
     return res
-      .status(204)
-      .json(new ApiResponse(204, null, "No vitals found for this user"));
+      .status(200)
+      .json(new ApiResponse(200, [], "No vitals found for this user"));
   }
 
   console.log("vitals found:", vitals);
@@ -105,8 +105,8 @@ const getAllVitals = asyncHandler(async (req, res) => {
 
   if (!vitals || vitals.length === 0) {
     return res
-      .status(204)
-      .json(new ApiResponse(204, null, "No vitals found in the system"));
+      .status(200)
+      .json(new ApiResponse(200, [], "No vitals found in the system"));
   }
 
   return res
@@ -116,6 +116,9 @@ const getAllVitals = asyncHandler(async (req, res) => {
 
 const getLatestVitals = asyncHandler(async (req, res) => {
   const { patientId } = req.params;
+  console.log("req.params: ", req.params);
+  console.log("req.body: ", req.body);
+  console.log("patient id vitals : ", patientId);
 
   if (!patientId || patientId === 'undefined') {
     throw new ApiError(400, "Patient ID is required");
@@ -132,9 +135,9 @@ const getLatestVitals = asyncHandler(async (req, res) => {
 
   if (!latestVitals) {
     return res
-      .status(204)
+      .status(200)
       .json(
-        new ApiResponse(204, null, "No latest vitals found for this patient")
+        new ApiResponse(200, null, "No latest vitals found for this patient")
       );
   }
 

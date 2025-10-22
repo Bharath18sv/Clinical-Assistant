@@ -21,72 +21,7 @@ import {
 import { AuthContext } from "@/context/AuthContext";
 import { updatePatientProfile } from "@/utils/api";
 import toast from "react-hot-toast";
-
-// Medical data constants
-const ALLERGIES = [
-  "Peanuts",
-  "Tree Nuts",
-  "Milk",
-  "Eggs",
-  "Wheat",
-  "Soy",
-  "Fish",
-  "Shellfish",
-  "Sesame",
-  "Penicillin",
-  "Aspirin",
-  "Sulfa Drugs",
-  "Latex",
-  "Pollen",
-  "Dust Mites",
-  "Pet Dander",
-  "Insect Stings",
-  "Mold",
-];
-
-const CHRONIC_CONDITIONS = [
-  "Diabetes Type 1",
-  "Diabetes Type 2",
-  "Hypertension",
-  "High Blood Pressure",
-  "Heart Disease",
-  "Asthma",
-  "COPD",
-  "Arthritis",
-  "Osteoporosis",
-  "Thyroid Disorder",
-  "Kidney Disease",
-  "Liver Disease",
-  "Cancer",
-  "Depression",
-  "Anxiety",
-  "Epilepsy",
-  "Migraine",
-  "Allergies",
-];
-
-const SYMPTOMS = [
-  "Fever",
-  "Cough",
-  "Shortness of Breath",
-  "Fatigue",
-  "Headache",
-  "Muscle Pain",
-  "Joint Pain",
-  "Nausea",
-  "Vomiting",
-  "Diarrhea",
-  "Abdominal Pain",
-  "Chest Pain",
-  "Dizziness",
-  "Rash",
-  "Sore Throat",
-  "Runny Nose",
-  "Loss of Appetite",
-  "Weight Loss",
-  "Weight Gain",
-  "Insomnia",
-];
+import { ALLERGIES, SYMPTOMS, CHRONIC_CONDITIONS } from "@/data/constant";
 
 // Helper function to create options for react-select
 const createOptions = (items) => {
@@ -275,7 +210,7 @@ export default function PatientProfile() {
     });
   };
 
-  if (authLoading || !profile) {
+  if (!profile) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">

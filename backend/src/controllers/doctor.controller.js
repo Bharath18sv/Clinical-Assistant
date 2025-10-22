@@ -13,7 +13,6 @@ import { Prescription } from "../models/prescription.models.js";
 import { Vitals } from "../models/vitals.models.js";
 import { Appointment } from "../models/appointments.models.js";
 import mongoose from "mongoose";
-import app from "../app.js";
 import PDFDocument from "pdfkit";
 import crypto from "crypto";
 import { sendEmail } from "../utils/email.js";

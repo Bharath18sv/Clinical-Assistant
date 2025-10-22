@@ -26,8 +26,8 @@ import { downloadMyPatientReportPdf } from "@/utils/api";
 
 export default function PatientDashboard() {
   const { user, authLoading } = useContext(AuthContext);
-  console.log("user : ", user);
-  const patientId = user?.data?.user?._id;
+  // console.log("user in dashboard: ", user);
+  const [patientId, setPatientId] = useState(user?.user?._id);
   const [appointments, setAppointments] = useState([]);
   const [prescriptions, setPrescriptions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -50,7 +50,12 @@ export default function PatientDashboard() {
       return;
     }
     try {
-      const vitals = await getLatestVitals(patientId);
+      const id = fetchPatientId();
+      if (!id) {
+        console.log("No patient id");
+        return;
+      }
+      const vitals = await getLatestVitals(id);
       console.log("Fetched vitals:", vitals);
       setHealthStats(vitals.data || {});
     } catch (error) {
@@ -65,7 +70,12 @@ export default function PatientDashboard() {
       return;
     }
     try {
-      const res = await getPatientPrescriptions(patientId);
+      const fetchedPatientId = fetchPatientId();
+      console.log(
+        "patient id in dashboard before api call: ",
+        fetchedPatientId
+      );
+      const res = await getPatientPrescriptions(fetchedPatientId);
       setPrescriptions(res.data || []);
     } catch (error) {
       console.error("Error fetching prescriptions:", error);
@@ -76,7 +86,7 @@ export default function PatientDashboard() {
   const loadAppointments = async () => {
     try {
       const appts = await fetchMyAppointments();
-      console.log("appts : ", appts);
+      // console.log("appts : ", appts);
       setAppointments(appts || []);
     } catch (error) {
       console.error("Error fetching appointments:", error);
@@ -111,6 +121,7 @@ export default function PatientDashboard() {
           setLoading(false);
         }
       } else if (!authLoading && !user) {
+
         setLoading(false);
       }
     };
@@ -241,8 +252,8 @@ export default function PatientDashboard() {
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Patient Dashboard</h1>
         <p className="text-gray-600 mt-2">
-          Welcome back, {user?.data?.user?.fullname || "Patient"}! Here's your
-          health overview.
+          Welcome back, {user?.user?.fullname || "Patient"}! Here's your health
+          overview.
         </p>
       </div>
 
@@ -273,7 +284,7 @@ export default function PatientDashboard() {
       )}
 
       {/* Pending Medication Logs */}
-      <PendingMedicationLogs />
+      {/* <PendingMedicationLogs /> */}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Upcoming Appointments */}
@@ -395,7 +406,7 @@ export default function PatientDashboard() {
             </div>
           </button>
 
-          <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left transition-colors">
+          {/* <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left transition-colors">
             <div className="flex items-center">
               <div className="icon-container icon-purple mr-3">
                 <Pill className="h-5 w-5" />
@@ -407,7 +418,7 @@ export default function PatientDashboard() {
                 <p className="text-sm text-gray-500">Set up alerts</p>
               </div>
             </div>
-          </button>
+          </button> */}
         </div>
       </div>
     </div>

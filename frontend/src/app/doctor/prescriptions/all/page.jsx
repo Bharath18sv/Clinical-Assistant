@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { AuthContext } from "@/context/AuthContext";
 import { getDoctorPrescriptions, getPrescriptionById } from "@/utils/api";
+import Link from "next/link";
 
 const AllPrescriptionsPage = () => {
   const router = useRouter();
@@ -32,7 +33,6 @@ const AllPrescriptionsPage = () => {
   const [showFilters, setShowFilters] = useState(false);
 
   const fetchAllPrescriptions = async () => {
-
     try {
       setLoading(true);
       setError(null);
@@ -215,7 +215,7 @@ const AllPrescriptionsPage = () => {
   };
 
   const handleViewPrescriptionDetails = (prescriptionId) => {
-    router.push(`/prescriptions/${prescriptionId}`);
+    router.push(`doctor/prescriptions/${prescriptionId}`);
   };
 
   const handleViewPatientDetails = (patientId) => {
@@ -529,16 +529,16 @@ const AllPrescriptionsPage = () => {
 
                     {/* Action Buttons */}
                     <div className="flex xl:flex-col gap-2">
-                      <button
-                        onClick={() =>
-                          handleViewPrescriptionDetails(prescription._id)
-                        }
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium whitespace-nowrap"
+                      <Link
+                        href={`/doctor/prescriptions/${prescription._id}`}
                       >
-                        <Eye size={16} />
-                        View Details
-                      </button>
-                      <button
+                        <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium whitespace-nowrap">
+                          <Eye size={16} />
+                          View Details
+                        </button>
+                      </Link>
+
+                      {/* <button
                         onClick={() =>
                           handleViewPatientDetails(
                             prescription.patientId?._id ||
@@ -549,7 +549,7 @@ const AllPrescriptionsPage = () => {
                       >
                         <User size={16} />
                         Patient Profile
-                      </button>
+                      </button> */}
                     </div>
                   </div>
                 </div>

@@ -16,6 +16,7 @@ import { MedicationLog } from "../models/medicationLogs.models.js";
 import { Patient } from "../models/patient.models.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+
 import axios from "axios";
 
 // ML-based ADR Detection
@@ -65,8 +66,10 @@ const fallbackADRDetection = async (patientId, medications) => {
   return adrAlerts;
 };
 
+
+
 // Helper function to create scheduled medication logs
-const createScheduledMedicationLogs = async (prescription) => {
+export const createScheduledMedicationLogs = async (prescription) => {
   const logs = [];
   const startDate = new Date();
   const endDate = new Date();
@@ -161,6 +164,60 @@ export const createPrescription = asyncHandler(async (req, res) => {
     console.error("Error creating scheduled medication logs:", error);
   }
 
+  // ADR Detection - Check for adverse drug reactions
+  try {
+    console.log("Running ADR detection for new prescription...");
+    const adrResults = await ADRDetectionService.detectADR(
+      patientId,
+      medications
+    );
+
+    // If high risk detected, create alert and send notifications
+    if (adrResults.riskLevel === "high") {
+      console.log(
+        "High risk ADR detected, creating alert and sending notifications..."
+      );
+
+      // Create ADR alert
+      const alert = new ADRAlert({
+        patientId,
+        doctorId,
+        riskLevel: adrResults.riskLevel,
+        adrData: adrResults,
+        status: "pending",
+        createdAt: new Date(),
+      });
+      await alert.save();
+
+      // Send notifications
+      const [doctor, patient] = await Promise.all([
+        ADRDetectionService.getDoctorInfo(doctorId),
+        ADRDetectionService.getPatientInfo(patientId),
+      ]);
+
+      if (doctor && patient) {
+        const notificationData = {
+          doctor,
+          patient,
+          adrResults,
+          timestamp: new Date(),
+        };
+
+        // Send notifications via multiple channels
+        await Promise.allSettled([
+          NotificationService.sendEmailAlert(notificationData),
+          NotificationService.sendSMSAlert(notificationData),
+          NotificationService.sendWhatsAppAlert(notificationData),
+        ]);
+      }
+    }
+
+    console.log(`ADR detection completed. Risk level: ${adrResults.riskLevel}`);
+  } catch (error) {
+    console.error("ADR detection failed:", error);
+    // Don't fail prescription creation if ADR detection fails
+  }
+
   return res
     .status(201)
     .json(
@@ -173,8 +230,9 @@ export const createPrescription = asyncHandler(async (req, res) => {
 });
 
 export const getPrescriptionsByPatient = asyncHandler(async (req, res) => {
-  const { patientId } = req.params;
-  console.log("patientId in server:", patientId);
+  const { patientId } = req?.params;
+  console.log("prescription request:", req.params, req.body);
+  console.log("patientId in prescription :", patientId);
 
   if (!patientId || patientId === 'undefined') {
     throw new ApiError(400, "Patient ID is required");
@@ -187,9 +245,9 @@ export const getPrescriptionsByPatient = asyncHandler(async (req, res) => {
 
   if (!prescriptions || prescriptions.length === 0) {
     return res
-      .status(204)
+      .status(200)
       .json(
-        new ApiResponse(204, null, "No prescriptions found for this patient")
+        new ApiResponse(200, [], "No prescriptions found for this patient")
       );
   }
   return res
@@ -214,10 +272,8 @@ export const getPrescriptionsByDoctor = asyncHandler(async (req, res) => {
 
   if (!prescriptions || prescriptions.length === 0) {
     return res
-      .status(204)
-      .json(
-        new ApiResponse(204, null, "No prescriptions found for this doctor")
-      );
+      .status(200)
+      .json(new ApiResponse(200, [], "No prescriptions found for this doctor"));
   }
 
   return res
@@ -244,9 +300,9 @@ export const getLatestPrescription = asyncHandler(async (req, res) => {
 
   if (!latestPrescription) {
     return res
-      .status(204)
+      .status(200)
       .json(
-        new ApiResponse(204, null, "No prescriptions found for this patient")
+        new ApiResponse(200, null, "No prescriptions found for this patient")
       );
   }
 
