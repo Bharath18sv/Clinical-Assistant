@@ -35,13 +35,19 @@ const PendingMedicationLogs = () => {
   const fetchPendingLogs = async () => {
     try {
       setLoading(true);
+      setError(null);
       const response = await getPatientPendingMedicationLogs();
-      if (response.success) {
-        setPendingLogs(response.data.logs);
-        setLogsByDate(response.data.logsByDate);
+      if (response?.success) {
+        setPendingLogs(response.data?.logs || []);
+        setLogsByDate(response.data?.logsByDate || {});
+      } else {
+        setPendingLogs([]);
+        setLogsByDate({});
       }
     } catch (error) {
       console.error("Error fetching pending logs:", error);
+      setPendingLogs([]);
+      setLogsByDate({});
       setError("Failed to fetch pending medication logs");
     } finally {
       setLoading(false);

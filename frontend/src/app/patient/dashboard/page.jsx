@@ -20,6 +20,7 @@ import {
   getPatientPrescriptions,
   getLatestVitals,
 } from "@/utils/api";
+import API from "@/utils/api";
 import { AuthContext } from "@/context/AuthContext";
 import { downloadMyPatientReportPdf } from "@/utils/api";
 
@@ -44,6 +45,10 @@ export default function PatientDashboard() {
   });
 
   const fetchVitals = async () => {
+    if (!patientId) {
+      console.log("No patientId, skipping vitals fetch");
+      return;
+    }
     try {
       const id = fetchPatientId();
       if (!id) {
@@ -55,10 +60,15 @@ export default function PatientDashboard() {
       setHealthStats(vitals.data || {});
     } catch (error) {
       console.error("Error fetching vitals:", error);
+      setHealthStats({});
     }
   };
 
   const fetchPatientPrescriptions = async () => {
+    if (!patientId) {
+      console.log("No patientId, skipping prescriptions fetch");
+      return;
+    }
     try {
       const fetchedPatientId = fetchPatientId();
       console.log(
@@ -69,6 +79,7 @@ export default function PatientDashboard() {
       setPrescriptions(res.data || []);
     } catch (error) {
       console.error("Error fetching prescriptions:", error);
+      setPrescriptions([]);
     }
   };
 
@@ -82,22 +93,35 @@ export default function PatientDashboard() {
     }
   };
 
-  const fetchPatientId = () => {
-    setPatientId(user?.user?._id);
-    console.log("Patient ID set to:", user?.user?._id);
-    return user?.user?._id;
+  const handleCancelAppointment = async (appointmentId) => {
+    try {
+      await API.delete(`/appointments/${appointmentId}`);
+      // Refresh appointments list
+      await loadAppointments();
+      alert('Appointment cancelled successfully');
+    } catch (error) {
+      console.error('Error cancelling appointment:', error);
+      alert('Failed to cancel appointment');
+    }
   };
 
   useEffect(() => {
     const fetchData = async () => {
       if (!authLoading && user) {
         setLoading(true);
-        await Promise.all([
-          fetchPatientId(),
-          loadAppointments(),
-          fetchPatientPrescriptions(),
-          fetchVitals(),
-        ]);
+        try {
+          await Promise.all([
+            loadAppointments(),
+            fetchPatientPrescriptions(),
+            fetchVitals(),
+          ]);
+        } catch (error) {
+          console.error("Error loading dashboard data:", error);
+        } finally {
+          setLoading(false);
+        }
+      } else if (!authLoading && !user) {
+
         setLoading(false);
       }
     };
@@ -276,10 +300,11 @@ export default function PatientDashboard() {
                   appointment={{
                     id: a._id,
                     userDetails: a?.doctorId,
-                    reason: a.reason || "Consultation",
+                    reason: a.reason,
                     time: a.scheduledAt,
                     status: a.status,
                   }}
+                  onCancel={handleCancelAppointment}
                 />
               ))
             ) : (
@@ -292,9 +317,9 @@ export default function PatientDashboard() {
             )}
           </div>
           {appointments && appointments.length > 3 && (
-            <button className="w-full mt-4 text-blue-600 hover:text-blue-800 text-sm font-medium">
+            <Link href="/patient/appointment" className="block w-full mt-4 text-blue-600 hover:text-blue-800 text-sm font-medium text-center">
               View All Appointments
-            </button>
+            </Link>
           )}
         </div>
 

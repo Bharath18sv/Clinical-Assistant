@@ -472,7 +472,7 @@ const getPatientsForDoctor = asyncHandler(async (req, res) => {
     {
       $match: {
         doctorId: new mongoose.Types.ObjectId(doctorId),
-        status: "active",
+        status: { $in: ["pending", "approved", "active"] }, // Only active care relationships
       },
     },
     {
@@ -550,20 +550,50 @@ const getPatientDetailsBundle = asyncHandler(async (req, res) => {
     Appointment.find({ patientId, doctorId }).sort({ scheduledAt: -1 }),
   ]);
 
-  // Simple ADR alerts: intersect patient allergies and prescribed med names
-  const allergySet = new Set(
-    (patient.allergies || []).map((a) => a.toLowerCase())
-  );
-  const adrAlerts = [];
-  for (const p of prescriptions) {
-    for (const med of p.medications || []) {
-      const name = (med.name || "").toLowerCase();
-      if (allergySet.has(name)) {
-        adrAlerts.push({
-          medication: med.name,
-          message: `Potential ADR: patient allergic to ${med.name}`,
-          date: p.date,
-        });
+  // ML-based ADR Detection
+  let adrAlerts = [];
+  try {
+    const allMedications = [];
+    for (const p of prescriptions) {
+      for (const med of p.medications || []) {
+        allMedications.push({ name: med.name, dosage: med.dosage });
+      }
+    }
+
+    if (allMedications.length > 0) {
+      const response = await fetch('http://localhost:5001/predict-adr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          medications: allMedications,
+          patient: {
+            age: patient.age,
+            allergies: patient.allergies || [],
+            chronicConditions: patient.chronicConditions || []
+          }
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        adrAlerts = data.interactions || [];
+      }
+    }
+  } catch (error) {
+    console.error('ML ADR service error:', error);
+    const allergySet = new Set((patient.allergies || []).map(a => a.toLowerCase()));
+    for (const p of prescriptions) {
+      for (const med of p.medications || []) {
+        const name = (med.name || '').toLowerCase();
+        if (allergySet.has(name)) {
+          adrAlerts.push({
+            type: 'allergy',
+            severity: 'high',
+            medications: [med.name],
+            message: `Patient allergic to ${med.name}`,
+            recommendation: 'Discontinue immediately'
+          });
+        }
       }
     }
   }

@@ -464,10 +464,16 @@ export default function DoctorAppointmentDetail() {
                   {canComplete && (
                     <button
                       onClick={async () => {
-                        const updated = await completeAppointment(
-                          appointment._id
-                        );
-                        setAppointment(updated);
+                        console.log('Completing appointment:', appointment._id);
+                        try {
+                          const updated = await completeAppointment(
+                            appointment._id
+                          );
+                          console.log('Appointment completed successfully:', updated);
+                          setAppointment(updated);
+                        } catch (error) {
+                          console.error('Error completing appointment:', error);
+                        }
                       }}
                       className="flex items-center justify-center px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors duration-200 shadow-sm hover:shadow-md"
                     >

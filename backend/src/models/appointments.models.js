@@ -37,6 +37,9 @@ const AppointmentSchema = new Schema(
     notes: {
       type: String, //notes from doctor
     },
+    completedAt: {
+      type: Date,
+    },
   },
   { timestamps: true }
 );
