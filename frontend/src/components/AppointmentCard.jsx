@@ -15,9 +15,9 @@ const getStatusColor = (status) => {
   }
 };
 
-export default function AppointmentCard({ appointment }) {
+export default function AppointmentCard({ appointment, onCancel }) {
   console.log("appointments in card : ", appointment);
-  const user = appointment.userDetails;
+  const user = appointment.userDetails || {};
 
   const formatDate = (scheduledAt) => {
     const dateObj = new Date(scheduledAt);
@@ -81,23 +81,25 @@ export default function AppointmentCard({ appointment }) {
       {/* Left side - user info */}
       <div className="flex items-center">
         {/* Profile image */}
-        {user.profilePic ? (
+        {user?.profilePic ? (
           <img
             src={user.profilePic || "/default-avatar.png"}
-            alt={user.fullname}
+            alt={user?.fullname || "User"}
             className="h-16 w-16 rounded-full object-cover border border-gray-200"
           />
         ) : (
-          <User />
+          <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center">
+            <User className="h-8 w-8 text-gray-400" />
+          </div>
         )}
 
         {/* User details */}
         <div className="ml-4 space-y-1">
           <h3 className="font-semibold text-gray-900 text-lg">
-            {user.fullname}
+            {user?.fullname || "Unknown User"}
           </h3>
-          <p className="text-sm text-gray-500">📧 {user.email}</p>
-          <p className="text-sm text-gray-500">📞 {user.phone}</p>
+          <p className="text-sm text-gray-500">📧 {user?.email || "N/A"}</p>
+          <p className="text-sm text-gray-500">📞 {user?.phone || "N/A"}</p>
 
           {/* Appointment time */}
           <div className="flex items-center text-sm text-gray-600 mt-2">
@@ -107,14 +109,31 @@ export default function AppointmentCard({ appointment }) {
         </div>
       </div>
 
-      {/* Right side - status badge */}
-      <span
-        className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(
-          appointment.status
-        )}`}
-      >
-        {getStatusBadge(appointment.status)}
-      </span>
+      {/* Right side - status and actions */}
+      <div className="flex items-center gap-3">
+        <span
+          className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(
+            appointment.status
+          )}`}
+        >
+          {getStatusBadge(appointment.status)}
+        </span>
+        
+        {/* Cancel button for pending appointments */}
+        {appointment.status === 'pending' && onCancel && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (window.confirm('Are you sure you want to cancel this appointment?')) {
+                onCancel(appointment.id);
+              }
+            }}
+            className="px-3 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full hover:bg-red-200 transition-colors"
+          >
+            Cancel
+          </button>
+        )}
+      </div>
     </div>
   );
 }

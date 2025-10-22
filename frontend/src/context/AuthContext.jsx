@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useState, useEffect } from "react";
+import { isTokenExpired } from "@/utils/auth";
 
 export const AuthContext = createContext();
 
@@ -46,19 +47,7 @@ export const AuthProvider = ({ children }) => {
     checkTokenValidity();
   }, []);
 
-  // Helper function to check token expiration
-  const isTokenExpired = (token) => {
-    if (!token) return true;
 
-    try {
-      const decoded = JSON.parse(atob(token.split(".")[1]));
-      const currentTime = Date.now() / 1000;
-      return decoded.exp < currentTime;
-    } catch (error) {
-      console.error("Error decoding token:", error);
-      return true;
-    }
-  };
 
   // Login function (save to localStorage + state)
   const login = (userData) => {

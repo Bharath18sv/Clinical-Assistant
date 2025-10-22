@@ -4,6 +4,7 @@ import { Doctor } from "../models/doctor.models.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import mongoose from "mongoose";
 
 const getVitalsById = asyncHandler(async (req, res) => {
   const userId = req.params.id || req.user._id;
@@ -11,6 +12,10 @@ const getVitalsById = asyncHandler(async (req, res) => {
 
   if (!userId) {
     throw new ApiError(400, "User ID is required, user is not authorized");
+  }
+
+  if (req.params.id && !mongoose.Types.ObjectId.isValid(req.params.id)) {
+    throw new ApiError(400, "Invalid user ID format");
   }
 
   const vitals = await Vitals.find({
@@ -55,6 +60,11 @@ const addVitals = asyncHandler(async (req, res) => {
   const doctor = await Doctor.findById(userId);
   if (!doctor) {
     throw new ApiError(404, "Doctor not found");
+  }
+
+  // Validate patient ID format
+  if (!mongoose.Types.ObjectId.isValid(patientId)) {
+    throw new ApiError(400, "Invalid patient ID format");
   }
 
   // Validate patient
@@ -107,8 +117,13 @@ const getAllVitals = asyncHandler(async (req, res) => {
 const getLatestVitals = asyncHandler(async (req, res) => {
   const { patientId } = req.params;
 
-  if (!patientId) {
+  if (!patientId || patientId === 'undefined') {
     throw new ApiError(400, "Patient ID is required");
+  }
+
+  // Validate ObjectId format
+  if (!mongoose.Types.ObjectId.isValid(patientId)) {
+    throw new ApiError(400, "Invalid patient ID format");
   }
 
   const latestVitals = await Vitals.findOne({ patient: patientId })

@@ -13,8 +13,57 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { Prescription } from "../models/prescription.models.js";
 import { MedicationLog } from "../models/medicationLogs.models.js";
+import { Patient } from "../models/patient.models.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import axios from "axios";
+
+// ML-based ADR Detection
+const detectADR = async (patientId, medications) => {
+  try {
+    const patient = await Patient.findById(patientId);
+    if (!patient) return [];
+
+    const response = await axios.post('http://localhost:5001/predict-adr', {
+      medications: medications,
+      patient: {
+        age: patient.age,
+        allergies: patient.allergies || [],
+        chronicConditions: patient.chronicConditions || []
+      }
+    }, { timeout: 5000 });
+
+    if (response.data.success) {
+      return response.data.interactions || [];
+    }
+    return [];
+  } catch (error) {
+    console.error('ML ADR service error:', error.message);
+    return fallbackADRDetection(patientId, medications);
+  }
+};
+
+const fallbackADRDetection = async (patientId, medications) => {
+  const patient = await Patient.findById(patientId);
+  if (!patient) return [];
+
+  const adrAlerts = [];
+  const allergySet = new Set((patient.allergies || []).map(a => a.toLowerCase()));
+  
+  for (const med of medications) {
+    const medName = (med.name || '').toLowerCase();
+    if (allergySet.has(medName)) {
+      adrAlerts.push({
+        type: 'allergy',
+        severity: 'high',
+        medications: [med.name],
+        message: `Patient is allergic to ${med.name}`,
+        recommendation: 'Discontinue immediately'
+      });
+    }
+  }
+  return adrAlerts;
+};
 
 // Helper function to create scheduled medication logs
 const createScheduledMedicationLogs = async (prescription) => {
@@ -97,12 +146,19 @@ export const createPrescription = asyncHandler(async (req, res) => {
 
   const savedPrescription = await newPrescription.save();
 
+  // Run ML ADR detection
+  let adrAlerts = [];
+  try {
+    adrAlerts = await detectADR(patientId, medications);
+  } catch (error) {
+    console.error("Error in ADR detection:", error);
+  }
+
   // Automatically create scheduled medication logs
   try {
     await createScheduledMedicationLogs(savedPrescription);
   } catch (error) {
     console.error("Error creating scheduled medication logs:", error);
-    // Don't fail the prescription creation if log creation fails
   }
 
   return res
@@ -110,8 +166,8 @@ export const createPrescription = asyncHandler(async (req, res) => {
     .json(
       new ApiResponse(
         201,
-        savedPrescription,
-        "Prescription created successfully"
+        { prescription: savedPrescription, adrAlerts },
+        adrAlerts.length > 0 ? `Prescription created with ${adrAlerts.length} ADR warnings` : "Prescription created successfully"
       )
     );
 });
@@ -120,7 +176,7 @@ export const getPrescriptionsByPatient = asyncHandler(async (req, res) => {
   const { patientId } = req.params;
   console.log("patientId in server:", patientId);
 
-  if (!patientId) {
+  if (!patientId || patientId === 'undefined') {
     throw new ApiError(400, "Patient ID is required");
   }
 
@@ -301,5 +357,21 @@ export const getPrescriptionById = asyncHandler(async (req, res) => {
     .status(200)
     .json(
       new ApiResponse(200, prescription, "Prescription retrieved successfully")
+    );
+});
+
+export const checkADR = asyncHandler(async (req, res) => {
+  const { patientId, medications } = req.body;
+  
+  if (!patientId || !medications) {
+    throw new ApiError(400, "Patient ID and medications are required");
+  }
+  
+  const adrAlerts = await detectADR(patientId, medications);
+  
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, { adrAlerts }, "ADR check completed")
     );
 });

@@ -38,31 +38,30 @@ export default function PatientDoctorsPage() {
   const patientId = user?.data?.user?._id;
 
   useEffect(() => {
-    if (!patientId || authLoading) return;
-    const fetchDoctors = async () => {
+    const fetchData = async () => {
+      if (authLoading) return;
+      
+      setLoading(true);
       try {
-        const myDocs = await getMyDoctors();
+        const [myDocs, appts] = await Promise.all([
+          getMyDoctors(),
+          fetchMyAppointments()
+        ]);
         setDoctors(myDocs || []);
+        setAppointments(appts || []);
       } catch (err) {
+        console.error("Error fetching data:", err);
         setDoctors([]);
-        console.error("Error fetching doctors:", err);
+        setAppointments([]);
       } finally {
         setLoading(false);
       }
     };
-    fetchDoctors();
-    getAppointments();
-  }, [patientId, authLoading]);
+    
+    fetchData();
+  }, [authLoading]);
 
-  const getAppointments = async () => {
-    try {
-      const appts = await fetchMyAppointments();
-      setAppointments(appts || []);
-    } catch (error) {
-      setAppointments([]);
-      console.error("Error fetching appointments:", error);
-    }
-  };
+
 
 
 

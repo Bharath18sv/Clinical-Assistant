@@ -33,11 +33,7 @@ export default function AdminDoctorsPage() {
     try {
       const response = await API.get("/admin/doctors");
       if (response.data.success) {
-        // Handle paginated response - doctors might be in response.data.data.docs
-        let doctorsData = response.data.data;
-        if (doctorsData && doctorsData.docs) {
-          doctorsData = doctorsData.docs;
-        }
+        const doctorsData = response.data.data;
         const finalData = Array.isArray(doctorsData) ? doctorsData : [];
         setDoctors(finalData);
         console.log("doctors for admin: ", finalData);

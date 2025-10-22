@@ -31,7 +31,14 @@ export default function PatientSidebar() {
 
   useEffect(() => {
     if (!authLoading && user) {
-      const userData = user.data?.user || user;
+      console.log('Full user object in patient sidebar:', user);
+      console.log('user.role:', user.role);
+      console.log('user.user:', user.user);
+      console.log('user.data:', user.data);
+      
+      // Patient login API returns: { user: patientData, accessToken, refreshToken, role }
+      const userData = user.user || user.data?.user || user;
+      console.log('Final extracted userData:', userData);
       setPatientData(userData);
     } else if (!authLoading && !user) {
       setPatientData(null);

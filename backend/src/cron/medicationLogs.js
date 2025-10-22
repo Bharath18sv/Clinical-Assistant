@@ -4,7 +4,7 @@ import { createMedicationLogsForCurrentPeriod } from "../services/medicationLogS
 import dotenv from "dotenv";
 import path from "path";
 
-dotenv.config({ path: path.resolve("../../.env") });
+dotenv.config({ path: path.resolve(".env") });
 
 // Connect to your MongoDB (adjust connection string as per your config)
 const MONGODB_URI = process.env.MONGODB_URI;
