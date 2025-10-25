@@ -238,9 +238,11 @@ export const getPrescriptionsByPatient = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Patient ID is required");
   }
 
-  const prescriptions = await Prescription.find({ patientId }).sort({
-    createdAt: -1,
-  });
+  // Populate doctor and patient details so frontend can reliably read patient info
+  const prescriptions = await Prescription.find({ patientId })
+    .sort({ createdAt: -1 })
+    .populate("patientId", "fullname email gender profilePic")
+    .populate("doctorId", "fullname email profilePic");
   console.log("patient prescriptions:", prescriptions);
 
   if (!prescriptions || prescriptions.length === 0) {
@@ -268,7 +270,8 @@ export const getPrescriptionsByDoctor = asyncHandler(async (req, res) => {
     .sort({
       createdAt: -1,
     })
-    .populate("patientId", "name email gender fullname profilePic"); // Populate patient details
+    // Populate patient details (use correct patient field names)
+    .populate("patientId", "fullname email gender profilePic");
 
   if (!prescriptions || prescriptions.length === 0) {
     return res
@@ -296,7 +299,9 @@ export const getLatestPrescription = asyncHandler(async (req, res) => {
 
   const latestPrescription = await Prescription.findOne({ patientId })
     .sort({ createdAt: -1 })
-    .limit(1);
+    .limit(1)
+    .populate("patientId", "fullname email gender profilePic")
+    .populate("doctorId", "fullname email profilePic");
 
   if (!latestPrescription) {
     return res
@@ -326,7 +331,9 @@ export const updatePrescription = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Prescription ID is required");
   }
 
-  const prescription = await Prescription.findById(id);
+  const prescription = await Prescription.findById(id)
+    .populate("patientId", "fullname email gender profilePic")
+    .populate("doctorId", "fullname email profilePic");
   if (!prescription) {
     throw new ApiError(404, "Prescription not found");
   }

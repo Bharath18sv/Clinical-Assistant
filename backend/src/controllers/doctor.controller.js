@@ -472,7 +472,7 @@ const getPatientsForDoctor = asyncHandler(async (req, res) => {
     {
       $match: {
         doctorId: new mongoose.Types.ObjectId(doctorId),
-        status: { $in: ["pending", "approved", "active"] }, // Only active care relationships
+        // Include all appointment statuses to show all patients
       },
     },
     {
