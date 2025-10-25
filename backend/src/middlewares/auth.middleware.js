@@ -46,6 +46,7 @@ export const verifyJwt = asyncHandler(async (req, res, next) => {
           "Unauthorized User, User with this access token is not found"
         );
       }
+      // console.log("patient in middleware: ", patient);
       req.user = patient;
     } else {
       throw new ApiError(401, "Invalid user role");

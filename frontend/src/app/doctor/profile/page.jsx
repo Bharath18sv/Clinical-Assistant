@@ -26,7 +26,7 @@ import toast from "react-hot-toast";
 import { SPECIALIZATION, QUALIFICATIONS } from "@/data/constant";
 
 export default function DoctorProfile() {
-  const { user, authLoading } = useContext(AuthContext);
+  const { user, authLoading, setUser } = useContext(AuthContext);
   const [profile, setProfile] = useState(null);
   const [editedProfile, setEditedProfile] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -79,7 +79,6 @@ export default function DoctorProfile() {
     setIsSaving(true);
     try {
       let experienceValue = editedProfile?.experience;
-      // Only set experience if it's a valid number string, else fallback
       if (
         experienceValue === "" ||
         experienceValue === undefined ||
@@ -107,8 +106,17 @@ export default function DoctorProfile() {
       const response = await updateDoctorProfile(updateData);
       if (response.success) {
         const updatedProfile = response.data || editedProfile;
+
+        // Update local states
         setProfile(updatedProfile);
         setEditedProfile(updatedProfile);
+
+        // ✅ UPDATE AUTH CONTEXT - This is the key fix!
+        setUser({
+          ...user,
+          user: updatedProfile,
+        });
+
         setIsEditing(false);
         toast.success("Profile updated successfully!");
       }
@@ -146,8 +154,20 @@ export default function DoctorProfile() {
       });
       if (response.data.success) {
         const updatedPic = response.data.data.profilePic;
+
+        // Update local states
         setProfile((prev) => ({ ...prev, profilePic: updatedPic }));
         setEditedProfile((prev) => ({ ...prev, profilePic: updatedPic }));
+
+        // ✅ UPDATE AUTH CONTEXT for profile picture
+        setUser({
+          ...user,
+          user: {
+            ...user.user,
+            profilePic: updatedPic,
+          },
+        });
+
         toast.success("Profile picture updated successfully!");
         setProfilePicFile(null);
       }
@@ -377,11 +397,9 @@ export default function DoctorProfile() {
                       Experience (Years)
                     </label>
                     {isEditing ? (
-                      // Experience input (edit mode)
                       <input
                         type="number"
                         min="0"
-                        // Always store the string from user input
                         value={
                           editedProfile?.experience === undefined
                             ? ""
@@ -554,12 +572,6 @@ export default function DoctorProfile() {
                     <AlertCircle className="w-5 h-5 text-yellow-500" />
                   )}
                 </div>
-                {/* <div className="flex justify-between items-center py-2">
-                  <span className="text-sm text-gray-600">Total Patients</span>
-                  <span className="text-lg font-bold text-blue-600">
-                    {profile?.patients?.length || 0}
-                  </span>
-                </div> */}
               </div>
             </div>
 

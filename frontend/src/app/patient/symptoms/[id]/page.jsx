@@ -21,7 +21,7 @@ import { SYMPTOMS } from "@/data/constant";
 
 export default function PatientSymptoms() {
   const { user } = useContext(AuthContext);
-  console.log("user", user);
+  // console.log("user", user);
   const [patientId, setPatientId] = useState(user?.user?._id);
   const params = useParams();
   const router = useRouter();
@@ -54,7 +54,7 @@ export default function PatientSymptoms() {
     }
     fetchSymptoms();
     getPatientId();
-  }, [doctorId]);
+  }, [doctorId]); //add doctorId as dependency
 
   const fetchSymptoms = async () => {
     try {
@@ -62,7 +62,7 @@ export default function PatientSymptoms() {
       setError("");
       console.log("doctorId: ", doctorId);
       const response = await getSymptomLogOfDoctorByPatient(doctorId);
-      console.log("response gslefee: ", response);
+      console.log("symptom log response: ", response);
       if (response?.data) {
         // Format symptoms for display
         const formattedSymptoms =
