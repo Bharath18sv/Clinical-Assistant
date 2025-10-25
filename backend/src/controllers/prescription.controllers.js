@@ -15,6 +15,9 @@ import { Prescription } from "../models/prescription.models.js";
 import { MedicationLog } from "../models/medicationLogs.models.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import { ADRDetectionService } from "../services/adrDetectionService.js";
+import { NotificationService } from "../services/notificationService.js";
+import { ADRAlert } from "../models/adrAlerts.models.js";
 
 // Helper function to create scheduled medication logs
 export const createScheduledMedicationLogs = async (prescription) => {
@@ -103,6 +106,60 @@ export const createPrescription = asyncHandler(async (req, res) => {
   } catch (error) {
     console.error("Error creating scheduled medication logs:", error);
     // Don't fail the prescription creation if log creation fails
+  }
+
+  // ADR Detection - Check for adverse drug reactions
+  try {
+    console.log("Running ADR detection for new prescription...");
+    const adrResults = await ADRDetectionService.detectADR(
+      patientId,
+      medications
+    );
+
+    // If high risk detected, create alert and send notifications
+    if (adrResults.riskLevel === "high") {
+      console.log(
+        "High risk ADR detected, creating alert and sending notifications..."
+      );
+
+      // Create ADR alert
+      const alert = new ADRAlert({
+        patientId,
+        doctorId,
+        riskLevel: adrResults.riskLevel,
+        adrData: adrResults,
+        status: "pending",
+        createdAt: new Date(),
+      });
+      await alert.save();
+
+      // Send notifications
+      const [doctor, patient] = await Promise.all([
+        ADRDetectionService.getDoctorInfo(doctorId),
+        ADRDetectionService.getPatientInfo(patientId),
+      ]);
+
+      if (doctor && patient) {
+        const notificationData = {
+          doctor,
+          patient,
+          adrResults,
+          timestamp: new Date(),
+        };
+
+        // Send notifications via multiple channels
+        await Promise.allSettled([
+          NotificationService.sendEmailAlert(notificationData),
+          NotificationService.sendSMSAlert(notificationData),
+          NotificationService.sendWhatsAppAlert(notificationData),
+        ]);
+      }
+    }
+
+    console.log(`ADR detection completed. Risk level: ${adrResults.riskLevel}`);
+  } catch (error) {
+    console.error("ADR detection failed:", error);
+    // Don't fail prescription creation if ADR detection fails
   }
 
   return res

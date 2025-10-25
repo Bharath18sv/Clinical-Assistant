@@ -23,6 +23,7 @@ import { AuthContext } from "@/context/AuthContext";
 
 export default function PatientSidebar() {
   const { user, authLoading, logout: contextLogout } = useContext(AuthContext);
+  // console.log("user in profile", user);
   const [patientData, setPatientData] = useState(null);
   const [isOpen, setIsOpen] = useState(true);
   const [expandedMenus, setExpandedMenus] = useState({ doctors: false });
@@ -31,7 +32,7 @@ export default function PatientSidebar() {
 
   useEffect(() => {
     if (!authLoading && user) {
-      const userData = user.data?.user || user;
+      const userData = user?.user || user;
       setPatientData(userData);
     } else if (!authLoading && !user) {
       setPatientData(null);
