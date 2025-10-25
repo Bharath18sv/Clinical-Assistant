@@ -33,6 +33,7 @@
     "node-cron": "^4.2.1",
     "nodemailer": "^6.10.1",
     "nodemon": "^3.1.10",
-    "pdfkit": "^0.17.2"
+    "pdfkit": "^0.17.2",
+    "twilio": "^5.10.3"
   }
 }
