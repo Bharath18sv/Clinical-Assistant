@@ -119,7 +119,7 @@ export default function DoctorSidebar() {
         },
         {
           name: "Symptom Logs",
-          href: "/doctor/logs/symptom",
+          href: "/doctor/logs/symptoms",
           icon: AlertCircle,
         },
       ],

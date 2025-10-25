@@ -50,7 +50,7 @@ export default function PatientDashboard() {
       return;
     }
     try {
-      const id = fetchPatientId();
+      const id = patientId;
       if (!id) {
         console.log("No patient id");
         return;
@@ -70,7 +70,7 @@ export default function PatientDashboard() {
       return;
     }
     try {
-      const fetchedPatientId = fetchPatientId();
+      const fetchedPatientId = patientId;
       console.log(
         "patient id in dashboard before api call: ",
         fetchedPatientId
@@ -98,10 +98,10 @@ export default function PatientDashboard() {
       await API.delete(`/appointments/${appointmentId}`);
       // Refresh appointments list
       await loadAppointments();
-      alert('Appointment cancelled successfully');
+      alert("Appointment cancelled successfully");
     } catch (error) {
-      console.error('Error cancelling appointment:', error);
-      alert('Failed to cancel appointment');
+      console.error("Error cancelling appointment:", error);
+      alert("Failed to cancel appointment");
     }
   };
 
@@ -121,7 +121,6 @@ export default function PatientDashboard() {
           setLoading(false);
         }
       } else if (!authLoading && !user) {
-
         setLoading(false);
       }
     };
@@ -317,7 +316,10 @@ export default function PatientDashboard() {
             )}
           </div>
           {appointments && appointments.length > 3 && (
-            <Link href="/patient/appointment" className="block w-full mt-4 text-blue-600 hover:text-blue-800 text-sm font-medium text-center">
+            <Link
+              href="/patient/appointment"
+              className="block w-full mt-4 text-blue-600 hover:text-blue-800 text-sm font-medium text-center"
+            >
               View All Appointments
             </Link>
           )}

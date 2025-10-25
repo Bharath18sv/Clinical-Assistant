@@ -89,10 +89,21 @@ class ADRPredictor:
                             'recommendation': 'Monitor patient closely'
                         })
         
+        # Drug class mappings
+        drug_classes = {
+            'penicillin': ['amoxicillin', 'ampicillin', 'benzylpenicillin', 'flucloxacillin', 'phenoxymethylpenicillin'],
+            'nsaids': ['ibuprofen', 'aspirin', 'naproxen', 'diclofenac', 'celecoxib'],
+            'sulfa': ['sulfamethoxazole', 'sulfadiazine', 'sulfasalazine'],
+            'cephalosporins': ['cephalexin', 'cefaclor', 'cefuroxime', 'ceftriaxone'],
+            'tetracyclines': ['tetracycline', 'doxycycline', 'minocycline']
+        }
+
         if 'allergies' in patient_data:
             allergies = [allergy.lower() for allergy in patient_data['allergies']]
             for med in medications:
                 med_name = med.get('name', '').lower()
+                
+                # Check direct matches
                 if med_name in allergies:
                     interactions.append({
                         'type': 'allergy',
@@ -102,6 +113,20 @@ class ADRPredictor:
                         'confidence': 1.0,
                         'recommendation': 'Discontinue immediately'
                     })
+                    continue
+                
+                # Check drug class matches
+                for allergy in allergies:
+                    if allergy in drug_classes:
+                        if med_name in drug_classes[allergy]:
+                            interactions.append({
+                                'type': 'allergy',
+                                'severity': 'high',
+                                'medications': [med.get('name', '')],
+                                'message': f"Patient allergic to {allergy} class drugs including {med.get('name', '')}",
+                                'confidence': 1.0,
+                                'recommendation': 'Discontinue immediately'
+                            })
         
         return interactions
 
@@ -130,4 +155,4 @@ def predict_adr():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5001, debug=True)
+    app.run(host='0.0.0.0', port=6001, debug=True)

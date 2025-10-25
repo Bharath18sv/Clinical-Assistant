@@ -488,8 +488,8 @@ function PrescriptionCard({ patient }) {
                                       <option value="completed">
                                         Completed
                                       </option>
-                                      <option value="discontinued">
-                                        Discontinued
+                                      <option value="cancelled">
+                                        Cancelled
                                       </option>
                                     </select>
                                   </div>

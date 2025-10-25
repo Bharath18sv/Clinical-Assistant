@@ -64,9 +64,9 @@ export default function AdminDashboardPage() {
     setLoading((prev) => ({ ...prev, doctors: true }));
     try {
       const response = await API.get("/admin/doctors");
-      console.log("admim/doctors response : ", response);
-      if (response.data.success) {
-        setRecentDoctors(response.data.data.docs.slice(0, 5));
+      console.log("admin/doctors response : ", response);
+      if (response?.data?.success) {
+        setRecentDoctors(response?.data?.data?.slice(0, 5));
       }
     } catch (error) {
       console.error("Error fetching doctors:", error);

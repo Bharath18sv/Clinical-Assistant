@@ -10,7 +10,7 @@ const API = axios.create({
 API.interceptors.request.use(
   (req) => {
     try {
-      const userData = JSON.parse(localStorage.getItem("user") || '{}');
+      const userData = JSON.parse(localStorage.getItem("user") || "{}");
       const token = userData?.accessToken || userData?.data?.accessToken;
       if (token && !isTokenExpired(token)) {
         req.headers.Authorization = `Bearer ${token}`;
@@ -120,38 +120,55 @@ export const getMyDoctors = async () => {
 export const registerPatient = async (data) => {
   const formData = new FormData();
 
+  // Basic fields
   formData.append("fullname", data.fullname);
   formData.append("email", data.email);
   formData.append("password", data.password);
   formData.append("phone", data.phone);
   formData.append("age", data.age);
   formData.append("gender", data.gender);
+
+  // Address fields
   formData.append("address[street]", data.address.street);
   formData.append("address[city]", data.address.city);
   formData.append("address[state]", data.address.state);
   formData.append("address[zip]", data.address.zip);
   formData.append("address[country]", data.address.country);
-  formData.append("chronicConditions", data.chronicConditions);
-  formData.append("allergies", data.allergies);
-  formData.append("symptoms", data.symptoms);
 
-  data.chronicConditions?.forEach((c) =>
-    formData.append("chronicConditions[]", c.value || c)
-  );
-  data.allergies?.forEach((a) => formData.append("allergies[]", a.value || a));
-  data.symptoms?.forEach((s) => formData.append("symptoms[]", s.value || s));
+  // Medical information arrays - ONLY append the array format
+  // Remove the duplicate lines that were appending single values
+  if (data.chronicConditions && data.chronicConditions.length > 0) {
+    data.chronicConditions.forEach((c) =>
+      formData.append("chronicConditions[]", c)
+    );
+  }
 
-  // File
-  if (data.profilePic) {
+  if (data.allergies && data.allergies.length > 0) {
+    data.allergies.forEach((a) => formData.append("allergies[]", a));
+  }
+
+  if (data.symptoms && data.symptoms.length > 0) {
+    data.symptoms.forEach((s) => formData.append("symptoms[]", s));
+  }
+
+  // Profile picture - check if it's a File object
+  if (data.profilePic && data.profilePic instanceof File) {
     formData.append("profilePic", data.profilePic);
+  }
+
+  // Debug: Log FormData contents
+  console.log("FormData entries:");
+  for (let pair of formData.entries()) {
+    console.log(pair[0] + ": ", pair[1]);
   }
 
   try {
     const registeredPatient = await API.post("/patients/register", formData);
-    return registerPatient;
+    return registeredPatient;
   } catch (error) {
-    console.error("❌ Error:", error);
-    return null;
+    console.error("❌ Registration Error:", error);
+    console.error("Error response:", error.response?.data);
+    throw error; // Re-throw so the calling code can handle it
   }
 };
 
@@ -324,7 +341,10 @@ export const addPatient = async (patientData) => {
   } catch (error) {
     console.error("Error creating patient:", error);
     console.error("Error response:", error.response?.data);
-    const errorMessage = error.response?.data?.message || error.message || "Failed to create patient";
+    const errorMessage =
+      error.response?.data?.message ||
+      error.message ||
+      "Failed to create patient";
     throw new Error(errorMessage);
   }
 };

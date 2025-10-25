@@ -14,7 +14,6 @@ export default function AdminLoginPage() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { login } = useContext(AuthContext);
   const router = useRouter();
 
   useEffect(() => {
@@ -48,13 +47,16 @@ export default function AdminLoginPage() {
 
       localStorage.setItem("user", JSON.stringify(data.data));
       login(data.data);
-       upstream/main
+
       toast.success("Login successful! Redirecting...");
       // Navigate to dashboard on success
       router.replace("/admin/dashboard");
     } catch (err) {
       console.error("Admin login error:", err);
-      const errorMessage = err.response?.data?.message || err.message || "Login failed. Please check your credentials.";
+      const errorMessage =
+        err.response?.data?.message ||
+        err.message ||
+        "Login failed. Please check your credentials.";
       setError(errorMessage);
     } finally {
       setIsLoading(false);

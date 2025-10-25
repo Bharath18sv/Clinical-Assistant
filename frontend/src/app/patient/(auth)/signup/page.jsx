@@ -97,8 +97,10 @@ export default function PatientSignupPage() {
     setProfilePicturePreview("");
   };
 
+  // Replace the onSubmit function in your PatientSignupPage component with this:
+
   const onSubmit = async (data) => {
-    // console.log(`Submitted data: ${JSON.stringify(data)}`);
+    console.log("Form data before formatting:", data);
 
     // Additional validation before submission
     if (data.age < 1 || data.age > 100) {
@@ -143,39 +145,79 @@ export default function PatientSignupPage() {
       return;
     }
 
+    // Format the data properly
     const formattedData = {
-      ...data,
+      fullname: data.fullname,
+      email: data.email,
+      password: data.password,
+      phone: data.phone,
+      age: data.age,
+      gender: data.gender,
+      address: {
+        street: data.address.street,
+        city: data.address.city,
+        state: data.address.state,
+        zip: data.address.zip,
+        country: data.address.country,
+      },
+      // Extract just the values from the react-select objects
       chronicConditions:
         data.chronicConditions?.map((item) => item.value) || [],
       allergies: data.allergies?.map((item) => item.value) || [],
       symptoms: data.symptoms?.map((item) => item.value) || [],
-      profilePic: profilePic || "",
+      // Pass the actual File object (not null or empty string)
+      profilePic: profilePic || null, // Use the state variable, not an empty string
     };
-    console.log("formatted data: ", formattedData);
-    setLoading(true);
-    try {
-      // const res = await API.post("/patients/register", formattedData);
-      const res = await registerPatient(formattedData);
-      setMessage("Patient registered successfully!");
-      const userData = res.data;
 
-      // Store user data and email for verification
-      localStorage.setItem("user", JSON.stringify(userData));
-      localStorage.setItem("pendingVerificationEmail", formattedData.email);
-      login(userData); // Update context
-      reset();
-      toast.success("Registration successful! Please verify your email.");
-      router.push(
-        `/patient/verify-email?email=${encodeURIComponent(formattedData.email)}`
-      );
+    console.log("Formatted data:", formattedData);
+    console.log("Profile pic file:", profilePic);
+
+    setLoading(true);
+    setMessage(""); // Clear previous messages
+
+    try {
+      const res = await registerPatient(formattedData);
+      console.log("Registration response:", res);
+
+      if (res && res.data) {
+        setMessage("Patient registered successfully!");
+        const userData = res.data;
+
+        // Store user data and email for verification
+        localStorage.setItem("user", JSON.stringify(userData));
+        localStorage.setItem("pendingVerificationEmail", formattedData.email);
+        login(userData); // Update context
+        reset();
+
+        // Reset profile picture state
+        setProfilePicture(null);
+        setProfilePicturePreview("");
+
+        toast.success("Registration successful! Please verify your email.");
+        router.push(
+          `/patient/verify-email?email=${encodeURIComponent(
+            formattedData.email
+          )}`
+        );
+      } else {
+        throw new Error("Registration failed - no response data");
+      }
     } catch (error) {
-      console.error(error);
-      setMessage(error.message || "Registration failed. Please try again.");
+      console.error("Registration error:", error);
+      console.error("Error details:", error.response?.data);
+
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Registration failed. Please try again.";
+
+      setMessage(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
-
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4">
       <div className="max-w-4xl mx-auto">
