@@ -8,30 +8,16 @@ const API = axios.create({
 });
 
 API.interceptors.request.use(
-  async (req) => {
-    //  Add Authorization header if token exists and valid
-    const userData = await JSON.parse(localStorage.getItem("user"));
-    console.log("local storage user data: ", userData);
-    const token = userData?.accessToken || userData?.data?.accessToken;
-    console.log("access token is local storage: ", token);
-    if (token) {
-      if (isTokenExpired(token)) {
-        // Token expired → clear storage + redirect
-        const clearUser = getGlobalClearUser();
-        if (clearUser) {
-          clearUser(); // This will clear both localStorage and AuthContext state
-        } else {
-          // Fallback if AuthContext is not available
-          localStorage.removeItem("user");
-          localStorage.removeItem("token");
-        }
-        window.location.href = "/";
-        return Promise.reject("Token expired");
-      } else {
+  (req) => {
+    try {
+      const userData = JSON.parse(localStorage.getItem("user") || '{}');
+      const token = userData?.accessToken || userData?.data?.accessToken;
+      if (token && !isTokenExpired(token)) {
         req.headers.Authorization = `Bearer ${token}`;
       }
+    } catch (error) {
+      console.error("Token error:", error);
     }
-    // console.log("request data before api req: ", req);
     return req;
   },
   (error) => Promise.reject(error)
@@ -104,21 +90,31 @@ export const fetchDoctorActiveAppointments = async () => {
 };
 
 export const fetchDoctorCompletedAppointments = async () => {
-  const data = await API.get(`/appointments/completed`);
+  const { data } = await API.get(`/appointments/completed`);
   return data?.data || [];
 };
 
 export const fetchAllDoctors = async () => {
-  const { data } = await API.get("/doctors/all");
-  console.log("doctors data:", data);
-  return data?.data.docs || [];
+  try {
+    const { data } = await API.get("/doctors/all");
+    console.log("doctors data:", data);
+    return data?.data || [];
+  } catch (error) {
+    console.error("Error fetching doctors:", error);
+    return [];
+  }
 };
 
 //patient apis:
 export const getMyDoctors = async () => {
-  const doctors = await API.get("/patients/myDoctors");
-  console.log("patient/mydoctors/ : ", doctors.data.data);
-  return doctors.data.data;
+  try {
+    const doctors = await API.get("/patients/myDoctors");
+    console.log("patient/mydoctors/ : ", doctors.data.data);
+    return doctors.data.data || [];
+  } catch (error) {
+    console.error("Error fetching my doctors:", error);
+    return [];
+  }
 };
 
 export const registerPatient = async (data) => {
@@ -327,7 +323,9 @@ export const addPatient = async (patientData) => {
     return response.data;
   } catch (error) {
     console.error("Error creating patient:", error);
-    throw error;
+    console.error("Error response:", error.response?.data);
+    const errorMessage = error.response?.data?.message || error.message || "Failed to create patient";
+    throw new Error(errorMessage);
   }
 };
 export const viewMyPatients = async () => {

@@ -369,10 +369,12 @@ const addPatient = asyncHandler(async (req, res) => {
 
   // Profile picture
   const profilePicLocalPath = req.file?.path;
+  console.log("Profile pic local path:", profilePicLocalPath);
   let profilePic;
   if (profilePicLocalPath) {
     try {
       profilePic = await uploadOnCloudinary(profilePicLocalPath);
+      console.log("Profile pic uploaded:", profilePic?.secure_url || profilePic?.url);
     } catch (error) {
       console.log("Profile pic upload failed", error);
       throw new ApiError(500, "Failed to upload Profile picture");
@@ -396,6 +398,33 @@ const addPatient = asyncHandler(async (req, res) => {
       symptoms: parsedSymptoms,
       doctorId,
     });
+
+    // Generate verification code and email it to patient
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const codeHash = crypto.createHash("sha256").update(code).digest("hex");
+    const codeExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    createdPatient.emailVerificationCodeHash = codeHash;
+    createdPatient.emailVerificationExpiresAt = codeExpiry;
+    await createdPatient.save({ validateBeforeSave: false });
+
+    try {
+      console.log("Sending verification email to:", createdPatient.email);
+      const html = verificationCodeTemplate({
+        name: createdPatient.fullname,
+        code,
+        appUrl: process.env.APP_URL,
+      });
+      const emailResult = await sendEmail({
+        to: createdPatient.email,
+        subject: "Verify your email - Smart Care Assistant",
+        html,
+      });
+      console.log("Email sent successfully:", emailResult);
+    } catch (emailErr) {
+      console.error("Failed to send verification email to patient:", emailErr);
+      console.error("Email error details:", emailErr.message);
+    }
 
     // Create appointment
     const createdAppointment = await Appointment.create({
@@ -443,7 +472,7 @@ const getPatientsForDoctor = asyncHandler(async (req, res) => {
     {
       $match: {
         doctorId: new mongoose.Types.ObjectId(doctorId),
-        status: "active",
+        status: { $in: ["pending", "approved", "active"] }, // Only active care relationships
       },
     },
     {
@@ -521,20 +550,50 @@ const getPatientDetailsBundle = asyncHandler(async (req, res) => {
     Appointment.find({ patientId, doctorId }).sort({ scheduledAt: -1 }),
   ]);
 
-  // Simple ADR alerts: intersect patient allergies and prescribed med names
-  const allergySet = new Set(
-    (patient.allergies || []).map((a) => a.toLowerCase())
-  );
-  const adrAlerts = [];
-  for (const p of prescriptions) {
-    for (const med of p.medications || []) {
-      const name = (med.name || "").toLowerCase();
-      if (allergySet.has(name)) {
-        adrAlerts.push({
-          medication: med.name,
-          message: `Potential ADR: patient allergic to ${med.name}`,
-          date: p.date,
-        });
+  // ML-based ADR Detection
+  let adrAlerts = [];
+  try {
+    const allMedications = [];
+    for (const p of prescriptions) {
+      for (const med of p.medications || []) {
+        allMedications.push({ name: med.name, dosage: med.dosage });
+      }
+    }
+
+    if (allMedications.length > 0) {
+      const response = await fetch('http://localhost:5001/predict-adr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          medications: allMedications,
+          patient: {
+            age: patient.age,
+            allergies: patient.allergies || [],
+            chronicConditions: patient.chronicConditions || []
+          }
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        adrAlerts = data.interactions || [];
+      }
+    }
+  } catch (error) {
+    console.error('ML ADR service error:', error);
+    const allergySet = new Set((patient.allergies || []).map(a => a.toLowerCase()));
+    for (const p of prescriptions) {
+      for (const med of p.medications || []) {
+        const name = (med.name || '').toLowerCase();
+        if (allergySet.has(name)) {
+          adrAlerts.push({
+            type: 'allergy',
+            severity: 'high',
+            medications: [med.name],
+            message: `Patient allergic to ${med.name}`,
+            recommendation: 'Discontinue immediately'
+          });
+        }
       }
     }
   }

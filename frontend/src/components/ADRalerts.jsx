@@ -1,51 +1,80 @@
-import React from "react";
-import { Zap } from "lucide-react";
+import React from 'react';
+import { AlertTriangle, XCircle, AlertCircle } from 'lucide-react';
 
-function ADRalerts({ patient }) {
-  return (
-    <div className="bg-white rounded-xl shadow-sm border p-6">
-      <div className="flex items-center gap-2 mb-4">
-        <Zap className="w-5 h-5 text-yellow-600" />
-        <h3 className="text-lg font-semibold text-gray-900">ADR Alerts</h3>
+const ADRAlerts = ({ alerts = [] }) => {
+  if (!alerts || alerts.length === 0) {
+    return (
+      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+        <div className="flex items-center gap-2">
+          <AlertCircle className="w-5 h-5 text-green-600" />
+          <span className="text-green-800 font-medium">No ADR warnings detected</span>
+        </div>
       </div>
-      {patient.adrAlerts?.length > 0 ? (
-        <div className="bg-white rounded-xl shadow-sm border p-6">
-          <div className="space-y-3">
-            {patient.adrAlerts.map((alert) => (
-              <div
-                key={alert.id}
-                className={`p-4 rounded-lg border-l-4 ${
-                  alert.severity === "Critical"
-                    ? "bg-red-50 border-red-400"
-                    : alert.severity === "High"
-                    ? "bg-orange-50 border-orange-400"
-                    : "bg-yellow-50 border-yellow-400"
-                }`}
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <span
-                    className={`text-sm font-medium ${
-                      alert.severity === "Critical"
-                        ? "text-red-800"
-                        : alert.severity === "High"
-                        ? "text-orange-800"
-                        : "text-yellow-800"
-                    }`}
-                  >
-                    {alert.type} - {alert.severity}
+    );
+  }
+
+  const getSeverityColor = (severity) => {
+    switch (severity) {
+      case 'high':
+        return 'bg-red-50 border-red-200 text-red-800';
+      case 'medium':
+        return 'bg-yellow-50 border-yellow-200 text-yellow-800';
+      case 'low':
+        return 'bg-blue-50 border-blue-200 text-blue-800';
+      default:
+        return 'bg-gray-50 border-gray-200 text-gray-800';
+    }
+  };
+
+  const getSeverityIcon = (severity) => {
+    switch (severity) {
+      case 'high':
+        return <XCircle className="w-5 h-5 text-red-600" />;
+      case 'medium':
+        return <AlertTriangle className="w-5 h-5 text-yellow-600" />;
+      default:
+        return <AlertCircle className="w-5 h-5 text-blue-600" />;
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <h3 className="text-lg font-semibold text-red-700 flex items-center gap-2">
+        <AlertTriangle className="w-5 h-5" />
+        ⚠️ ADR Warnings ({alerts.length})
+      </h3>
+      
+      {alerts.map((alert, index) => (
+        <div
+          key={index}
+          className={`p-4 rounded-lg border ${getSeverityColor(alert.severity)}`}
+        >
+          <div className="flex items-start gap-3">
+            {getSeverityIcon(alert.severity)}
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="font-semibold">
+                  {Array.isArray(alert.medications) ? alert.medications.join(' + ') : alert.medication}
+                </span>
+                <span className="text-xs px-2 py-1 rounded-full bg-white/50 uppercase">
+                  {alert.type}
+                </span>
+                {alert.confidence && (
+                  <span className="text-xs text-gray-600">
+                    ({Math.round(alert.confidence * 100)}% confidence)
                   </span>
-                  <span className="text-xs text-gray-500">{alert.date}</span>
-                </div>
-                <p className="text-sm text-gray-700">{alert.message}</p>
+                )}
               </div>
-            ))}
+              <p className="text-sm mb-2">{alert.message}</p>
+              <p className="text-xs font-medium">
+                💡 Recommendation: {alert.recommendation}
+              </p>
+            </div>
           </div>
         </div>
-      ) : (
-        <p className="text-sm text-gray-600">No ADR alerts.</p>
-      )}
+      ))}
     </div>
   );
-}
+};
 
-export default ADRalerts;
+export default ADRAlerts;

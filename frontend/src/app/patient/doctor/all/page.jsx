@@ -43,9 +43,11 @@ export default function PatientAllDoctors() {
     const fetchDoctors = async () => {
       try {
         const allDoctors = await fetchAllDoctors();
-        setDoctors(allDoctors);
+        console.log("Fetched doctors:", allDoctors);
+        setDoctors(allDoctors || []);
       } catch (error) {
         console.error("Error fetching doctors:", error);
+        setDoctors([]);
       } finally {
         setLoading(false);
       }
@@ -53,6 +55,14 @@ export default function PatientAllDoctors() {
 
     fetchDoctors();
     getAppointments();
+
+    // Refresh appointments when window gains focus (user returns to page)
+    const handleFocus = () => {
+      getAppointments();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
   }, []);
 
   const filteredDoctors = useMemo(() => {
@@ -84,8 +94,11 @@ export default function PatientAllDoctors() {
     return ["all", ...new Set(allSpecs)];
   }, [doctors]);
 
-  const hasAppointment = (doctorId) =>
-    appointments.some((appt) => appt.doctorId?._id === doctorId);
+  const hasActiveAppointment = (doctorId) =>
+    appointments.some((appt) => 
+      appt.doctorId?._id === doctorId && 
+      appt.status !== 'completed'
+    );
 
   const LoadingSkeleton = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -303,7 +316,7 @@ export default function PatientAllDoctors() {
 
                 {/* Action Button */}
                 <div className="px-6 pb-6">
-                  {hasAppointment(doctor._id) ? (
+                  {hasActiveAppointment(doctor._id) ? (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -493,7 +506,7 @@ export default function PatientAllDoctors() {
 
               {/* Action Button */}
               <div className="flex gap-3">
-                {hasAppointment(selectedDoctor._id) ? (
+                {hasActiveAppointment(selectedDoctor._id) ? (
                   <button
                     onClick={() => {
                       setSelectedDoctor(null);

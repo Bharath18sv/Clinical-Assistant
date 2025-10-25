@@ -17,11 +17,13 @@ const Navbar = ({ Propuser }) => {
     logout(); // clears tokens + redirects
   };
 
+  // Use Propuser if provided, otherwise use context user
+  const currentUser = Propuser || user;
+
   // Role-based profile path
-  const profilePath =
-    user.role === "admin"
+  const profilePath = currentUser?.role === "admin"
       ? "/admin/profile"
-      : user.role === "doctor"
+      : currentUser?.role === "doctor"
       ? "/doctor/profile"
       : "/patient/profile";
 
@@ -34,7 +36,7 @@ const Navbar = ({ Propuser }) => {
               Smart Care Assistant
             </h1>
           </div>
-          {Propuser && (
+          {currentUser && (
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setOpen(!open)}
@@ -44,7 +46,7 @@ const Navbar = ({ Propuser }) => {
                   <User className="text-white" size={16} />
                 </div>
                 <span className="text-gray-700 font-medium">
-                  {user?.fullname}
+                  {currentUser?.fullname}
                 </span>
                 <ChevronDown
                   className={`text-gray-500 transform transition-transform duration-300 ${
@@ -58,20 +60,20 @@ const Navbar = ({ Propuser }) => {
                 <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-2xl shadow-xl py-2 z-50">
                   <div className="px-4 py-3 border-b border-gray-100">
                     <p className="text-sm font-medium text-gray-900">
-                      {user?.fullname}
+                      {currentUser?.fullname}
                     </p>
-                    <p className="text-xs text-gray-500">{user?.email}</p>
-                    {role === "admin" && (
+                    <p className="text-xs text-gray-500">{currentUser?.email}</p>
+                    {currentUser?.role === "admin" && (
                       <span className="inline-block mt-1 px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
                         Administrator
                       </span>
                     )}
-                    {role === "doctor" && (
+                    {currentUser?.role === "doctor" && (
                       <span className="inline-block mt-1 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
                         Doctor
                       </span>
                     )}
-                    {role === "patient" && (
+                    {currentUser?.role === "patient" && (
                       <span className="inline-block mt-1 px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
                         Patient
                       </span>

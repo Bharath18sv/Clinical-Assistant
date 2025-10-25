@@ -74,7 +74,7 @@ const loginAdmin = asyncHandler(async (req, res) => {
 
   const options = {
     httpOnly: true,
-    secure: true,
+    secure: process.env.NODE_ENV === "production",
     sameSite: "strict", // prevent CSRF
     maxAge: 1000 * 60 * 60, // 1h
   };
@@ -112,7 +112,7 @@ const logoutAdmin = asyncHandler(async (req, res) => {
 
   const options = {
     httpOnly: true,
-    secure: true,
+    secure: process.env.NODE_ENV === "production",
   };
 
   return res
@@ -212,7 +212,7 @@ const addDoctor = asyncHandler(async (req, res) => {
 });
 
 const getAllDoctors = asyncHandler(async (req, res) => {
-  const { page = 1, limit = 10, status, search, isAvailable } = req.query;
+  const { status, search, isAvailable } = req.query;
 
   const query = {};
 
@@ -232,16 +232,11 @@ const getAllDoctors = asyncHandler(async (req, res) => {
     ];
   }
 
-  const options = {
-    page: parseInt(page),
-    limit: parseInt(limit),
-    populate: [
-      { path: "addedBy", select: "fullname email" },
-      { path: "approvedBy", select: "fullname email" },
-    ],
-  };
-
-  const doctors = await Doctor.paginate(query, options);
+  const doctors = await Doctor.find(query)
+    .select("-password")
+    .populate("addedBy", "fullname email")
+    .populate("approvedBy", "fullname email")
+    .sort({ createdAt: -1 });
 
   return res
     .status(200)
