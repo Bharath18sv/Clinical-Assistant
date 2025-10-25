@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 export default function PatientLayout({ children }) {
   const path = usePathname();
   let hideSidebar = false;
+
+
   if (
     path === "/patient/signup" ||
     path === "/patient/login" ||

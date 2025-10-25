@@ -233,8 +233,7 @@ const loginPatient = asyncHandler(async (req, res) => {
     );
   }
 
-  const isPasswordCorrect = await patient.isPasswordCorrect(password);
-  if (!isPasswordCorrect) {
+  if (!(await patient.isPasswordCorrect(password))) {
     console.log("Password doesn't match");
     throw new ApiError(400, "Password doesn't match");
   }
@@ -596,8 +595,8 @@ const getMyDoctors = asyncHandler(async (req, res) => {
 
   if (!appointments || appointments.length === 0) {
     return res
-      .status(404)
-      .json(new ApiResponse(404, [], "No appointments found for this patient"));
+      .status(200)
+      .json(new ApiResponse(200, [], "No doctors found for this patient"));
   }
 
   // Extract unique doctors from appointments

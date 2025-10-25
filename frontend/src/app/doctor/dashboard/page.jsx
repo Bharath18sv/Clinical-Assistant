@@ -68,6 +68,14 @@ export default function DoctorDashboardPage() {
   const ongoingAppointments = appointments.filter(
     (appt) => appt.status?.toLowerCase() === "active"
   );
+  
+  const upcomingAppointments = appointments.filter(
+    (appt) => ["pending", "approved"].includes(appt.status?.toLowerCase())
+  );
+  
+  const completedAppointments = appointments.filter(
+    (appt) => appt.status?.toLowerCase() === "completed"
+  );
   // const formatAddress = (address) =>
   //   address
   //     ? `${address.street}, ${address.city}, ${address.state} ${address.zip}`
@@ -154,33 +162,67 @@ export default function DoctorDashboardPage() {
           {/* Appointments and Patients Side by Side */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             {/* Appointments Column */}
-            <div className="card h-fit">
-              <div className="card-header">
-                <h2 className="card-title">Upcoming Appointments</h2>
+            <div className="space-y-6">
+              {/* Upcoming Appointments */}
+              <div className="card h-fit">
+                <div className="card-header">
+                  <h2 className="card-title">Upcoming Appointments</h2>
+                </div>
+                <div className="space-y-4">
+                  {loading.appointments ? (
+                    <div className="flex justify-center py-6">
+                      <LoadingSpinner size="md" />
+                    </div>
+                  ) : upcomingAppointments && upcomingAppointments.length > 0 ? (
+                    upcomingAppointments.slice(0, 3).map((appointment) => (
+                      <AppointmentCard
+                        key={appointment._id}
+                        appointment={{
+                          id: appointment._id,
+                          userDetails: appointment?.patientId,
+                          reason: appointment.reason || "Consultation",
+                          time: appointment.scheduledAt,
+                          status: appointment.status,
+                        }}
+                      />
+                    ))
+                  ) : (
+                    <p className="text-gray-500 text-sm text-center py-6">
+                      No upcoming appointments.
+                    </p>
+                  )}
+                </div>
               </div>
-              <div className="space-y-4">
-                {loading.appointments ? (
-                  <div className="flex justify-center py-6">
-                    <LoadingSpinner size="md" />
-                  </div>
-                ) : appointments && appointments.length > 0 ? (
-                  appointments.slice(0, 3).map((appointment) => (
-                    <AppointmentCard
-                      key={appointment._id}
-                      appointment={{
-                        id: appointment._id,
-                        userDetails: appointment?.patientId,
-                        reason: appointment.reason || "Consultation",
-                        time: appointment.scheduledAt,
-                        status: appointment.status,
-                      }}
-                    />
-                  ))
-                ) : (
-                  <p className="text-gray-500 text-sm text-center py-6">
-                    No upcoming appointments.
-                  </p>
-                )}
+              
+              {/* Completed Appointments */}
+              <div className="card h-fit">
+                <div className="card-header">
+                  <h2 className="card-title">Completed Appointments</h2>
+                </div>
+                <div className="space-y-4">
+                  {loading.appointments ? (
+                    <div className="flex justify-center py-6">
+                      <LoadingSpinner size="md" />
+                    </div>
+                  ) : completedAppointments && completedAppointments.length > 0 ? (
+                    completedAppointments.slice(0, 3).map((appointment) => (
+                      <AppointmentCard
+                        key={appointment._id}
+                        appointment={{
+                          id: appointment._id,
+                          userDetails: appointment?.patientId,
+                          reason: appointment.reason || "Consultation",
+                          time: appointment.scheduledAt,
+                          status: appointment.status,
+                        }}
+                      />
+                    ))
+                  ) : (
+                    <p className="text-gray-500 text-sm text-center py-6">
+                      No completed appointments.
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
 

@@ -13,12 +13,131 @@ import {
   Pill,
   Stethoscope,
   ChevronRight,
+  Clock,
+  Activity,
+  CheckCircle,
+  XCircle,
 } from "lucide-react";
+
+// Patient Card Component
+const PatientCard = ({ patient, status, onPatientClick }) => {
+  const calculateDuration = (lastVisit) => {
+    if (!lastVisit) return "N/A";
+    const now = new Date();
+    const visitDate = new Date(lastVisit);
+    const diffTime = Math.abs(now - visitDate);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    if (diffDays < 7) {
+      return `${diffDays} day${diffDays !== 1 ? "s" : ""}`;
+    } else if (diffDays < 30) {
+      const weeks = Math.floor(diffDays / 7);
+      return `${weeks} week${weeks !== 1 ? "s" : ""}`;
+    } else if (diffDays < 365) {
+      const months = Math.floor(diffDays / 30);
+      return `${months} month${months !== 1 ? "s" : ""}`;
+    } else {
+      const years = Math.floor(diffDays / 365);
+      return `${years} year${years !== 1 ? "s" : ""}`;
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "active":
+        return "border-green-200 bg-green-50";
+      case "completed":
+        return "border-blue-200 bg-blue-50";
+      case "cancelled":
+        return "border-red-200 bg-red-50";
+      default:
+        return "border-gray-200 bg-gray-50";
+    }
+  };
+
+  return (
+    <div
+      className={`bg-white rounded-xl shadow-sm border-2 ${getStatusColor(status)} hover:shadow-md transition-all cursor-pointer group`}
+      onClick={() => onPatientClick(patient.patientDetails._id)}
+    >
+      <div className="p-6">
+        <div className="flex items-center mb-4">
+          <div className="flex-shrink-0 h-12 w-12 rounded-full overflow-hidden">
+            {patient.patientDetails.profilePic ? (
+              <img
+                src={patient.patientDetails.profilePic}
+                alt={`${patient.patientDetails.fullname}'s profile`}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="h-full w-full bg-blue-100 rounded-full flex items-center justify-center">
+                <User className="h-6 w-6 text-blue-600" />
+              </div>
+            )}
+          </div>
+          <div className="ml-4 flex-1">
+            <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+              {patient.patientDetails.fullname}
+            </h3>
+            <p className="text-sm text-gray-500">
+              Age {patient.patientDetails.age} • {patient.patientDetails.gender}
+            </p>
+          </div>
+          <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-blue-600 transition-colors" />
+        </div>
+        <div className="space-y-2 mb-4">
+          <div className="flex items-center text-sm text-gray-600">
+            <Mail className="h-4 w-4 mr-2" />
+            <span className="truncate">{patient.patientDetails.email}</span>
+          </div>
+          <div className="flex items-center text-sm text-gray-600">
+            <Phone className="h-4 w-4 mr-2" />
+            {patient.patientDetails.phone}
+          </div>
+          <div className="flex items-center text-sm text-gray-600">
+            <Clock className="h-4 w-4 mr-2" />
+            <span>{calculateDuration(patient.lastVisit)} since last visit</span>
+          </div>
+        </div>
+        {(patient.patientDetails.chronicConditions?.length > 0 ||
+          patient.patientDetails.allergies?.length > 0) && (
+          <div className="space-y-2">
+            {patient.patientDetails.chronicConditions?.length > 0 && (
+              <div className="flex items-start">
+                <AlertTriangle className="h-4 w-4 text-orange-500 mr-2 mt-0.5" />
+                <div>
+                  <p className="text-xs font-medium text-gray-700">Conditions</p>
+                  <p className="text-xs text-gray-600">
+                    {patient.patientDetails.chronicConditions.slice(0, 2).join(", ")}
+                    {patient.patientDetails.chronicConditions.length > 2 &&
+                      " +" +
+                        (patient.patientDetails.chronicConditions.length - 2)}
+                  </p>
+                </div>
+              </div>
+            )}
+            {patient.patientDetails.allergies?.length > 0 && (
+              <div className="flex items-start">
+                <Pill className="h-4 w-4 text-red-500 mr-2 mt-0.5" />
+                <div>
+                  <p className="text-xs font-medium text-gray-700">Allergies</p>
+                  <p className="text-xs text-gray-600">
+                    {patient.patientDetails.allergies.slice(0, 2).join(", ")}
+                    {patient.patientDetails.allergies.length > 2 &&
+                      " +" + (patient.patientDetails.allergies.length - 2)}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
 export default function DoctorPatientsPage({ params }) {
   const { user, authLoading } = useContext(AuthContext);
   const router = useRouter();
-  const doctorId = user?.user?._id;
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -31,18 +150,21 @@ export default function DoctorPatientsPage({ params }) {
     const fetchPatients = async () => {
       try {
         const patients = await viewMyPatients();
+<<<<<<< HEAD
         console.log("my patients :", patients);
         console.log("first patient profile pic:", patients[0]?.patientDetails?.profilePic);
         if (patients) {
           setPatients(patients || []);
         }
+=======
+        setPatients(patients || []);
+>>>>>>> upstream/main
       } catch (error) {
         console.error("Error fetching patients:", error);
       } finally {
         setLoading(false);
       }
     };
-
     if (user?.user?._id) {
       fetchPatients();
     }
@@ -57,6 +179,17 @@ export default function DoctorPatientsPage({ params }) {
         ?.toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
       patient.patientDetails.phone?.includes(searchTerm)
+  );
+
+  // Group patients by appointment status
+  const activePatients = filteredPatients.filter((p) =>
+    ["pending", "approved", "active"].includes(p.latestStatus)
+  );
+  const completedPatients = filteredPatients.filter(
+    (p) => p.latestStatus === "completed"
+  );
+  const cancelledPatients = filteredPatients.filter(
+    (p) => p.latestStatus === "cancelled"
   );
 
   if (authLoading || loading) {
@@ -90,7 +223,6 @@ export default function DoctorPatientsPage({ params }) {
                 </p>
               </div>
             </div>
-
             {/* Search Bar */}
             <div className="relative max-w-md w-full sm:w-auto">
               <input
@@ -105,7 +237,6 @@ export default function DoctorPatientsPage({ params }) {
           </div>
         </div>
       </div>
-
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {filteredPatients.length === 0 ? (
@@ -123,6 +254,7 @@ export default function DoctorPatientsPage({ params }) {
             </p>
           </div>
         ) : (
+<<<<<<< HEAD
           <>
             {/* Desktop Table View */}
             <div className="hidden lg:block bg-white rounded-xl shadow-sm border overflow-hidden">
@@ -366,10 +498,67 @@ export default function DoctorPatientsPage({ params }) {
                       </div>
                     )}
                   </div>
+=======
+          <div className="space-y-8">
+            {/* Active Patients */}
+            {activePatients.length > 0 && (
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                  <Activity className="h-5 w-5 text-green-600 mr-2" />
+                  Active Patients ({activePatients.length})
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {activePatients.map((patient) => (
+                    <PatientCard
+                      key={patient.patientDetails._id}
+                      patient={patient}
+                      status="active"
+                      onPatientClick={handlePatientClick}
+                    />
+                  ))}
+>>>>>>> upstream/main
                 </div>
-              ))}
-            </div>
-          </>
+              </div>
+            )}
+            {/* Completed Patients */}
+            {completedPatients.length > 0 && (
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                  <CheckCircle className="h-5 w-5 text-blue-600 mr-2" />
+                  Completed Patients ({completedPatients.length})
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {completedPatients.map((patient) => (
+                    <PatientCard
+                      key={patient.patientDetails._id}
+                      patient={patient}
+                      status="completed"
+                      onPatientClick={handlePatientClick}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+            {/* Cancelled Patients */}
+            {cancelledPatients.length > 0 && (
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                  <XCircle className="h-5 w-5 text-red-600 mr-2" />
+                  Cancelled Patients ({cancelledPatients.length})
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {cancelledPatients.map((patient) => (
+                    <PatientCard
+                      key={patient.patientDetails._id}
+                      patient={patient}
+                      status="cancelled"
+                      onPatientClick={handlePatientClick}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>

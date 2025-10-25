@@ -23,10 +23,16 @@ const createAppointment = asyncHandler(async (req, res) => {
     reason: reason || "",
     status: "pending",
   });
-  console.log("appointment created successfully: ", appt);
+  
+  // Populate doctor information before returning
+  const populatedAppt = await Appointment.findById(appt._id)
+    .populate("doctorId", "fullname email phone address specialization profilePic")
+    .populate("patientId", "fullname email phone address profilePic");
+  
+  console.log("appointment created successfully: ", populatedAppt);
   return res
     .status(201)
-    .json(new ApiResponse(201, appt, "Appointment created successfully"));
+    .json(new ApiResponse(201, populatedAppt, "Appointment created successfully"));
 });
 
 //appointment update - reschedule or change reason by patient
@@ -190,7 +196,7 @@ const completedAppointments = asyncHandler(async (req, res) => {
     status: "completed",
   })
     .populate("patientId", "fullname email phone profilePic")
-    .sort({ scheduledAt: -1 });
+    .sort({ completedAt: -1 });
 
   if (!appointments || appointments.length === 0) {
     return res
@@ -239,23 +245,53 @@ const startAppointment = asyncHandler(async (req, res) => {
 
 // Mark appointment as completed
 const completeAppointment = asyncHandler(async (req, res) => {
-  const userId = req.user._id;
-  const { id } = req.params;
-  const appt = await Appointment.findById(id);
-  if (!appt) throw new ApiError(404, "Appointment not found");
-  if (
-    String(appt.doctorId) !== String(userId) &&
-    String(appt.patientId) !== String(userId)
-  ) {
-    throw new ApiError(403, "Not authorized for this appointment");
-  }
-  appt.status = "completed";
-  appt.notes = req.body.notes || appt.notes || "";
+  try {
+    const userId = req.user?._id;
+    const { id } = req.params;
+    
+    if (!userId) {
+      throw new ApiError(401, "User not authenticated");
+    }
+    
+    if (!id) {
+      throw new ApiError(400, "Appointment ID is required");
+    }
+    
+    console.log(`Completing appointment ${id} by user ${userId}`);
+    
+    const appt = await Appointment.findById(id);
+    if (!appt) {
+      throw new ApiError(404, "Appointment not found");
+    }
+    
+    console.log(`Appointment found:`, { 
+      id: appt._id, 
+      status: appt.status, 
+      doctorId: appt.doctorId,
+      userId: userId 
+    });
+    
+    // Only the doctor can complete appointments
+    if (String(appt.doctorId) !== String(userId)) {
+      console.log(`Auth failed - Doctor: ${appt.doctorId}, User: ${userId}`);
+      throw new ApiError(403, "Only the doctor can complete this appointment");
+    }
+    
+    appt.status = "completed";
+    appt.notes = req.body?.notes || appt.notes || "";
+    appt.completedAt = new Date();
 
-  await appt.save();
-  return res
-    .status(200)
-    .json(new ApiResponse(200, appt, "Appointment completed"));
+    const savedAppt = await appt.save();
+    
+    console.log(`Appointment completed:`, { id: savedAppt._id, status: savedAppt.status });
+    
+    return res
+      .status(200)
+      .json(new ApiResponse(200, savedAppt, "Appointment completed"));
+  } catch (error) {
+    console.error(`Error completing appointment:`, error);
+    throw error;
+  }
 });
 
 const getAppointmentById = asyncHandler(async (req, res) => {

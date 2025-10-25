@@ -198,7 +198,7 @@ const EmptyState = () => {
 // Main Component
 function MyDoctors({
   filteredDoctors,
-  handleDoctorClick,
+  onDoctorClick,
   handleBookAppointment,
   handleViewAppointment,
   hasAppointment,
@@ -210,15 +210,15 @@ function MyDoctors({
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {filteredDoctors.map((doctor) => (
-            <Link key={doctor._id} href={`/patient/symptoms/${doctor._id}`}>
+            <div key={doctor._id} onClick={() => onDoctorClick && onDoctorClick(doctor._id)} className="cursor-pointer">
               <DoctorCard
                 doctor={doctor}
-                onViewProfile={handleDoctorClick}
+                onViewProfile={onDoctorClick}
                 onBookAppointment={handleBookAppointment}
                 onViewAppointment={handleViewAppointment}
                 hasAppointment={hasAppointment}
               />
-            </Link>
+            </div>
           ))}
         </div>
       )}

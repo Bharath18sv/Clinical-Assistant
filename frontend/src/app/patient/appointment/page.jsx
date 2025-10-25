@@ -1,129 +1,197 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
-import { Calendar, Plus, User } from "lucide-react";
-import Link from "next/link";
-import AppointmentCard from "@/components/AppointmentCard";
-import { fetchMyAppointments, completeAppointment } from "@/utils/api";
+import { useContext, useState, useEffect } from "react";
+import { Calendar, Clock, User, Plus } from "lucide-react";
+import { fetchMyAppointments } from "@/utils/api";
+import API from "@/utils/api";
+import { AuthContext } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 
 export default function PatientAppointments() {
+  const { user, authLoading } = useContext(AuthContext);
   const [appointments, setAppointments] = useState([]);
-  const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState("all");
-
   const router = useRouter();
 
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const res = await fetchMyAppointments();
-        if (!mounted) return;
-        setAppointments(res || []);
-      } catch (e) {
-        console.error("Failed to fetch appointments:", e);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  const handleEndAppointment = async (appointmentId) => {
+  const loadAppointments = async () => {
     try {
-      const appt = await completeAppointment(appointmentId);
-      // Defensive: appt may be in data property
-      const updatedAppt = appt?.data || appt;
-      setAppointments((prev) =>
-        prev.map((a) => (a._id === updatedAppt._id ? updatedAppt : a))
-      );
-      if (selected?._id === updatedAppt._id) setSelected(updatedAppt);
-    } catch (e) {
-      console.error("Failed to complete appointment:", e);
+      const appts = await fetchMyAppointments();
+      setAppointments(appts || []);
+    } catch (error) {
+      console.error("Error fetching appointments:", error);
+      setAppointments([]);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const filteredAppointments = useMemo(() => {
-    if (statusFilter === "all") return appointments;
-    return appointments.filter((appt) => appt.status === statusFilter);
-  }, [appointments, statusFilter]);
+  const handleCancelAppointment = async (appointmentId) => {
+    if (!window.confirm("Are you sure you want to cancel this appointment?")) {
+      return;
+    }
+
+    try {
+      await API.delete(`/appointments/${appointmentId}`);
+      await loadAppointments();
+      alert("Appointment cancelled successfully");
+    } catch (error) {
+      console.error("Error cancelling appointment:", error);
+      alert("Failed to cancel appointment");
+    }
+  };
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      loadAppointments();
+    }
+  }, [authLoading, user]);
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "pending":
+        return "bg-yellow-100 text-yellow-800";
+      case "approved":
+        return "bg-green-100 text-green-800";
+      case "cancelled":
+        return "bg-red-100 text-red-800";
+      case "completed":
+        return "bg-blue-100 text-blue-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading appointments...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      {/* Header with filter + button */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">My Appointments</h1>
           <p className="text-gray-600 mt-2">
-            View and manage your appointments
+            View and manage your scheduled appointments
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          {/* Filter Dropdown */}
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">All</option>
-            <option value="pending">Pending</option>
-            <option value="approved">Approved</option>
-            <option value="active">Active</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
-
-          {/* Create Appointment Button */}
-          <button
-            onClick={() => router.push("/patient/doctor/all")}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <Plus size={18} />
-            <span>Create Appointment</span>
-          </button>
-        </div>
+        <button
+          onClick={() => router.push('/patient/doctor/all')}
+          className="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center gap-2"
+        >
+          <Plus className="w-5 h-5" />
+          Book New Appointment
+        </button>
       </div>
 
-      {/* Appointments Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              All Appointments
-            </h2>
-            <div className="space-y-3">
-              {loading ? (
-                <p className="text-gray-500">Loading...</p>
-              ) : filteredAppointments.length === 0 ? (
-                <p className="text-gray-500">No appointments found.</p>
-              ) : (
-                filteredAppointments.map((appointment) => (
-                  <div
-                    key={appointment._id}
-                    className="cursor-pointer hover:bg-gray-50 rounded-lg"
-                  >
-                    <Link href={`/patient/appointment/${appointment._id}`}>
-                      <AppointmentCard
-                        appointment={{
-                          id: appointment._id,
-                          userDetails: appointment?.doctorId || {},
-                          reason: appointment.reason || "Consultation",
-                          time: appointment.scheduledAt,
-                          status: appointment.status,
-                        }}
+      {appointments.length === 0 ? (
+        <div className="bg-white rounded-xl shadow-sm border p-12 text-center">
+          <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            No Appointments
+          </h3>
+          <p className="text-gray-600">
+            You don't have any appointments scheduled yet.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {appointments.map((appointment) => (
+            <div
+              key={appointment._id}
+              className="bg-white rounded-xl shadow-sm border p-6"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  {/* Doctor Info */}
+                  <div className="flex items-center gap-3">
+                    {appointment.doctorId?.profilePic ? (
+                      <img
+                        src={appointment.doctorId.profilePic}
+                        alt={appointment.doctorId.fullname}
+                        className="w-12 h-12 rounded-full object-cover"
                       />
-                    </Link>
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                        <User className="w-6 h-6 text-gray-400" />
+                      </div>
+                    )}
+                    <div>
+                      <h3 className="font-semibold text-gray-900">
+                        {appointment.doctorId?.fullname || "Unknown"}
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        {appointment.doctorId?.specialization?.[0] || "General Practice"}
+                      </p>
+                    </div>
                   </div>
-                ))
-              )}
+
+                  {/* Appointment Details */}
+                  <div className="ml-6">
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Calendar className="w-4 h-4" />
+                      <span>
+                        {new Date(appointment.scheduledAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
+                      <Clock className="w-4 h-4" />
+                      <span>
+                        {new Date(appointment.scheduledAt).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </div>
+                    {appointment.reason && (
+                      <p className="text-sm text-gray-500 mt-1">
+                        Reason: {appointment.reason}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Status and Actions */}
+                <div className="flex items-center gap-3">
+                  <span
+                    className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
+                      appointment.status
+                    )}`}
+                  >
+                    {appointment.status.charAt(0).toUpperCase() +
+                      appointment.status.slice(1)}
+                  </span>
+
+                  {appointment.status === "pending" && (
+                    <button
+                      onClick={() => handleCancelAppointment(appointment._id)}
+                      className="px-4 py-2 bg-red-100 text-red-700 text-sm font-medium rounded-lg hover:bg-red-200 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                  
+                  {appointment.status === "completed" && (
+                    <button
+                      onClick={() => router.push(`/patient/doctor/${appointment.doctorId?._id}/appointment`)}
+                      className="px-4 py-2 bg-blue-100 text-blue-700 text-sm font-medium rounded-lg hover:bg-blue-200 transition-colors flex items-center gap-1"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Book Again
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
+          ))}
         </div>
-      </div>
+      )}
     </div>
   );
 }

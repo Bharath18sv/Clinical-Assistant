@@ -59,6 +59,7 @@ export const getSymptomLogsOfPatientByDoctor = async (patientId) => {
 export const getSymptomLogOfDoctorByPatient = async (doctorId) => {
   try {
     const response = await API.get(`/symptoms/patient/${doctorId}`);
+    console.log("symptom log response is api:", response);
     if (!response.data) {
       return null;
     }

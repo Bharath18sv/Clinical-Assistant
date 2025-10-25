@@ -96,14 +96,69 @@ const AddPrescription = ({ patient }) => {
       return false;
     }
 
-    const validMedications = medications.filter(
-      (med) => med.name.trim() && med.dosage.trim() && med.duration.trim()
-    );
+    const errors = [];
+    let atLeastOneMedication = false;
 
-    if (validMedications.length === 0) {
-      alert(
-        "Please add at least one complete medication with name, dosage, and duration"
-      );
+    medications.forEach((med, index) => {
+      // Skip completely empty medications
+      if (!med.name.trim() && !med.dosage && !med.duration) {
+        return;
+      }
+
+      const medErrors = [];
+      
+      // Validate medication name
+      if (!med.name.trim()) {
+        medErrors.push("Name is required");
+      }
+
+      // Validate dosage
+      if (!med.dosage) {
+        medErrors.push("Dosage is required");
+      } else {
+        const dosageNum = Number(med.dosage);
+        if (isNaN(dosageNum)) {
+          medErrors.push(`Dosage "${med.dosage}" is not a valid number`);
+        } else if (dosageNum <= 0) {
+          medErrors.push(`Dosage ${med.dosage} must be greater than 0`);
+        } else if (!Number.isInteger(dosageNum)) {
+          medErrors.push(`Dosage ${med.dosage} must be a whole number`);
+        }
+      }
+
+      // Validate duration
+      if (!med.duration) {
+        medErrors.push("Duration is required");
+      } else {
+        const durationNum = Number(med.duration);
+        if (isNaN(durationNum)) {
+          medErrors.push(`Duration "${med.duration}" is not a valid number`);
+        } else if (durationNum <= 0) {
+          medErrors.push(`Duration ${med.duration} must be greater than 0`);
+        } else if (!Number.isInteger(durationNum)) {
+          medErrors.push(`Duration ${med.duration} must be a whole number`);
+        }
+      }
+
+      // Validate schedule
+      if (!med.schedule || med.schedule.length === 0) {
+        medErrors.push("At least one schedule time must be selected");
+      }
+
+      if (medErrors.length > 0) {
+        errors.push(`Medication ${index + 1} (${med.name || 'Unnamed'}):\n- ${medErrors.join('\n- ')}`);
+      } else {
+        atLeastOneMedication = true;
+      }
+    });
+
+    if (!atLeastOneMedication) {
+      alert("Please add at least one complete medication with name, dosage, and duration");
+      return false;
+    }
+
+    if (errors.length > 0) {
+      alert("Please fix the following errors:\n\n" + errors.join("\n\n"));
       return false;
     }
 
@@ -117,17 +172,32 @@ const AddPrescription = ({ patient }) => {
 
     try {
       const prescriptionData = {
-        title: title, // Using 'name' to match your schema
+        title: title.trim(),
         patientId: patient._id || patient.id,
         status,
         medications: medications
           .filter((med) => med.name.trim() !== "")
-          .map((med) => ({
-            ...med,
-            // Keep as strings for flexibility with medical dosages
-            dosage: med.dosage.toString(),
-            duration: med.duration.toString(),
-          })),
+          .map((med) => {
+            const dosageNum = Number(med.dosage);
+            const durationNum = Number(med.duration);
+            
+            if (isNaN(dosageNum) || dosageNum <= 0) {
+              throw new Error(`Invalid dosage for ${med.name}: ${med.dosage}. Dosage must be a positive number.`);
+            }
+            
+            if (isNaN(durationNum) || durationNum <= 0) {
+              throw new Error(`Invalid duration for ${med.name}: ${med.duration}. Duration must be a positive number.`);
+            }
+            
+            return {
+              name: med.name.trim(),
+              dosage: dosageNum,
+              duration: durationNum,
+              notes: med.notes?.trim() || "",
+              status: med.status || "active",
+              schedule: med.schedule.length > 0 ? med.schedule : ["morning"]
+            };
+          }),
       };
 
       console.log("Submitting prescription:", prescriptionData);
@@ -267,8 +337,10 @@ const AddPrescription = ({ patient }) => {
                           Dosage *
                         </label>
                         <input
-                          type="text"
-                          placeholder="e.g., 500mg, 10ml"
+                          type="number"
+                          min="0"
+                          step="any"
+                          placeholder="e.g., 500"
                           value={medication.dosage}
                           onChange={(e) =>
                             updateMedication(index, "dosage", e.target.value)
@@ -282,8 +354,10 @@ const AddPrescription = ({ patient }) => {
                           Duration *
                         </label>
                         <input
-                          type="text"
-                          placeholder="e.g., 30 days, 2 weeks"
+                          type="number"
+                          min="1"
+                          step="1"
+                          placeholder="Number of days"
                           value={medication.duration}
                           onChange={(e) =>
                             updateMedication(index, "duration", e.target.value)
