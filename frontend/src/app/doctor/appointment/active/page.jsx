@@ -39,11 +39,16 @@ export default function DoctorActiveAppointments() {
   const handleCompleteAppointment = async (appointmentId) => {
     setCompletingIds((prev) => new Set([...prev, appointmentId]));
     try {
+      console.log("Attempting to complete appointment:", appointmentId);
       const updated = await completeAppointment(appointmentId);
+      console.log("Appointment completed successfully:", updated);
       setAppointments((prev) => prev.filter((x) => x._id !== updated._id));
+      alert("Appointment completed successfully!");
     } catch (error) {
       console.error("Failed to complete appointment:", error);
-      // You might want to show an error toast here
+      console.error("Error details:", error.response?.data);
+      const errorMessage = error.response?.data?.message || error.message || "Failed to complete appointment";
+      alert(`Error: ${errorMessage}`);
     } finally {
       setCompletingIds((prev) => {
         const newSet = new Set(prev);

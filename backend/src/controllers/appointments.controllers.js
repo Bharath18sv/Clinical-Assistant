@@ -245,32 +245,53 @@ const startAppointment = asyncHandler(async (req, res) => {
 
 // Mark appointment as completed
 const completeAppointment = asyncHandler(async (req, res) => {
-  const userId = req.user._id;
-  const { id } = req.params;
-  console.log(`Completing appointment ${id} by user ${userId}`);
-  
-  const appt = await Appointment.findById(id);
-  if (!appt) throw new ApiError(404, "Appointment not found");
-  
-  console.log(`Appointment found:`, { id: appt._id, status: appt.status, doctorId: appt.doctorId });
-  
-  // Only the doctor can complete appointments
-  if (String(appt.doctorId) !== String(userId)) {
-    console.log(`Auth failed - Doctor: ${appt.doctorId}, User: ${userId}`);
-    throw new ApiError(403, "Only the doctor can complete this appointment");
-  }
-  
-  appt.status = "completed";
-  appt.notes = req.body.notes || appt.notes || "";
-  appt.completedAt = new Date();
+  try {
+    const userId = req.user?._id;
+    const { id } = req.params;
+    
+    if (!userId) {
+      throw new ApiError(401, "User not authenticated");
+    }
+    
+    if (!id) {
+      throw new ApiError(400, "Appointment ID is required");
+    }
+    
+    console.log(`Completing appointment ${id} by user ${userId}`);
+    
+    const appt = await Appointment.findById(id);
+    if (!appt) {
+      throw new ApiError(404, "Appointment not found");
+    }
+    
+    console.log(`Appointment found:`, { 
+      id: appt._id, 
+      status: appt.status, 
+      doctorId: appt.doctorId,
+      userId: userId 
+    });
+    
+    // Only the doctor can complete appointments
+    if (String(appt.doctorId) !== String(userId)) {
+      console.log(`Auth failed - Doctor: ${appt.doctorId}, User: ${userId}`);
+      throw new ApiError(403, "Only the doctor can complete this appointment");
+    }
+    
+    appt.status = "completed";
+    appt.notes = req.body?.notes || appt.notes || "";
+    appt.completedAt = new Date();
 
-  await appt.save();
-  
-  console.log(`Appointment completed:`, { id: appt._id, status: appt.status });
-  
-  return res
-    .status(200)
-    .json(new ApiResponse(200, appt, "Appointment completed"));
+    const savedAppt = await appt.save();
+    
+    console.log(`Appointment completed:`, { id: savedAppt._id, status: savedAppt.status });
+    
+    return res
+      .status(200)
+      .json(new ApiResponse(200, savedAppt, "Appointment completed"));
+  } catch (error) {
+    console.error(`Error completing appointment:`, error);
+    throw error;
+  }
 });
 
 const getAppointmentById = asyncHandler(async (req, res) => {

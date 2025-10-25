@@ -97,12 +97,15 @@ const AllPrescriptionsPage = () => {
     prescriptions.forEach((prescription) => {
       if (
         prescription.patientId &&
-        !patientMap.has(prescription.patientId._id || prescription.patientId)
+        !patientMap.has(
+          (prescription.patientId?._id || prescription.patientId)?.toString()
+        )
       ) {
-        const id = prescription.patientId._id || prescription.patientId;
+        const rawId = prescription.patientId._id || prescription.patientId;
+        const id = rawId ? rawId.toString() : "";
         const name =
-          prescription.patientId.fullname ||
-          prescription.patientId.name ||
+          prescription.patientId?.fullname ||
+          prescription.patientId?.name ||
           "Unknown Patient";
         patientMap.set(id, { id, name });
       }
@@ -122,10 +125,10 @@ const AllPrescriptionsPage = () => {
         .includes(searchTerm.toLowerCase());
 
     // Patient filter
-    const prescriptionPatientId =
-      prescription.patientId?._id || prescription.patientId;
-    const matchesPatient =
-      filterPatient === "all" || prescriptionPatientId === filterPatient;
+    const prescriptionPatientId = (
+      prescription.patientId?._id || prescription.patientId
+    )?.toString();
+    const matchesPatient = filterPatient === "all" || prescriptionPatientId === filterPatient;
 
     // Status filter
     const matchesStatus =

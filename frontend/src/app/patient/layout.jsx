@@ -12,7 +12,6 @@ export default function PatientLayout({ children }) {
     path === "/patient/login" ||
     path === "/patient/verify-email"
   ) {
- upstream/main
     hideSidebar = true;
   }
   return (

@@ -2,6 +2,8 @@ import { SymptomLog } from "../models/symptomLogs.models.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
+import { Patient } from "../models/patient.models.js";
+import { Doctor } from "../models/doctor.models.js";
 
 // Create a new symptom log
 export const createSymptomLog = asyncHandler(async (req, res) => {
@@ -24,6 +26,95 @@ export const createSymptomLog = asyncHandler(async (req, res) => {
   });
 
   await newLog.save();
+
+  // Check for potential ADRs based on new symptoms
+  try {
+    const patient = await Patient.findById(patientId).populate(
+      "allergies chronicConditions"
+    );
+    const activePrescriptions = await Prescription.find({
+      patientId,
+      status: "active",
+    });
+
+    const activeSymptoms = symptoms.map((s) => s.toLowerCase());
+    const dangerousSymptomCombinations = {
+      rash: ["penicillin", "amoxicillin", "ampicillin"],
+      "difficulty breathing": ["aspirin", "ibuprofen"],
+      "severe nausea": ["metformin", "antibiotics"],
+      dizziness: ["blood pressure medications", "antidepressants"],
+      "chest pain": ["stimulants", "antidepressants"],
+      "severe headache": ["blood thinners", "vasodilators"],
+    };
+
+    let potentialADRs = [];
+
+    // Check each active prescription against new symptoms
+    for (const prescription of activePrescriptions) {
+      for (const medication of prescription.medications) {
+        for (const symptom of activeSymptoms) {
+          // Check if this symptom-medication combination is dangerous
+          for (const [dangerousSymptom, relatedMeds] of Object.entries(
+            dangerousSymptomCombinations
+          )) {
+            if (
+              symptom.includes(dangerousSymptom.toLowerCase()) &&
+              relatedMeds.some((med) =>
+                medication.name.toLowerCase().includes(med)
+              )
+            ) {
+              potentialADRs.push({
+                symptom,
+                medication: medication.name,
+                severity: "high",
+                message: `Potential adverse reaction: ${symptom} may be related to ${medication.name}`,
+              });
+            }
+          }
+        }
+      }
+    }
+
+    // If potential ADRs found, create alerts and send notifications
+    if (potentialADRs.length > 0) {
+      const doctor = await Doctor.findById(doctorId);
+
+      // Create ADR Alert
+      const alert = new ADRAlert({
+        patientId,
+        doctorId,
+        riskLevel: "high",
+        adrData: {
+          symptoms: activeSymptoms,
+          detectedIssues: potentialADRs,
+        },
+        status: "pending",
+        createdAt: new Date(),
+      });
+      await alert.save();
+
+      // Send SMS notifications
+      await sendSMS(
+        doctor.phone,
+        `URGENT: Potential ADR detected for patient. New symptoms: ${activeSymptoms.join(
+          ", "
+        )} may interact with current medications.`
+      );
+
+      // Also notify the patient if they have a phone number
+      if (patient.phone) {
+        await sendSMS(
+          patient.phone,
+          `Warning: Your new symptoms may indicate a reaction to your current medications. Please contact your doctor immediately.`
+        );
+      }
+
+      console.log("ADR alerts created and notifications sent:", potentialADRs);
+    }
+  } catch (error) {
+    console.error("Error checking for ADRs:", error);
+    // Don't throw the error, just log it - we still want to save the symptom log
+  }
 
   return res
     .status(201)
@@ -90,13 +181,9 @@ export const getSymptomLogsForDoctor = asyncHandler(async (req, res) => {
 // get specific symptom log of a doctor by patient
 export const getSymptomLogOfDoctorByPatient = asyncHandler(async (req, res) => {
   const { doctorId } = req.params;
-  const { patientId } = req.user._id;
-
-  console.log("patientId : ", patientId);
-  console.log("doctorId : ", doctorId);
+  const patientId = req.user._id;
 
   const symptomLog = await SymptomLog.findOne({ doctorId, patientId });
-  console.log("symptomLog data : ", symptomLog);
 
   if (!symptomLog) {
     return res
