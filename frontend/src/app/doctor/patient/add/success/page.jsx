@@ -73,6 +73,7 @@ export default function PatientAddedSuccessPage() {
               onClick={handleBackToPatients}
               className="w-full bg-gray-100 text-gray-700 py-3 rounded-lg hover:bg-gray-200 transition-colors duration-200 font-semibold flex items-center justify-center"
             >
+
               <ArrowLeft className="w-4 w-4 mr-2" />
               Back to Patient List
             </button>

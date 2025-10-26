@@ -50,7 +50,8 @@ export default function PatientDashboard() {
       return;
     }
     try {
-      const id = fetchPatientId();
+      // use patientId from state (set from authenticated user)
+      const id = patientId;
       if (!id) {
         console.log("No patient id");
         return;
@@ -70,7 +71,7 @@ export default function PatientDashboard() {
       return;
     }
     try {
-      const fetchedPatientId = fetchPatientId();
+      const fetchedPatientId = patientId;
       console.log(
         "patient id in dashboard before api call: ",
         fetchedPatientId

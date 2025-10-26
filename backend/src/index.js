@@ -1,9 +1,9 @@
-import app from "./app.js";
 import dotenv from "dotenv";
-import connectDB from "./db/index.js";
-const port = process.env.PORT || 5002;
+dotenv.config();
 
-dotenv.config({ path: "../.env" }); //we can pass the path to this, by default will look in the root directory
+import app from "./app.js";
+import connectDB from "./db/index.js";
+const port = process.env.PORT || 5002; //we can pass the path to this, by default will look in the root directory
 
 connectDB()
   .then(

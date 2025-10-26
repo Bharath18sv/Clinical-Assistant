@@ -154,6 +154,7 @@ export default function AddPatientPage() {
       };
       const newPatient = await addPatient(patientData);
       console.log("Patient data being submitted:", patientData);
+      console.log("Patient creation response:", newPatient);
 
       setSuccess("Patient added successfully! A verification email has been sent to the patient's email address.");
       

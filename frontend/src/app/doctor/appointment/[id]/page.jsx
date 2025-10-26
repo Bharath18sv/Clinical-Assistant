@@ -148,6 +148,15 @@ export default function DoctorAppointmentDetail() {
   const StatusIcon = statusConfig.icon;
   const { date, time } = formatDateTime(appointment.scheduledAt);
 
+  // Helper function for patient profile image
+  const getPatientProfileImage = (patient) => {
+    if (!patient) return "/default-avatar.png";
+    if (patient.profilePic) return patient.profilePic;
+    if (patient.gender === "female") return "/default-female.png";
+    if (patient.gender === "male") return "/default-male.png";
+    return "/default-avatar.png";
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -190,32 +199,6 @@ export default function DoctorAppointmentDetail() {
 
           {/* Content */}
           <div className="p-6">
-            {/* Date & Time Info */}
-            <div className="bg-gray-50 rounded-lg p-6 mb-8">
-              <div className="flex items-center mb-4">
-                <Calendar className="h-6 w-6 text-blue-600 mr-3" />
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Schedule Information
-                </h3>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="flex items-center">
-                  <Calendar className="h-5 w-5 text-gray-400 mr-3" />
-                  <div>
-                    <p className="text-sm text-gray-600">Date</p>
-                    <p className="font-medium text-gray-900">{date}</p>
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <Clock className="h-5 w-5 text-gray-400 mr-3" />
-                  <div>
-                    <p className="text-sm text-gray-600">Time</p>
-                    <p className="font-medium text-gray-900">{time}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
             {/* Patient Information */}
             <div className="bg-gray-50 rounded-lg p-6 mb-8">
               <div className="flex items-center mb-6">
@@ -228,17 +211,18 @@ export default function DoctorAppointmentDetail() {
               {/* Patient Header */}
               <div className="flex items-start space-x-6 mb-6 pb-6 border-b border-gray-200">
                 <div className="flex-shrink-0">
-                  {appointment.patientId?.profilePic ? (
-                    <img
-                      src={appointment.patientId.profilePic}
-                      alt={appointment.patientId.fullname}
-                      className="h-20 w-20 rounded-full object-cover border-4 border-white shadow-lg"
-                    />
-                  ) : (
-                    <div className="h-20 w-20 bg-blue-100 rounded-full flex items-center justify-center">
-                      <User className="h-10 w-10 text-blue-600" />
-                    </div>
-                  )}
+                  <img
+                    src={
+                      appointment.patientId?.profilePic
+                        ? appointment.patientId.profilePic
+                        : appointment.patientId?.gender === "female"
+                          ? "/default-female.png"
+                          : "/default-male.png"
+                    }
+                    alt={appointment.patientId?.fullname || "Patient"}
+                    className="h-20 w-20 rounded-full object-cover border-4 border-white shadow-lg"
+                  />
+
                 </div>
                 <div className="flex-1">
                   <h4 className="text-2xl font-semibold text-gray-900 mb-2">
@@ -273,111 +257,8 @@ export default function DoctorAppointmentDetail() {
                         {appointment.patientId?.phone || "N/A"}
                       </span>
                     </div>
-                    <div className="flex items-center">
-                      <MapPin className="h-4 w-4 text-gray-400 mr-2" />
-                      <span className="text-sm text-gray-600">
-                        {appointment.patientId?.address
-                          ? `${appointment.patientId.address.city}, ${appointment.patientId.address.state}`
-                          : "N/A"}
-                      </span>
-                    </div>
                   </div>
                 </div>
-              </div>
-
-              {/* Patient Details Grid */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Address */}
-                {appointment.patientId?.address && (
-                  <div className="bg-white rounded-lg p-4 border border-gray-200">
-                    <div className="flex items-center mb-3">
-                      <MapPin className="h-5 w-5 text-gray-500 mr-2" />
-                      <h5 className="font-medium text-gray-900">Address</h5>
-                    </div>
-                    <div className="text-sm text-gray-700 leading-relaxed">
-                      {appointment.patientId.address.street}
-                      <br />
-                      {appointment.patientId.address.city},{" "}
-                      {appointment.patientId.address.state}{" "}
-                      {appointment.patientId.address.zip}
-                      <br />
-                      {appointment.patientId.address.country}
-                    </div>
-                  </div>
-                )}
-
-                {/* Current Symptoms */}
-                {appointment.patientId?.symptoms &&
-                  appointment.patientId.symptoms.length > 0 && (
-                    <div className="bg-white rounded-lg p-4 border border-gray-200">
-                      <div className="flex items-center mb-3">
-                        <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
-                        <h5 className="font-medium text-gray-900">
-                          Current Symptoms
-                        </h5>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {appointment.patientId.symptoms.map(
-                          (symptom, index) => (
-                            <span
-                              key={index}
-                              className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200"
-                            >
-                              {symptom}
-                            </span>
-                          )
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                {/* Allergies */}
-                {appointment.patientId?.allergies &&
-                  appointment.patientId.allergies.length > 0 && (
-                    <div className="bg-white rounded-lg p-4 border border-gray-200">
-                      <div className="flex items-center mb-3">
-                        <AlertCircle className="h-5 w-5 text-orange-500 mr-2" />
-                        <h5 className="font-medium text-gray-900">Allergies</h5>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {appointment.patientId.allergies.map(
-                          (allergy, index) => (
-                            <span
-                              key={index}
-                              className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800 border border-orange-200"
-                            >
-                              {allergy}
-                            </span>
-                          )
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                {/* Chronic Conditions */}
-                {appointment.patientId?.chronicConditions &&
-                  appointment.patientId.chronicConditions.length > 0 && (
-                    <div className="bg-white rounded-lg p-4 border border-gray-200">
-                      <div className="flex items-center mb-3">
-                        <Activity className="h-5 w-5 text-purple-500 mr-2" />
-                        <h5 className="font-medium text-gray-900">
-                          Chronic Conditions
-                        </h5>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {appointment.patientId.chronicConditions.map(
-                          (condition, index) => (
-                            <span
-                              key={index}
-                              className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200"
-                            >
-                              {condition}
-                            </span>
-                          )
-                        )}
-                      </div>
-                    </div>
-                  )}
               </div>
             </div>
 
@@ -391,7 +272,6 @@ export default function DoctorAppointmentDetail() {
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Reason for Visit */}
                 <div className="bg-white rounded-lg p-4 border border-gray-200">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Reason for Visit
@@ -401,7 +281,6 @@ export default function DoctorAppointmentDetail() {
                   </p>
                 </div>
 
-                {/* Appointment ID */}
                 <div className="bg-white rounded-lg p-4 border border-gray-200">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Appointment ID
@@ -410,103 +289,7 @@ export default function DoctorAppointmentDetail() {
                     {appointment._id}
                   </p>
                 </div>
-
-                {/* Last Updated */}
-                <div className="bg-white rounded-lg p-4 border border-gray-200">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Last Updated
-                  </label>
-                  <p className="text-gray-900 text-sm">
-                    {new Date(appointment.updatedAt).toLocaleString("en-US", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      hour12: true,
-                    })}
-                  </p>
-                </div>
-
-                {/* Additional Notes */}
-                {appointment.notes && (
-                  <div className="bg-white rounded-lg p-4 border border-gray-200 lg:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Additional Notes
-                    </label>
-                    <p className="text-gray-900 text-base leading-relaxed">
-                      {appointment.notes}
-                    </p>
-                  </div>
-                )}
               </div>
-            </div>
-
-            {/* Action Buttons */}
-            {(canStart || canComplete) && (
-              <div className="bg-gray-50 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Available Actions
-                </h3>
-                <div className="flex flex-col sm:flex-row gap-4">
-                  {canStart && (
-                    <button
-                      onClick={async () => {
-                        const updated = await startAppointment(appointment._id);
-                        setAppointment(updated);
-                      }}
-                      className="flex items-center justify-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 shadow-sm hover:shadow-md"
-                    >
-                      <Play className="h-5 w-5 mr-2" />
-                      Start Appointment
-                    </button>
-                  )}
-                  {canComplete && (
-                    <button
-                      onClick={async () => {
-                        console.log('Completing appointment:', appointment._id);
-                        try {
-                          const updated = await completeAppointment(
-                            appointment._id
-                          );
-                          console.log('Appointment completed successfully:', updated);
-                          setAppointment(updated);
-                        } catch (error) {
-                          console.error('Error completing appointment:', error);
-                        }
-                      }}
-                      className="flex items-center justify-center px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors duration-200 shadow-sm hover:shadow-md"
-                    >
-                      <CheckCircle className="h-5 w-5 mr-2" />
-                      End Appointment
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Additional Information Card */}
-        <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
-          <div className="flex items-start">
-            <div className="p-2 bg-blue-100 rounded-lg mr-4">
-              <AlertCircle className="h-5 w-5 text-blue-600" />
-            </div>
-            <div>
-              <h4 className="text-sm font-semibold text-blue-900 mb-1">
-                Appointment Management Tips
-              </h4>
-              <ul className="text-sm text-blue-800 space-y-1">
-                <li>
-                  • Start appointments when both you and the patient are ready
-                </li>
-                <li>
-                  • End appointments after completing all necessary
-                  consultations
-                </li>
-                <li>• All changes are automatically saved and logged</li>
-              </ul>
             </div>
           </div>
         </div>

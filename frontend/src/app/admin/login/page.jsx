@@ -39,7 +39,6 @@ export default function AdminLoginPage() {
     setError("");
 
     try {
-      // Perform admin login via AuthContext; this sets tokens and user role
       const response = await API.post("/admin/login", { email, password });
       const data = response.data;
       console.log("Login response data:", data);
@@ -48,7 +47,6 @@ export default function AdminLoginPage() {
       localStorage.setItem("user", JSON.stringify(data.data));
       login(data.data);
       toast.success("Login successful! Redirecting...");
-      // Navigate to dashboard on success
       router.replace("/admin/dashboard");
     } catch (err) {
       console.error("Admin login error:", err);
