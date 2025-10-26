@@ -4,6 +4,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
 import { Patient } from "../models/patient.models.js";
 import { Doctor } from "../models/doctor.models.js";
+import { Notification } from "../models/notification.model.js";
 
 // Create a new symptom log
 export const createSymptomLog = asyncHandler(async (req, res) => {
@@ -75,9 +76,10 @@ export const createSymptomLog = asyncHandler(async (req, res) => {
       }
     }
 
-    // If potential ADRs found, create alerts and send notifications
+    // If potential ADRs found, create alerts, deactivate medications, and send notifications
     if (potentialADRs.length > 0) {
       const doctor = await Doctor.findById(doctorId);
+      const patient = await Patient.findById(patientId);
 
       // Create ADR Alert
       const alert = new ADRAlert({
@@ -93,11 +95,58 @@ export const createSymptomLog = asyncHandler(async (req, res) => {
       });
       await alert.save();
 
+      // Deactivate dangerous medications and their prescriptions
+      const affectedMedications = new Set(
+        potentialADRs.map((adr) => adr.medication.toLowerCase())
+      );
+
+      for (const prescription of activePrescriptions) {
+        const hasDangerousMeds = prescription.medications.some((med) =>
+          affectedMedications.has(med.name.toLowerCase())
+        );
+
+        if (hasDangerousMeds) {
+          // Cancel the entire prescription
+          prescription.status = "cancelled";
+          prescription.medications = prescription.medications.map((med) => ({
+            ...med,
+            status: affectedMedications.has(med.name.toLowerCase())
+              ? "cancelled"
+              : med.status,
+          }));
+          await prescription.save();
+
+          // Delete pending medication logs for cancelled medications
+          await MedicationLog.deleteMany({
+            prescriptionId: prescription._id,
+            medicationName: { $in: Array.from(affectedMedications) },
+            status: "pending",
+          });
+        }
+      }
+
+      // Send email notifications about cancelled medications
+      const emailSubject =
+        "URGENT: Medications Cancelled Due to Adverse Reaction";
+      const emailBody = `Some medications have been automatically cancelled due to potential adverse reactions.
+        \nReported Symptoms: ${activeSymptoms.join(", ")}
+        \nCancelled Medications: ${Array.from(affectedMedications).join(", ")}
+        \nReason: ${potentialADRs.map((adr) => adr.message).join("\n")}
+        \n\nPlease contact your healthcare provider immediately.`;
+
+      if (patient.email) {
+        await sendEmail(patient.email, emailSubject, emailBody);
+      }
+      if (doctor.email) {
+        await sendEmail(doctor.email, emailSubject, emailBody);
+      }
+
       // Send SMS notifications
       await sendSMS(
         doctor.phone,
-        `URGENT: Potential ADR detected for patient. New symptoms: ${activeSymptoms.join(
+        `URGENT: ADR detected. Patient symptoms: ${activeSymptoms.join(
           ", "
+        )}. Medications cancelled.
         )} may interact with current medications.`
       );
 
@@ -110,6 +159,17 @@ export const createSymptomLog = asyncHandler(async (req, res) => {
       }
 
       console.log("ADR alerts created and notifications sent:", potentialADRs);
+
+      const res = await Notification.create({
+        userId: patientId,
+        userType: "Patient", // 🔥 IMPORTANT
+        type: "ADR_ALERT",
+        title: "⚠️ Adverse Drug Reaction Alert",
+        message: adrAlerts.map((a) => a.message).join(", "), // Detailed message
+        prescriptionId: savedPrescription._id, // so clicking takes them to details
+      });
+
+      console.log("Patient notified with adr response: ", res);
     }
   } catch (error) {
     console.error("Error checking for ADRs:", error);

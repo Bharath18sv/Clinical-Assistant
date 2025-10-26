@@ -17,6 +17,7 @@ import {
   LogOut,
   X,
   Pill,
+  Bell
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { AuthContext } from "@/context/AuthContext";
@@ -33,14 +34,14 @@ export default function PatientSidebar() {
   useEffect(() => {
     if (!authLoading && user) {
 
-      console.log('Full user object in patient sidebar:', user);
-      console.log('user.role:', user.role);
-      console.log('user.user:', user.user);
-      console.log('user.data:', user.data);
+      // console.log('Full user object in patient sidebar:', user);
+      // console.log('user.role:', user.role);
+      // console.log('user.user:', user.user);
+      // console.log('user.data:', user.data);
       
       // Patient login API returns: { user: patientData, accessToken, refreshToken, role }
       const userData = user.user || user.data?.user || user;
-      console.log('Final extracted userData:', userData);
+      // console.log('Final extracted userData:', userData);
 
       setPatientData(userData);
     } else if (!authLoading && !user) {
@@ -83,6 +84,7 @@ export default function PatientSidebar() {
     { name: "Appointments", href: "/patient/appointment", icon: Calendar },
     { name: "Prescriptions", href: "/patient/prescriptions", icon: FileText },
     { name: "Symptoms", href: "/patient/symptoms", icon: Activity },
+    { name: "Notifications", href: "/patient/notification", icon: Bell },
   ];
 
   const expandableMenus = [

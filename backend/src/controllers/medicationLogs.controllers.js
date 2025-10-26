@@ -10,15 +10,6 @@ import mongoose from "mongoose";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 
-// =================
-// PATIENT CONTROLLERS
-// =================
-
-/**
- * Patient adds medication log entry
- * POST /api/medication-logs
- * Auth: Patient
- */
 export const addMedicationLog = async (req, res) => {
   try {
     const {

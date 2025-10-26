@@ -362,10 +362,6 @@ export default function DoctorCompletedAppointments() {
                           <FileText className="h-4 w-4 mr-2" />
                           View Notes
                         </button>
-                        <button className="flex items-center justify-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors duration-200">
-                          <MessageSquare className="h-4 w-4 mr-2" />
-                          Chat History
-                        </button>
                         <button
                           onClick={() =>
                             handleRestartAppointment(appointment._id)
