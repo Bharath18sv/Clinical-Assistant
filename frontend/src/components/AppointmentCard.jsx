@@ -90,9 +90,11 @@ export default function AppointmentCard({ appointment, onCancel }) {
             className="h-16 w-16 rounded-full object-cover border border-gray-200"
           />
         ) : (
-          <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center">
-            <User className="h-8 w-8 text-gray-400" />
-          </div>
+          <img
+            src="/default-doctor.png"
+            alt="Default Doctor"
+            className="h-16 w-16 rounded-full object-cover border border-gray-200"
+          />
         )}
 
         {/* User details */}

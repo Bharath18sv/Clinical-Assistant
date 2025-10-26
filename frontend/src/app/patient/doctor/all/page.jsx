@@ -246,9 +246,11 @@ export default function PatientAllDoctors() {
                           className="w-20 h-20 rounded-full object-cover border-2 border-gray-200 group-hover:border-blue-300 transition-colors"
                         />
                       ) : (
-                        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center border-2 border-gray-200 group-hover:border-blue-300 transition-colors">
-                          <User size={32} className="text-blue-600" />
-                        </div>
+                        <img
+                          src="/default-doctor.png"
+                          alt="Default Doctor"
+                          className="w-20 h-20 rounded-full object-cover border-2 border-gray-200 group-hover:border-blue-300 transition-colors"
+                        />
                       )}
                       {/* Availability Indicator */}
                       <div
@@ -377,9 +379,11 @@ export default function PatientAllDoctors() {
                       className="w-32 h-32 rounded-2xl object-cover border-2 border-gray-200"
                     />
                   ) : (
-                    <div className="w-32 h-32 rounded-2xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center border-2 border-gray-200">
-                      <User size={48} className="text-blue-600" />
-                    </div>
+                    <img
+                      src="/default-doctor.png"
+                      alt="Default Doctor"
+                      className="w-32 h-32 rounded-2xl object-cover border-2 border-gray-200"
+                    />
                   )}
                   <div
                     className={`absolute -top-2 -right-2 px-3 py-1 rounded-full text-xs font-semibold ${

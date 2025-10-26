@@ -35,7 +35,7 @@ export default function PatientDoctorsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [specializationFilter, setSpecializationFilter] = useState("all");
 
-  const patientId = user?.data?.user?._id;
+  const patientId = user?.user?._id;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -59,7 +59,7 @@ export default function PatientDoctorsPage() {
     };
     
     fetchData();
-  }, [authLoading]);
+  }, [authLoading, user]);
 
 
 
@@ -67,6 +67,23 @@ export default function PatientDoctorsPage() {
 
   const handleDoctorClick = (doctorId) => {
     router.push(`/patient/doctor/${doctorId}`);
+  };
+
+  const handleBookAppointment = (doctorId, isAvailable) => {
+    if (isAvailable) {
+      router.push(`/patient/doctor/${doctorId}/appointment`);
+    }
+  };
+
+  const handleViewAppointment = (doctorId) => {
+    router.push(`/patient/appointment`);
+  };
+
+  const hasAppointment = (doctorId) => {
+    return appointments.some((appt) => 
+      appt.doctorId?._id === doctorId && 
+      (appt.status === 'pending' || appt.status === 'approved')
+    );
   };
 
   // Filter doctors based on search and specialization
@@ -237,6 +254,9 @@ export default function PatientDoctorsPage() {
       <MyDoctors
         filteredDoctors={filteredDoctors}
         onDoctorClick={handleDoctorClick}
+        handleBookAppointment={handleBookAppointment}
+        handleViewAppointment={handleViewAppointment}
+        hasAppointment={hasAppointment}
         actions={true}
       />
     </div>

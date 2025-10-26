@@ -185,9 +185,11 @@ export default function AppointmentPage() {
                         className="w-16 h-16 rounded-full object-cover ring-2 ring-blue-200"
                       />
                     ) : (
-                      <div className="w-16 h-16 rounded-full bg-blue-200 flex items-center justify-center">
-                        <User className="w-8 h-8 text-blue-600" />
-                      </div>
+                      <img
+                        src="/default-doctor.png"
+                        alt="Default Doctor"
+                        className="w-16 h-16 rounded-full object-cover ring-2 ring-blue-200"
+                      />
                     )}
                     <div>
                       <h4 className="font-semibold text-gray-900 text-lg">

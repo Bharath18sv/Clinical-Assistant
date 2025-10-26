@@ -138,9 +138,11 @@ export default function DoctorProfilePage() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-white/20">
-                        <User className="w-16 h-16 text-white" />
-                      </div>
+                      <img
+                        src="/default-doctor.png"
+                        alt="Default Doctor"
+                        className="w-full h-full object-cover"
+                      />
                     )}
                   </div>
                   {doctor.isAvailable && (

@@ -45,9 +45,11 @@ const DoctorCard = ({
                 className="w-16 h-16 rounded-full object-cover border-2 border-blue-100"
               />
             ) : (
-              <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center">
-                <User className="h-8 w-8 text-blue-600" />
-              </div>
+              <img
+                src="/default-doctor.png"
+                alt="Default Doctor"
+                className="w-16 h-16 rounded-full object-cover border-2 border-blue-100"
+              />
             )}
             {doctor.isAvailable && (
               <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white" />
