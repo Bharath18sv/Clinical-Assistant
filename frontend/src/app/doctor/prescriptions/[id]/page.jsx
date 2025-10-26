@@ -1,15 +1,7 @@
-//doctor views the prescriptions given to a patient
-//doctor can delete or add a prescription
-//doctor can edit a prescription
-//doctor can view the details of a prescription
-//a button to navigate to add a new prescription for the patient
-//a button to navigate to edit a prescription for the patient
-//a button to delete a prescription for the patient
-//a button to view the details of a prescription for the patient
-//a button to view the details of a patient which redirects to the patient details page
-
 "use client";
 import React, { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { getPrescriptionById, getPatientById, deletePrescription } from "@/utils/api";
 import {
   Plus,
   Edit3,
@@ -33,68 +25,115 @@ const PatientPrescriptionsPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [showDeleteModal, setShowDeleteModal] = useState(null);
+  const [patient, setPatient] = useState(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [actionError, setActionError] = useState(null);
+  const [loadError, setLoadError] = useState(null);
 
-  // Mock patient data - replace with actual API call
-  const patient = {
-    id: "patient_123",
-    name: "John Smith",
-    age: 45,
-    gender: "Male",
-    phone: "+1 (555) 123-4567",
-    email: "john.smith@email.com",
-    lastVisit: "2024-01-15",
-    allergies: ["Penicillin", "Sulfa drugs"],
-  };
+  const router = useRouter();
 
-  // Mock prescriptions data - replace with actual API call
+  // Load prescription by id (replaces mock data)
+  const params = useParams();
+  const prescriptionId = params?.id;
+
   useEffect(() => {
-    const mockPrescriptions = [
-      {
-        id: "rx_001",
-        medicationName: "Lisinopril",
-        dosage: "10mg",
-        frequency: "Once daily",
-        duration: "30 days",
-        instructions: "Take with food in the morning",
-        prescribedDate: "2024-01-15",
-        status: "active",
-        refills: 2,
-        refillsUsed: 0,
-        condition: "Hypertension",
-      },
-      {
-        id: "rx_002",
-        medicationName: "Metformin",
-        dosage: "500mg",
-        frequency: "Twice daily",
-        duration: "90 days",
-        instructions: "Take with meals",
-        prescribedDate: "2024-01-10",
-        status: "active",
-        refills: 5,
-        refillsUsed: 1,
-        condition: "Diabetes Type 2",
-      },
-      {
-        id: "rx_003",
-        medicationName: "Amoxicillin",
-        dosage: "250mg",
-        frequency: "Three times daily",
-        duration: "7 days",
-        instructions: "Complete full course",
-        prescribedDate: "2024-01-05",
-        status: "completed",
-        refills: 0,
-        refillsUsed: 0,
-        condition: "Bacterial infection",
-      },
-    ];
+    let mounted = true;
 
-    setTimeout(() => {
-      setPrescriptions(mockPrescriptions);
-      setLoading(false);
-    }, 1000);
-  }, []);
+    const loadPrescription = async () => {
+      if (!prescriptionId) {
+        setPrescriptions([]);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const res = await getPrescriptionById(prescriptionId);
+        setLoadError(null);
+
+        // res may be an ApiResponse-like object { statusCode, data, message, success }
+        const pres = res?.data || res;
+
+        if (!pres) {
+          if (mounted) setPrescriptions([]);
+          return;
+        }
+
+        // Map backend prescription to the UI shape expected by this component
+        const med = pres.medications?.[0] || {};
+        const mapped = {
+          id: pres._id || pres.id || prescriptionId,
+          medicationName: med.name || pres.title || "Untitled",
+          dosage: med.dosage ? `${med.dosage}mg` : med.dosage || "",
+          frequency: med.schedule ? med.schedule.join(", ") : "As prescribed",
+          duration: med.duration ? `${med.duration} days` : med.duration || "",
+          instructions: med.notes || pres.notes || "",
+          prescribedDate: pres.createdAt
+            ? new Date(pres.createdAt).toLocaleDateString()
+            : pres.date
+              ? new Date(pres.date).toLocaleDateString()
+              : "",
+          status: pres.status || med.status || "active",
+          refills: pres.refills || 0,
+          refillsUsed: pres.refillsUsed || 0,
+          condition: pres.title || "",
+        };
+
+        if (mounted) {
+          setPrescriptions([mapped]);
+          const p = pres.patientId || {};
+          if (!p || typeof p === 'string' || (!p.fullname && !p.name)) {
+            try {
+              const pid = typeof p === 'string' ? p : p?._id;
+              if (pid) {
+                const patientData = await getPatientById(pid);
+                const patientInfo = {
+                  id: patientData?._id || pid,
+                  name: patientData?.fullname || patientData?.name || 'Unknown Patient',
+                  age: patientData?.age || '-',
+                  gender: patientData?.gender || '-',
+                  phone: patientData?.phone || '-',
+                  lastVisit: mapped.prescribedDate || '-',
+                  allergies: Array.isArray(patientData?.allergies) ? patientData.allergies : [],
+                };
+                setPatient(patientInfo);
+              } else {
+                setPatient(null);
+              }
+            } catch (e) {
+              console.error('Failed to load patient info:', e);
+              setPatient(null);
+            }
+          } else {
+            const patientInfo = {
+              id: p._id || p,
+              name: p.fullname || p.name || 'Unknown Patient',
+              age: p.age || '-',
+              gender: p.gender || '-',
+              phone: p.phone || '-',
+              lastVisit: mapped.prescribedDate || '-',
+              allergies: Array.isArray(p.allergies) ? p.allergies : [],
+            };
+            setPatient(patientInfo);
+          }
+        }
+      } catch (error) {
+        console.error("Error loading prescription:", error);
+        if (mounted) {
+          setPrescriptions([]);
+          setLoadError('Failed to load prescription.');
+        }
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    loadPrescription();
+
+    return () => {
+      mounted = false;
+    };
+  }, [prescriptionId]);
 
   const filteredPrescriptions = prescriptions.filter((prescription) => {
     const matchesSearch =
@@ -102,8 +141,10 @@ const PatientPrescriptionsPage = () => {
         .toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
       prescription.condition.toLowerCase().includes(searchTerm.toLowerCase());
+
     const matchesFilter =
       filterStatus === "all" || prescription.status === filterStatus;
+
     return matchesSearch && matchesFilter;
   });
 
@@ -136,29 +177,47 @@ const PatientPrescriptionsPage = () => {
     );
   };
 
-  const handleDelete = (prescriptionId) => {
-    setPrescriptions((prev) => prev.filter((p) => p.id !== prescriptionId));
-    setShowDeleteModal(null);
+  const handleDelete = async (id) => {
+    if (!id) return;
+    try {
+      setActionError(null);
+      setActionLoading(true);
+
+      // Call backend API
+      await deletePrescription(id);
+
+      // Remove from state after successful deletion
+      setPrescriptions((prev) => prev.filter((p) => p.id !== id));
+      setShowDeleteModal(null);
+
+      // Navigate to all prescriptions page
+      router.push("/doctor/prescriptions/all");
+    } catch (error) {
+      // Handle server errors
+      const message =
+        error.response?.data?.message || error.message || "Delete failed";
+      setActionError(message);
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const handleAddPrescription = () => {
-    // Navigate to add prescription page
-    console.log("Navigate to add prescription for patient:", patient.id);
+    if (!patient?.id) return;
+    router.push(`/doctor/prescriptions/new?patientId=${patient.id}`);
   };
 
-  const handleEditPrescription = (prescriptionId) => {
-    // Navigate to edit prescription page
-    console.log("Navigate to edit prescription:", prescriptionId);
+  const handleEditPrescription = (id) => {
+    router.push(`/doctor/prescriptions/${id}/edit`);
   };
 
-  const handleViewDetails = (prescriptionId) => {
-    // Navigate to prescription details page
-    console.log("Navigate to prescription details:", prescriptionId);
+  const handleViewDetails = (id) => {
+    router.push(`/doctor/prescriptions/${id}`);
   };
 
   const handleViewPatientDetails = () => {
-    // Navigate to patient details page
-    console.log("Navigate to patient details:", patient.id);
+    if (!patient?.id) return;
+    router.push(`/doctor/patient/${patient.id}`);
   };
 
   if (loading) {
@@ -167,7 +226,9 @@ const PatientPrescriptionsPage = () => {
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <span className="ml-2 text-gray-600">Loading prescriptions...</span>
+            <span className="ml-2 text-gray-600">
+              Loading prescriptions...
+            </span>
           </div>
         </div>
       </div>
@@ -181,7 +242,7 @@ const PatientPrescriptionsPage = () => {
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+              <button onClick={() => router.back()} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                 <ChevronLeft size={20} className="text-gray-600" />
               </button>
               <div>
@@ -189,7 +250,7 @@ const PatientPrescriptionsPage = () => {
                   Patient Prescriptions
                 </h1>
                 <p className="text-sm text-gray-600">
-                  Manage prescriptions for {patient.name}
+                  Manage prescriptions for {patient?.name || 'Patient'}
                 </p>
               </div>
             </div>
@@ -198,15 +259,13 @@ const PatientPrescriptionsPage = () => {
                 onClick={handleViewPatientDetails}
                 className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
               >
-                <User size={16} />
-                Patient Details
+                <User size={16} /> Patient Details
               </button>
               <button
                 onClick={handleAddPrescription}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
-                <Plus size={16} />
-                New Prescription
+                <Plus size={16} /> New Prescription
               </button>
             </div>
           </div>
@@ -214,6 +273,16 @@ const PatientPrescriptionsPage = () => {
       </div>
 
       <div className="max-w-7xl mx-auto p-6">
+        {loadError && (
+          <div className="bg-red-50 text-red-700 border border-red-200 rounded-lg p-3 mb-4">
+            {loadError}
+          </div>
+        )}
+        {actionError && (
+          <div className="bg-red-50 text-red-700 border border-red-200 rounded-lg p-3 mb-4">
+            {actionError}
+          </div>
+        )}
         {/* Patient Info Card */}
         <div className="bg-white rounded-xl shadow-sm border p-6 mb-6">
           <div className="flex flex-col lg:flex-row lg:items-center gap-6">
@@ -223,25 +292,25 @@ const PatientPrescriptionsPage = () => {
               </div>
               <div>
                 <h2 className="text-xl font-semibold text-gray-900">
-                  {patient.name}
+                  {patient?.name || 'Patient'}
                 </h2>
                 <p className="text-gray-600">
-                  {patient.age} years old, {patient.gender}
+                  {patient?.age} years old, {patient?.gender}
                 </p>
-                <p className="text-sm text-gray-500">{patient.phone}</p>
+                <p className="text-sm text-gray-500">{patient?.phone}</p>
               </div>
             </div>
             <div className="flex flex-wrap gap-6 text-sm">
               <div className="flex items-center gap-2">
                 <Calendar size={16} className="text-gray-400" />
                 <span className="text-gray-600">
-                  Last visit: {patient.lastVisit}
+                  Last visit: {patient?.lastVisit}
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <AlertTriangle size={16} className="text-red-400" />
                 <span className="text-gray-600">
-                  Allergies: {patient.allergies.join(", ")}
+                  Allergies: {patient?.allergies?.join(", ")}
                 </span>
               </div>
             </div>
@@ -264,15 +333,17 @@ const PatientPrescriptionsPage = () => {
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
-            <div className="relative">
+            <div className="flex items-center gap-2 min-w-[220px]">
+              {/* Icon is next to select, not on top of it */}
               <Filter
-                size={20}
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                size={18}
+                className="text-gray-400 ml-2"
               />
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="pl-10 pr-8 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                className="pr-8 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                style={{ minWidth: '150px' }}
               >
                 <option value="all">All Status</option>
                 <option value="active">Active</option>
@@ -300,8 +371,7 @@ const PatientPrescriptionsPage = () => {
                 onClick={handleAddPrescription}
                 className="flex items-center gap-2 mx-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
-                <Plus size={16} />
-                Add First Prescription
+                <Plus size={16} /> Add First Prescription
               </button>
             </div>
           ) : (
@@ -371,22 +441,19 @@ const PatientPrescriptionsPage = () => {
                         onClick={() => handleViewDetails(prescription.id)}
                         className="flex items-center gap-2 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-sm"
                       >
-                        <Eye size={16} />
-                        View Details
+                        <Eye size={16} /> View Details
                       </button>
                       <button
                         onClick={() => handleEditPrescription(prescription.id)}
                         className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors text-sm"
                       >
-                        <Edit3 size={16} />
-                        Edit
+                        <Edit3 size={16} /> Edit
                       </button>
                       <button
                         onClick={() => setShowDeleteModal(prescription.id)}
                         className="flex items-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm"
                       >
-                        <Trash2 size={16} />
-                        Delete
+                        <Trash2 size={16} /> Delete
                       </button>
                     </div>
                   </div>
@@ -410,12 +477,10 @@ const PatientPrescriptionsPage = () => {
                   Delete Prescription
                 </h3>
               </div>
-
               <p className="text-gray-600 mb-6">
                 Are you sure you want to delete this prescription? This action
                 cannot be undone.
               </p>
-
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowDeleteModal(null)}
@@ -425,9 +490,10 @@ const PatientPrescriptionsPage = () => {
                 </button>
                 <button
                   onClick={() => handleDelete(showDeleteModal)}
-                  className="flex-1 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+                  className="flex-1 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium disabled:opacity-60"
+                  disabled={actionLoading}
                 >
-                  Delete Prescription
+                  {actionLoading ? 'Deleting...' : 'Delete Prescription'}
                 </button>
               </div>
             </div>
