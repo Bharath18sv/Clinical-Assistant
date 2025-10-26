@@ -23,6 +23,7 @@ import {
   TrendingUp,
   AlertCircle,
   ArrowUpDown,
+  User2
 } from "lucide-react";
 import { AuthContext } from "@/context/AuthContext";
 import { getAllMedicationLogs } from "@/utils/api";
@@ -634,7 +635,17 @@ const AllMedicationLogsPage = () => {
                     >
                       <td className="py-4 px-6">
                         <div className="flex items-center gap-3">
-                          <img src={log.patientId?.profilePic} alt="" className="h-10 w-15"/>
+                          {log.patientId?.profilePic ? (
+                            <img
+                              src={log.patientId.profilePic}
+                              alt="Patient"
+                              className="h-10 w-10 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                              <User className="h-6 w-6 text-gray-600" />
+                            </div>
+                          )}
                           <div>
                             <p className="font-medium text-gray-900">
                               {log.patientId?.fullname ||

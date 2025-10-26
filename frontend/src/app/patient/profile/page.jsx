@@ -42,6 +42,7 @@ const selectValueToArray = (selectValue) => {
 
 export default function PatientProfile() {
   const { user, authLoading, setUser } = useContext(AuthContext);
+  // console.log("user : ", user);
   const [profile, setProfile] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -72,8 +73,9 @@ export default function PatientProfile() {
 
   // Load patient data when user is available
   useEffect(() => {
-    if (!authLoading && user?.data?.user) {
-      const userData = user.data.user;
+    if (user?.user) {
+      const userData = user.user;
+      console.log("profile set to : ", userData);
       setProfile(userData);
 
       // Reset form with user data
@@ -94,7 +96,7 @@ export default function PatientProfile() {
         symptoms: arrayToSelectValue(userData.symptoms || []),
       });
     }
-  }, [user, authLoading, reset]);
+  }, [user, reset]);
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -181,6 +183,8 @@ export default function PatientProfile() {
   };
 
   const handleCancel = () => {
+    if (!profile) return;
+
     // Reset form to original profile data
     reset({
       fullname: profile.fullname || "",
@@ -210,7 +214,8 @@ export default function PatientProfile() {
     });
   };
 
-  if (!profile) {
+  // Show loading spinner while auth is loading or user data is not available
+  if (authLoading || !user?.user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -223,6 +228,9 @@ export default function PatientProfile() {
     );
   }
 
+  // Use profile if available, otherwise use user data directly
+  const displayData = profile || user.data.user;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-8 px-4">
       <form onSubmit={handleSubmit(onSubmit)}>
@@ -234,9 +242,9 @@ export default function PatientProfile() {
                 <div className="flex items-start gap-6">
                   <div className="relative flex-shrink-0">
                     <div className="w-24 h-24 rounded-xl overflow-hidden bg-white/20 backdrop-blur-sm">
-                      {profile?.profilePic ? (
+                      {displayData?.profilePic ? (
                         <img
-                          src={profile.profilePic}
+                          src={displayData.profilePic}
                           alt="Profile"
                           className="w-full h-full object-cover"
                         />
@@ -253,14 +261,14 @@ export default function PatientProfile() {
 
                   <div className="flex-1">
                     <h1 className="text-3xl font-bold text-white mb-1">
-                      {profile.fullname}
+                      {displayData?.fullname || "User"}
                     </h1>
                     <p className="text-blue-100 mb-3">
                       Personal Health Profile
                     </p>
                     <div className="flex flex-wrap items-center gap-3 text-sm">
                       <span className="text-blue-100">
-                        Member since {formatDate(profile.createdAt)}
+                        Member since {formatDate(displayData?.createdAt)}
                       </span>
                       <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full font-medium">
                         Active
@@ -327,7 +335,7 @@ export default function PatientProfile() {
                         />
                       ) : (
                         <p className="bg-gray-50 rounded-lg px-4 py-2.5 border border-gray-200">
-                          {profile.fullname || "-"}
+                          {displayData?.fullname || "-"}
                         </p>
                       )}
                     </div>
@@ -371,7 +379,7 @@ export default function PatientProfile() {
                       ) : (
                         <div className="bg-gray-50 rounded-lg px-4 py-2.5 border border-gray-200 flex items-center gap-2">
                           <Mail className="w-4 h-4 text-gray-500" />
-                          <span>{profile.email || "-"}</span>
+                          <span>{displayData?.email || "-"}</span>
                         </div>
                       )}
                     </div>
@@ -397,7 +405,7 @@ export default function PatientProfile() {
                       ) : (
                         <div className="bg-gray-50 rounded-lg px-4 py-2.5 border border-gray-200 flex items-center gap-2">
                           <Phone className="w-4 h-4 text-gray-500" />
-                          <span>{profile.phone || "-"}</span>
+                          <span>{displayData?.phone || "-"}</span>
                         </div>
                       )}
                     </div>
@@ -441,7 +449,9 @@ export default function PatientProfile() {
                         <div className="bg-gray-50 rounded-lg px-4 py-2.5 border border-gray-200 flex items-center gap-2">
                           <Calendar className="w-4 h-4 text-gray-500" />
                           <span>
-                            {profile.age ? `${profile.age} years old` : "-"}
+                            {displayData?.age
+                              ? `${displayData.age} years old`
+                              : "-"}
                           </span>
                         </div>
                       )}
@@ -453,7 +463,7 @@ export default function PatientProfile() {
                         Gender
                       </label>
                       <div className="bg-gray-50 rounded-lg px-4 py-2.5 border border-gray-200 inline-block">
-                        <span>{profile.gender || "-"}</span>
+                        <span>{displayData?.gender || "-"}</span>
                       </div>
                     </div>
                   </div>
@@ -487,7 +497,7 @@ export default function PatientProfile() {
                       />
                     ) : (
                       <p className="bg-gray-50 rounded-lg px-4 py-2.5 border border-gray-200">
-                        {profile.address?.street || "-"}
+                        {displayData?.address?.street || "-"}
                       </p>
                     )}
                   </div>
@@ -512,7 +522,7 @@ export default function PatientProfile() {
                       />
                     ) : (
                       <p className="bg-gray-50 rounded-lg px-4 py-2.5 border border-gray-200">
-                        {profile.address?.city || "-"}
+                        {displayData?.address?.city || "-"}
                       </p>
                     )}
                   </div>
@@ -537,7 +547,7 @@ export default function PatientProfile() {
                       />
                     ) : (
                       <p className="bg-gray-50 rounded-lg px-4 py-2.5 border border-gray-200">
-                        {profile.address?.state || "-"}
+                        {displayData?.address?.state || "-"}
                       </p>
                     )}
                   </div>
@@ -562,7 +572,7 @@ export default function PatientProfile() {
                       />
                     ) : (
                       <p className="bg-gray-50 rounded-lg px-4 py-2.5 border border-gray-200">
-                        {profile.address?.zip || "-"}
+                        {displayData?.address?.zip || "-"}
                       </p>
                     )}
                   </div>
@@ -587,7 +597,7 @@ export default function PatientProfile() {
                       />
                     ) : (
                       <p className="bg-gray-50 rounded-lg px-4 py-2.5 border border-gray-200">
-                        {profile.address?.country || "-"}
+                        {displayData?.address?.country || "-"}
                       </p>
                     )}
                   </div>
@@ -629,8 +639,9 @@ export default function PatientProfile() {
                   />
                 ) : (
                   <div className="space-y-2">
-                    {profile.allergies && profile.allergies.length > 0 ? (
-                      profile.allergies.map((allergy, index) => (
+                    {displayData?.allergies &&
+                    displayData.allergies.length > 0 ? (
+                      displayData.allergies.map((allergy, index) => (
                         <div
                           key={index}
                           className="bg-red-50 border border-red-200 rounded-lg px-4 py-2"
@@ -679,9 +690,9 @@ export default function PatientProfile() {
                   />
                 ) : (
                   <div className="space-y-2">
-                    {profile.chronicConditions &&
-                    profile.chronicConditions.length > 0 ? (
-                      profile.chronicConditions.map((condition, index) => (
+                    {displayData?.chronicConditions &&
+                    displayData.chronicConditions.length > 0 ? (
+                      displayData.chronicConditions.map((condition, index) => (
                         <div
                           key={index}
                           className="bg-orange-50 border border-orange-200 rounded-lg px-4 py-2"
@@ -732,8 +743,9 @@ export default function PatientProfile() {
                   />
                 ) : (
                   <div className="space-y-2">
-                    {profile.symptoms && profile.symptoms.length > 0 ? (
-                      profile.symptoms.map((symptom, index) => (
+                    {displayData?.symptoms &&
+                    displayData.symptoms.length > 0 ? (
+                      displayData.symptoms.map((symptom, index) => (
                         <div
                           key={index}
                           className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2"

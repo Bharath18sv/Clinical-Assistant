@@ -10,6 +10,7 @@ import {
   Thermometer,
   Droplets,
   Scale,
+  FileText,
 } from "lucide-react";
 import HealthCard from "@/components/HealthCard";
 import AppointmentCard from "@/components/AppointmentCard";
@@ -26,8 +27,6 @@ import { downloadMyPatientReportPdf } from "@/utils/api";
 
 export default function PatientDashboard() {
   const { user, authLoading } = useContext(AuthContext);
-  // console.log("user in dashboard: ", user);
-  const [patientId, setPatientId] = useState(user?.user?._id);
   const [appointments, setAppointments] = useState([]);
   const [prescriptions, setPrescriptions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -44,19 +43,16 @@ export default function PatientDashboard() {
     weight: "",
   });
 
+  // Get patientId directly from user context
+  const patientId = user?.user?._id;
+
   const fetchVitals = async () => {
     if (!patientId) {
       console.log("No patientId, skipping vitals fetch");
       return;
     }
     try {
-      // use patientId from state (set from authenticated user)
-      const id = patientId;
-      if (!id) {
-        console.log("No patient id");
-        return;
-      }
-      const vitals = await getLatestVitals(id);
+      const vitals = await getLatestVitals(patientId);
       console.log("Fetched vitals:", vitals);
       setHealthStats(vitals.data || {});
     } catch (error) {
@@ -71,13 +67,17 @@ export default function PatientDashboard() {
       return;
     }
     try {
-      const fetchedPatientId = patientId;
-      console.log(
-        "patient id in dashboard before api call: ",
-        fetchedPatientId
+      console.log("Fetching prescriptions for patient:", patientId);
+      const res = await getPatientPrescriptions(patientId);
+      console.log("Raw prescriptions response:", res);
+
+      // Filter for only active prescriptions
+      const activePrescriptions = (res.data || []).filter(
+        (prescription) => prescription.status === "active"
       );
-      const res = await getPatientPrescriptions(fetchedPatientId);
-      setPrescriptions(res.data || []);
+
+      console.log("Active prescriptions:", activePrescriptions);
+      setPrescriptions(activePrescriptions);
     } catch (error) {
       console.error("Error fetching prescriptions:", error);
       setPrescriptions([]);
@@ -87,47 +87,56 @@ export default function PatientDashboard() {
   const loadAppointments = async () => {
     try {
       const appts = await fetchMyAppointments();
-      // console.log("appts : ", appts);
       setAppointments(appts || []);
     } catch (error) {
       console.error("Error fetching appointments:", error);
+      setAppointments([]);
     }
   };
 
   const handleCancelAppointment = async (appointmentId) => {
     try {
       await API.delete(`/appointments/${appointmentId}`);
-      // Refresh appointments list
       await loadAppointments();
-      alert('Appointment cancelled successfully');
+      alert("Appointment cancelled successfully");
     } catch (error) {
-      console.error('Error cancelling appointment:', error);
-      alert('Failed to cancel appointment');
+      console.error("Error cancelling appointment:", error);
+      alert("Failed to cancel appointment");
     }
   };
 
+  // Main effect to fetch data when user is loaded
   useEffect(() => {
     const fetchData = async () => {
-      if (!authLoading && user) {
-        setLoading(true);
-        try {
-          await Promise.all([
-            loadAppointments(),
-            fetchPatientPrescriptions(),
-            fetchVitals(),
-          ]);
-        } catch (error) {
-          console.error("Error loading dashboard data:", error);
-        } finally {
-          setLoading(false);
-        }
-      } else if (!authLoading && !user) {
+      if (authLoading) {
+        console.log("Auth still loading...");
+        return;
+      }
 
+      if (!user || !patientId) {
+        console.log("No user or patientId available");
+        setLoading(false);
+        return;
+      }
+
+      console.log("User loaded, fetching dashboard data for:", patientId);
+      setLoading(true);
+
+      try {
+        await Promise.all([
+          loadAppointments(),
+          fetchPatientPrescriptions(),
+          fetchVitals(),
+        ]);
+      } catch (error) {
+        console.error("Error loading dashboard data:", error);
+      } finally {
         setLoading(false);
       }
     };
+
     fetchData();
-  }, [authLoading, user]);
+  }, [authLoading, user, patientId]); // Added patientId to dependencies
 
   // Convert vitals object to health stats array for display
   const getHealthStatsArray = () => {
@@ -221,7 +230,7 @@ export default function PatientDashboard() {
       if (nextAppt) {
         stats.push({
           icon: Calendar,
-          title: "Next Appointment",
+          title: "Active Appointment",
           value: new Date(nextAppt.scheduledAt).toLocaleDateString("en-US", {
             month: "short",
             day: "numeric",
@@ -237,10 +246,20 @@ export default function PatientDashboard() {
 
   if (authLoading || loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading dashboard...</p>
+          <p className="text-gray-600 font-medium">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user || !patientId) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center">
+          <p className="text-gray-600">Please log in to view your dashboard.</p>
         </div>
       </div>
     );
@@ -249,9 +268,12 @@ export default function PatientDashboard() {
   const healthStatsArray = getHealthStatsArray();
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Patient Dashboard</h1>
+    <div className="max-w-7xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+          Patient Dashboard
+        </h1>
         <p className="text-gray-600 mt-2">
           Welcome back, {user?.user?.fullname || "Patient"}! Here's your health
           overview.
@@ -260,7 +282,7 @@ export default function PatientDashboard() {
 
       {/* Health Stats Cards */}
       {healthStatsArray.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {healthStatsArray.map((stat, index) => (
             <HealthCard
               key={index}
@@ -273,7 +295,7 @@ export default function PatientDashboard() {
           ))}
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border p-8 text-center">
+        <div className="bg-white rounded-xl shadow-md border border-gray-100 p-8 text-center">
           <Activity className="w-12 h-12 text-gray-300 mx-auto mb-3" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">
             No Health Data Yet
@@ -284,14 +306,13 @@ export default function PatientDashboard() {
         </div>
       )}
 
-      {/* Pending Medication Logs */}
-      {/* <PendingMedicationLogs /> */}
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Upcoming Appointments */}
-        <div className="card">
-          <div className="card-header">
-            <h2 className="card-title">Your Appointments</h2>
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+          <div className="mb-6">
+            <h2 className="text-xl font-bold text-gray-900">
+              Your Appointments
+            </h2>
           </div>
           <div className="space-y-3">
             {appointments && appointments.length > 0 ? (
@@ -318,16 +339,21 @@ export default function PatientDashboard() {
             )}
           </div>
           {appointments && appointments.length > 3 && (
-            <Link href="/patient/appointment" className="block w-full mt-4 text-blue-600 hover:text-blue-800 text-sm font-medium text-center">
+            <Link
+              href="/patient/appointment"
+              className="block w-full mt-4 text-blue-600 hover:text-blue-800 text-sm font-medium text-center"
+            >
               View All Appointments
             </Link>
           )}
         </div>
 
         {/* Current Medications */}
-        <div className="card">
-          <div className="card-header">
-            <h2 className="card-title">Current Medications</h2>
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+          <div className="mb-6">
+            <h2 className="text-xl font-bold text-gray-900">
+              Active Medications
+            </h2>
           </div>
           <div className="space-y-3">
             {prescriptions && prescriptions.length > 0 ? (
@@ -347,24 +373,28 @@ export default function PatientDashboard() {
             )}
           </div>
           {prescriptions && prescriptions.length > 3 && (
-            <button className="w-full mt-4 text-blue-600 hover:text-blue-800 text-sm font-medium">
-              Manage Medications
-            </button>
+            <Link
+              href="/patient/medications"
+              className="block w-full mt-4 text-blue-600 hover:text-blue-800 text-sm font-medium text-center"
+            >
+              View All Medications
+            </Link>
           )}
         </div>
       </div>
 
       {/* Quick Actions */}
-      <div className="card">
-        <div className="card-header">
-          <h2 className="card-title">Quick Actions</h2>
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+        <div className="mb-6">
+          <h2 className="text-xl font-bold text-gray-900">Quick Actions</h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Link href="/patient/doctor/all">
-            <button className="w-full p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left transition-colors">
+          {/* Book Appointment */}
+          <Link href="/patient/doctor/all" className="w-full">
+            <button className="w-full p-4 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-blue-300 text-left transition-all">
               <div className="flex items-center">
-                <div className="icon-container icon-blue mr-3">
-                  <Calendar className="h-5 w-5" />
+                <div className="p-3 bg-blue-100 rounded-lg mr-3">
+                  <Calendar className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
                   <h3 className="font-medium text-gray-900">
@@ -376,27 +406,31 @@ export default function PatientDashboard() {
             </button>
           </Link>
 
-          <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left transition-colors">
-            <div className="flex items-center">
-              <div className="icon-container icon-green mr-3">
-                <Activity className="h-5 w-5" />
+          {/* Log Symptoms */}
+          <Link href="/patient/symptoms" className="w-full">
+            <button className="w-full p-4 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-green-300 text-left transition-all">
+              <div className="flex items-center">
+                <div className="p-3 bg-green-100 rounded-lg mr-3">
+                  <Activity className="h-5 w-5 text-green-600" />
+                </div>
+                <div>
+                  <h3 className="font-medium text-gray-900">Log Symptoms</h3>
+                  <p className="text-sm text-gray-500">
+                    Record how you're feeling
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-medium text-gray-900">Log Symptoms</h3>
-                <p className="text-sm text-gray-500">
-                  Record how you're feeling
-                </p>
-              </div>
-            </div>
-          </button>
+            </button>
+          </Link>
 
+          {/* Download Report */}
           <button
             onClick={() => downloadMyPatientReportPdf()}
-            className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left transition-colors"
+            className="w-full p-4 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-purple-300 text-left transition-all"
           >
             <div className="flex items-center">
-              <div className="icon-container icon-blue mr-3">
-                <Calendar className="h-5 w-5" />
+              <div className="p-3 bg-purple-100 rounded-lg mr-3">
+                <FileText className="h-5 w-5 text-purple-600" />
               </div>
               <div>
                 <h3 className="font-medium text-gray-900">
@@ -406,20 +440,6 @@ export default function PatientDashboard() {
               </div>
             </div>
           </button>
-
-          {/* <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-left transition-colors">
-            <div className="flex items-center">
-              <div className="icon-container icon-purple mr-3">
-                <Pill className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="font-medium text-gray-900">
-                  Medication Reminder
-                </h3>
-                <p className="text-sm text-gray-500">Set up alerts</p>
-              </div>
-            </div>
-          </button> */}
         </div>
       </div>
     </div>

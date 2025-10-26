@@ -5,7 +5,7 @@ export const isTokenExpired = (token) => {
 
   try {
     const decoded = jwtDecode(token);
-    console.log("decoded jwt token:", decoded);
+    // console.log("decoded jwt token:", decoded);
     const currentTimeSeconds = Math.floor(Date.now() / 1000);
     if (typeof decoded?.exp !== "number") {
       console.log("token expired");

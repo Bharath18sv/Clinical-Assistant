@@ -1,6 +1,3 @@
-//this page displays all the medications in the prescription and the option to add medication logs and display medication logs and what is the upcoming medication schedule and the reminder for the same
-//fetch prescriptions from the backend using the prescriptionId from the URL
-
 "use client";
 import { useState, useEffect, useContext } from "react";
 import { useRouter } from "next/navigation";
@@ -25,6 +22,7 @@ import {
   Edit3,
   Save,
   X,
+  Filter,
 } from "lucide-react";
 import { AuthContext } from "@/context/AuthContext";
 import { useParams } from "next/navigation";
@@ -60,6 +58,7 @@ export default function PrescriptionDetailPage() {
   const [activeTab, setActiveTab] = useState("overview");
   const [showLogModal, setShowLogModal] = useState(false);
   const [selectedMedication, setSelectedMedication] = useState(null);
+  const [logStatusFilter, setLogStatusFilter] = useState("all");
   const [logForm, setLogForm] = useState({
     medicationName: "",
     dosage: 0,
@@ -133,26 +132,42 @@ export default function PrescriptionDetailPage() {
     }
   };
 
+  const handleLogMedicationClick = () => {
+    const activeMeds = prescription?.medications?.filter(
+      (med) => med.status === "active"
+    );
+
+    if (!activeMeds || activeMeds.length === 0) {
+      alert("You don't have any active medications to log.");
+      return;
+    }
+
+    setShowLogModal(true);
+  };
+
   const getUpcomingSchedule = () => {
     if (!prescription) return [];
 
     const today = new Date();
     const schedule = [];
 
-    prescription?.medications?.forEach((medication) => {
-      medication.schedule.forEach((timeOfDay) => {
-        const scheduledTime = getScheduledTime(timeOfDay);
-        const scheduleItem = {
-          medication: medication.name,
-          dosage: medication.dosage,
-          timeOfDay,
-          scheduledTime,
-          isUpcoming: scheduledTime > today,
-          isPast: scheduledTime < today,
-        };
-        schedule.push(scheduleItem);
+    // Only include active medications
+    prescription?.medications
+      ?.filter((medication) => medication.status === "active")
+      .forEach((medication) => {
+        medication.schedule.forEach((timeOfDay) => {
+          const scheduledTime = getScheduledTime(timeOfDay);
+          const scheduleItem = {
+            medication: medication.name,
+            dosage: medication.dosage,
+            timeOfDay,
+            scheduledTime,
+            isUpcoming: scheduledTime > today,
+            isPast: scheduledTime < today,
+          };
+          schedule.push(scheduleItem);
+        });
       });
-    });
 
     return schedule.sort((a, b) => a.scheduledTime - b.scheduledTime);
   };
@@ -189,19 +204,27 @@ export default function PrescriptionDetailPage() {
   const getStatusColor = (status) => {
     switch (status) {
       case "taken":
-        return "text-green-700 bg-green-100";
+        return "text-green-700 bg-green-100 border-green-200";
       case "missed":
-        return "text-red-700 bg-red-100";
+        return "text-red-700 bg-red-100 border-red-200";
       case "skipped":
-        return "text-yellow-700 bg-yellow-100";
+        return "text-yellow-700 bg-yellow-100 border-yellow-200";
+      case "pending":
+        return "text-blue-700 bg-blue-100 border-blue-200";
       default:
-        return "text-gray-700 bg-gray-100";
+        return "text-gray-700 bg-gray-100 border-gray-200";
     }
   };
 
   const formatDateTime = (dateString) => {
     return new Date(dateString).toLocaleString();
   };
+
+  // Filter logs based on status
+  const filteredLogs = medicationLogs.filter((log) => {
+    if (logStatusFilter === "all") return true;
+    return log.status === logStatusFilter;
+  });
 
   if (loading) {
     return (
@@ -230,6 +253,9 @@ export default function PrescriptionDetailPage() {
 
   const upcomingSchedule = getUpcomingSchedule();
   const nextDose = upcomingSchedule.find((item) => item.isUpcoming);
+  const hasActiveMedications = prescription?.medications?.some(
+    (med) => med.status === "active"
+  );
 
   return (
     <div className="space-y-6">
@@ -268,8 +294,8 @@ export default function PrescriptionDetailPage() {
         </span>
       </div>
 
-      {/* Next Dose Alert */}
-      {nextDose && (
+      {/* Next Dose Alert - Only show if there are active medications and upcoming doses */}
+      {hasActiveMedications && nextDose && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -287,6 +313,23 @@ export default function PrescriptionDetailPage() {
                 hour: "2-digit",
                 minute: "2-digit",
               })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* No Active Medications Alert */}
+      {!hasActiveMedications && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="h-5 w-5 text-yellow-600" />
+            <div>
+              <p className="font-medium text-yellow-900">
+                No Active Medications
+              </p>
+              <p className="text-yellow-700 text-sm">
+                This prescription has no active medications at the moment.
+              </p>
             </div>
           </div>
         </div>
@@ -413,7 +456,7 @@ export default function PrescriptionDetailPage() {
                         </div>
                       </div>
                       <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                        className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(
                           log.status
                         )}`}
                       >
@@ -438,8 +481,12 @@ export default function PrescriptionDetailPage() {
                   <Stethoscope className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <p className="font-medium text-gray-900">Dr. Sarah Johnson</p>
-                  <p className="text-sm text-gray-600">Endocrinologist</p>
+                  <p className="font-medium text-gray-900">
+                    {prescription?.doctorId?.fullname || "Dr. Unknown"}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    {prescription?.doctorId?.specialization?.[0] || "Doctor"}
+                  </p>
                 </div>
               </div>
             </div>
@@ -451,8 +498,9 @@ export default function PrescriptionDetailPage() {
               </h3>
               <div className="space-y-2">
                 <button
-                  onClick={() => setShowLogModal(true)}
-                  className="w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
+                  onClick={handleLogMedicationClick}
+                  className="w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={!hasActiveMedications}
                 >
                   <Plus className="h-4 w-4" />
                   Log Medication
@@ -480,12 +528,47 @@ export default function PrescriptionDetailPage() {
       )}
 
       {activeTab === "logs" && (
-        <MedicationLogs
-          prescriptionStatus={prescription.status}
-          setShowLogModal={setShowLogModal}
-          medicationLogs={medicationLogs}
-          getStatusColor={getStatusColor}
-        />
+        <div className="space-y-6">
+          {/* Filter Section */}
+          <div className="bg-white rounded-lg border border-gray-200 p-4">
+            <div className="flex items-center gap-4">
+              <Filter className="h-5 w-5 text-gray-400" />
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Filter by Status
+                </label>
+                <select
+                  value={logStatusFilter}
+                  onChange={(e) => setLogStatusFilter(e.target.value)}
+                  className="w-full md:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                >
+                  <option value="all">All Logs</option>
+                  <option value="pending">Pending</option>
+                  <option value="taken">Taken</option>
+                  <option value="missed">Missed</option>
+                  <option value="skipped">Skipped</option>
+                </select>
+              </div>
+              {logStatusFilter !== "all" && (
+                <button
+                  onClick={() => setLogStatusFilter("all")}
+                  className="text-sm text-purple-600 hover:text-purple-700 font-medium"
+                >
+                  Clear Filter
+                </button>
+              )}
+            </div>
+          </div>
+
+          <MedicationLogs
+            prescriptionStatus={prescription.status}
+            setShowLogModal={setShowLogModal}
+            medicationLogs={filteredLogs}
+            getStatusColor={getStatusColor}
+            totalLogs={medicationLogs.length}
+            filteredCount={filteredLogs.length}
+          />
+        </div>
       )}
 
       {activeTab === "schedule" && (
@@ -499,7 +582,7 @@ export default function PrescriptionDetailPage() {
       {/* Add Log Modal */}
       {showLogModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">
                 Log Medication
@@ -533,11 +616,13 @@ export default function PrescriptionDetailPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 >
                   <option value="">Select medication</option>
-                  {prescription.medications.map((med) => (
-                    <option key={med.name} value={med.name}>
-                      {med.name} - {med.dosage}mg
-                    </option>
-                  ))}
+                  {prescription.medications
+                    .filter((med) => med.status === "active")
+                    .map((med) => (
+                      <option key={med.name} value={med.name}>
+                        {med.name} - {med.dosage}mg
+                      </option>
+                    ))}
                 </select>
               </div>
 

@@ -30,7 +30,8 @@
     "src/app/patient/(auth)/signup/page.jsx",
     "src/app/doctor/patient/add/page.jsx",
     "src/app/patient/prescriptions/[id]/page.jsx",
-    "src/app/doctor/logs/medications/page.jsx"
+    "src/app/doctor/logs/medications/page.jsx",
+    "src/app/patient/notification/page.jsx"
   ],
   "exclude": ["node_modules"]
 }

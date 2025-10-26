@@ -9,6 +9,41 @@ import os
 app = Flask(__name__)
 CORS(app)
 
+# Drug class mapping - maps specific drugs to their classes
+DRUG_CLASSES = {
+    # Penicillin antibiotics
+    'amoxicillin': ['penicillin', 'beta-lactam', 'antibiotic'],
+    'ampicillin': ['penicillin', 'beta-lactam', 'antibiotic'],
+    'penicillin': ['penicillin', 'beta-lactam', 'antibiotic'],
+    'penicillin g': ['penicillin', 'beta-lactam', 'antibiotic'],
+    'penicillin v': ['penicillin', 'beta-lactam', 'antibiotic'],
+    'oxacillin': ['penicillin', 'beta-lactam', 'antibiotic'],
+    'dicloxacillin': ['penicillin', 'beta-lactam', 'antibiotic'],
+    
+    # Cephalosporins (cross-reactivity with penicillin)
+    'cephalexin': ['cephalosporin', 'beta-lactam', 'antibiotic'],
+    'cefuroxime': ['cephalosporin', 'beta-lactam', 'antibiotic'],
+    'ceftriaxone': ['cephalosporin', 'beta-lactam', 'antibiotic'],
+    'cefixime': ['cephalosporin', 'beta-lactam', 'antibiotic'],
+    
+    # NSAIDs
+    'ibuprofen': ['nsaid', 'anti-inflammatory'],
+    'aspirin': ['nsaid', 'antiplatelet', 'anti-inflammatory'],
+    'naproxen': ['nsaid', 'anti-inflammatory'],
+    'diclofenac': ['nsaid', 'anti-inflammatory'],
+    
+    # Sulfa drugs
+    'sulfamethoxazole': ['sulfonamide', 'antibiotic'],
+    'trimethoprim': ['antibiotic'],
+    
+    # Other common drugs
+    'paracetamol': ['analgesic', 'antipyretic'],
+    'acetaminophen': ['analgesic', 'antipyretic'],
+    'metformin': ['antidiabetic', 'biguanide'],
+    'warfarin': ['anticoagulant'],
+    'lisinopril': ['ace-inhibitor', 'antihypertensive'],
+}
+
 class ADRPredictor:
     def __init__(self):
         self.vectorizer = TfidfVectorizer(max_features=1000, stop_words='english')
@@ -51,6 +86,42 @@ class ADRPredictor:
         with open('vectorizer.pkl', 'wb') as f:
             pickle.dump(self.vectorizer, f)
     
+    def get_drug_classes(self, drug_name):
+        """Get all drug classes for a given drug"""
+        drug_lower = drug_name.lower().strip()
+        return DRUG_CLASSES.get(drug_lower, [])
+    
+    def check_allergy_match(self, drug_name, allergy):
+        """Check if a drug matches an allergy (including drug class matching)"""
+        drug_lower = drug_name.lower().strip()
+        allergy_lower = allergy.lower().strip()
+        
+        # Direct name match
+        if drug_lower == allergy_lower:
+            return True, "exact_match"
+        
+        # Check if drug name contains allergy term
+        if allergy_lower in drug_lower or drug_lower in allergy_lower:
+            return True, "partial_match"
+        
+        # Check drug classes
+        drug_classes = self.get_drug_classes(drug_lower)
+        allergy_classes = self.get_drug_classes(allergy_lower)
+        
+        # If allergy is a class name, check if drug belongs to that class
+        if allergy_lower in drug_classes:
+            return True, "class_match"
+        
+        # Check for cross-reactivity (e.g., penicillin and cephalosporin)
+        if 'penicillin' in allergy_classes or allergy_lower == 'penicillin':
+            if 'penicillin' in drug_classes:
+                return True, "penicillin_allergy"
+            # 10% cross-reactivity between penicillin and cephalosporins
+            if 'cephalosporin' in drug_classes:
+                return True, "cross_reactivity_warning"
+        
+        return False, None
+    
     def predict_interaction(self, drug1, drug2):
         if not self.is_trained:
             return {"severity": "unknown", "confidence": 0.0}
@@ -71,6 +142,7 @@ class ADRPredictor:
     def check_multiple_drugs(self, medications, patient_data):
         interactions = []
         
+        # Check drug-drug interactions
         for i in range(len(medications)):
             for j in range(i + 1, len(medications)):
                 drug1 = medications[i].get('name', '')
@@ -89,19 +161,43 @@ class ADRPredictor:
                             'recommendation': 'Monitor patient closely'
                         })
         
-        if 'allergies' in patient_data:
-            allergies = [allergy.lower() for allergy in patient_data['allergies']]
+        # Check drug-allergy interactions (with drug class matching)
+        if 'allergies' in patient_data and patient_data['allergies']:
             for med in medications:
-                med_name = med.get('name', '').lower()
-                if med_name in allergies:
-                    interactions.append({
-                        'type': 'allergy',
-                        'severity': 'high',
-                        'medications': [med.get('name', '')],
-                        'message': f"Patient allergic to {med.get('name', '')}",
-                        'confidence': 1.0,
-                        'recommendation': 'Discontinue immediately'
-                    })
+                drug_name = med.get('name', '')
+                if not drug_name:
+                    continue
+                
+                for allergy in patient_data['allergies']:
+                    is_match, match_type = self.check_allergy_match(drug_name, allergy)
+                    
+                    if is_match:
+                        severity = 'high'
+                        recommendation = 'Discontinue immediately and consult physician'
+                        
+                        if match_type == 'cross_reactivity_warning':
+                            severity = 'medium'
+                            recommendation = 'Use with caution - possible cross-reactivity. Monitor closely.'
+                            message = f"⚠️ Cross-reactivity warning: Patient allergic to {allergy}. {drug_name} is a cephalosporin with ~10% cross-reactivity risk with penicillin."
+                        elif match_type == 'class_match':
+                            message = f"🚨 ALLERGY ALERT: Patient allergic to {allergy}. {drug_name} belongs to the same drug class."
+                        elif match_type == 'penicillin_allergy':
+                            message = f"🚨 PENICILLIN ALLERGY: Patient allergic to penicillin. {drug_name} is a penicillin-based antibiotic."
+                        elif match_type == 'exact_match':
+                            message = f"🚨 DIRECT ALLERGY: Patient is allergic to {drug_name}"
+                        else:
+                            message = f"⚠️ ALLERGY WARNING: Patient allergic to {allergy}, which may be related to {drug_name}"
+                        
+                        interactions.append({
+                            'type': 'allergy',
+                            'severity': severity,
+                            'medications': [drug_name],
+                            'allergy': allergy,
+                            'match_type': match_type,
+                            'message': message,
+                            'confidence': 1.0 if match_type in ['exact_match', 'class_match', 'penicillin_allergy'] else 0.9,
+                            'recommendation': recommendation
+                        })
         
         return interactions
 
@@ -118,7 +214,14 @@ def predict_adr():
         medications = data.get('medications', [])
         patient_data = data.get('patient', {})
         
+        print(f"Checking ADR for medications: {[m.get('name') for m in medications]}")
+        print(f"Patient allergies: {patient_data.get('allergies', [])}")
+        
         interactions = predictor.check_multiple_drugs(medications, patient_data)
+        
+        print(f"Found {len(interactions)} interactions")
+        for interaction in interactions:
+            print(f"  - {interaction['type']}: {interaction['message']}")
         
         return jsonify({
             "success": True,
@@ -127,7 +230,8 @@ def predict_adr():
         })
     
     except Exception as e:
+        print(f"Error in predict_adr: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5001, debug=True)
+    app.run(host='0.0.0.0', port=6001, debug=True)

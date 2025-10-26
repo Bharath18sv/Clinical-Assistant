@@ -44,9 +44,11 @@ import vitalsRouter from "./routes/vitals.routes.js";
 import medicationLogsRouter from "./routes/medicationLogs.routes.js";
 import symptomsRouter from "./routes/symptoms.routes.js";
 import adrRouter from "./routes/adr.routes.js";
+import notificationRouter from "./routes/notification.routes.js";
 
 //routes
 app.use("/api/patients", patientRouter); //routes should always start with /
+app.use("/api/notifications", notificationRouter); 
 app.use("/api/doctors", doctorRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/auth", authRouter);
