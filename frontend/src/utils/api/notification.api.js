@@ -1,4 +1,4 @@
-import API from "../api.js";
+import API from "../api";
 
 export const getAllNotifications = async () => {
   try {
@@ -30,15 +30,13 @@ export const getUnreadNotifications = async () => {
 
 export const markNotificationAsRead = async (notificationId) => {
   try {
+    console.log("Sending PATCH request...");
     const res = await API.patch(`/notifications/read/${notificationId}`);
-    console.log("mark notification as read response : ", res.data);
+    console.log("mark notification as read response:", res.data);
     return res?.data;
   } catch (error) {
-    console.error(
-      "Error marking notification as read:",
-      error.response?.data || error.message
-    );
-    throw error;
+    console.error(error);
+    return null;
   }
 };
 

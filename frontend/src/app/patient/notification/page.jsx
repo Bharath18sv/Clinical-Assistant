@@ -41,16 +41,45 @@ export default function NotificationsPage() {
   }
 
   async function handleMarkRead(id) {
+    if (!id) {
+      toast.error("Invalid notification ID");
+      return;
+    }
+
     try {
-      await markNotificationAsRead(id);
-      // Optimistically update UI
+      console.log("Attempting to mark notification as read:", id);
+
+      // Optimistically update UI first
       setNotifications((prev) =>
         prev.map((n) => (n._id === id ? { ...n, isRead: true } : n))
       );
-      toast.success("Marked as read");
+
+      const res = await markNotificationAsRead(id);
+      console.log("Mark as read response:", res);
+
+      if (res?.success) {
+        toast.success("Marked as read");
+      } else {
+        // If backend update failed, revert the optimistic update
+        setNotifications((prev) =>
+          prev.map((n) => (n._id === id ? { ...n, isRead: false } : n))
+        );
+        toast.error(res?.message || "Failed to mark as read");
+      }
     } catch (err) {
-      console.error("Error marking as read", err);
-      toast.error("Failed to mark as read");
+      console.error("Error marking as read:", {
+        error: err,
+        response: err.response?.data,
+        status: err.response?.status,
+      });
+
+      // Revert optimistic update on error
+      setNotifications((prev) =>
+        prev.map((n) => (n._id === id ? { ...n, isRead: false } : n))
+      );
+
+      // Show specific error message if available
+      toast.error(err.response?.data?.message || "Failed to mark as read");
     }
   }
 

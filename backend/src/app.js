@@ -9,7 +9,6 @@ app.use(
   cors({
     origin: process.env.CORS_ORIGIN || "http://localhost:3001",
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: [
       "Content-Type",
       "Authorization",
@@ -48,7 +47,7 @@ import notificationRouter from "./routes/notification.routes.js";
 
 //routes
 app.use("/api/patients", patientRouter); //routes should always start with /
-app.use("/api/notifications", notificationRouter); 
+app.use("/api/notifications", notificationRouter);
 app.use("/api/doctors", doctorRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/auth", authRouter);

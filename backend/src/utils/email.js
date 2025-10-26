@@ -27,8 +27,16 @@ export function getEmailTransporter() {
 }
 
 export async function sendEmail({ to, subject, html }) {
+  console.log("Sending email....");
+  console.log(`to : ${to}`);
+
   if (process.env.EMAIL_NOTIFICATIONS_ENABLED === "false")
     return { skipped: true };
+
+  if (!to) {
+    console.warn("⚠️ Email not sent — no recipient (to:) provided!");
+    return { skipped: true, reason: "No recipient email" };
+  }
 
   const from = process.env.EMAIL_FROM || "no-reply@smart-care";
   const transporter = getEmailTransporter();
