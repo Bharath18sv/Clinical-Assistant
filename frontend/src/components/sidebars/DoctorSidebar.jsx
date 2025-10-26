@@ -288,9 +288,11 @@ export default function DoctorSidebar() {
                 className="w-10 h-10 rounded-full object-cover border-2 border-gray-600"
               />
             ) : (
-              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center border-2 border-slate-600">
-                <User size={20} className="text-white" />
-              </div>
+              <img
+                src="/default-doctor.png"
+                alt="Default Doctor"
+                className="w-10 h-10 rounded-full object-cover border-2 border-slate-600"
+              />
             )}
           </div>
           {isOpen && (

@@ -118,9 +118,11 @@ export default function PatientAppointments() {
                         className="w-12 h-12 rounded-full object-cover"
                       />
                     ) : (
-                      <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
-                        <User className="w-6 h-6 text-gray-400" />
-                      </div>
+                      <img
+                        src="/default-doctor.png"
+                        alt="Default Doctor"
+                        className="w-12 h-12 rounded-full object-cover"
+                      />
                     )}
                     <div>
                       <h3 className="font-semibold text-gray-900">

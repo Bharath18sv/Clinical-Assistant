@@ -247,123 +247,93 @@ export default function PatientPrescriptions() {
           </div>
         ) : (
           <div className="divide-y divide-gray-200">
-            {filteredPrescriptions.map((prescription) => {
-              const doctorInfo = getDoctorInfo(prescription.doctorId);
-
-              return (
-                <div
-                  key={prescription._id}
-                  onClick={() => handlePrescriptionClick(prescription._id)}
-                  className="p-6 hover:bg-gray-50 cursor-pointer transition-colors group"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-purple-100 rounded-lg">
-                              <FileText className="h-5 w-5 text-purple-600" />
-                            </div>
-                            <div className="flex-1">
-                              <h3 className="text-lg font-semibold text-gray-900 group-hover:text-purple-600 transition-colors">
-                                {prescription.title || "Untitled Prescription"}
-                              </h3>
-                              <div className="flex items-center gap-4 text-sm text-gray-600 mt-1 flex-wrap">
-                                <div className="flex items-center gap-1">
-                                  <Calendar className="h-4 w-4" />
-                                  <span>
-                                    Prescribed: {formatDate(prescription.date)}
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <Pill className="h-4 w-4" />
-                                  <span>
-                                    {getMedicationCount(
-                                      prescription.medications
-                                    )}{" "}
-                                    medications
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
+            {filteredPrescriptions.map((prescription) => (
+              <div
+                key={prescription._id}
+                onClick={() => handlePrescriptionClick(prescription._id)}
+                className="p-6 hover:bg-gray-50 cursor-pointer transition-colors group"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 bg-purple-100 rounded-lg">
+                        <FileText className="h-5 w-5 text-purple-600" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-gray-900 group-hover:text-purple-600 transition-colors">
+                          {prescription.title || "Untitled Prescription"}
+                        </h3>
+                        <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-4 w-4" />
+                            <span>
+                              Prescribed: {formatDate(prescription.date)}
+                            </span>
                           </div>
-
-                          {/* Doctor Info */}
-                          <div className="ml-11 mb-3">
-                            <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-100 rounded-lg w-fit">
-                              <div className="w-8 h-8 rounded-full overflow-hidden bg-blue-200 flex-shrink-0">
-                                {doctorInfo.profilePic ? (
-                                  <img
-                                    src={doctorInfo.profilePic}
-                                    alt={doctorInfo.name}
-                                    className="w-full h-full object-cover"
-                                  />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center">
-                                    <Stethoscope className="h-4 w-4 text-blue-600" />
-                                  </div>
-                                )}
-                              </div>
-                              <div>
-                                <p className="text-xs text-blue-600 font-medium">
-                                  Prescribed by
-                                </p>
-                                <p className="text-sm font-semibold text-blue-900">
-                                  {doctorInfo.name}
-                                </p>
-                              </div>
-                            </div>
+                          <div className="flex items-center gap-1">
+                            <User className="h-4 w-4" />
+                            <span>
+                              {prescription.doctorId?.fullname ||
+                                "Unknown Doctor"}
+                            </span>
                           </div>
-
-                          {/* Medications Preview */}
-                          <div className="ml-11">
-                            <div className="flex flex-wrap gap-2 mb-3">
-                              {prescription.medications
-                                .slice(0, 3)
-                                .map((medication, index) => (
-                                  <span
-                                    key={index}
-                                    className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
-                                  >
-                                    {medication.name} - {medication.dosage}mg
-                                    {medication.duration &&
-                                      ` (${medication.duration} days)`}
-                                  </span>
-                                ))}
-                              {prescription.medications.length > 3 && (
-                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-200 text-gray-600">
-                                  +{prescription.medications.length - 3} more
-                                </span>
-                              )}
-                            </div>
-
-                            {prescription.medications.length > 0 &&
-                              prescription.medications[0].notes && (
-                                <p className="text-sm text-gray-600 line-clamp-2">
-                                  <span className="font-medium">Notes:</span>{" "}
-                                  {prescription.medications[0].notes}
-                                </p>
-                              )}
+                          <div className="flex items-center gap-1">
+                            <Pill className="h-4 w-4" />
+                            <span>
+                              {getMedicationCount(prescription.medications)}{" "}
+                              medications
+                            </span>
                           </div>
-                        </div>
-
-                        <div className="flex flex-col items-end gap-2">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                              prescription.status
-                            )}`}
-                          >
-                            {prescription.status?.charAt(0).toUpperCase() +
-                              prescription.status?.slice(1)}
-                          </span>
-                          <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-purple-600 transition-colors" />
                         </div>
                       </div>
                     </div>
+
+                    {/* Medications Preview */}
+                    <div className="ml-11">
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {prescription.medications
+                          .slice(0, 3)
+                          .map((medication, index) => (
+                            <span
+                              key={index}
+                              className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
+                            >
+                              {medication.name} - {medication.dosage}mg
+                              {medication.duration &&
+                                ` (${medication.duration} days)`}
+                            </span>
+                          ))}
+                        {prescription.medications.length > 3 && (
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-200 text-gray-600">
+                            +{prescription.medications.length - 3} more
+                          </span>
+                        )}
+                      </div>
+
+                      {prescription.medications.length > 0 &&
+                        prescription.medications[0].notes && (
+                          <p className="text-sm text-gray-600 line-clamp-2">
+                            <span className="font-medium">Notes:</span>{" "}
+                            {prescription.medications[0].notes}
+                          </p>
+                        )}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col items-end gap-2 ml-4">
+                    <span
+                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                        prescription.status
+                      )}`}
+                    >
+                      {prescription.status?.charAt(0).toUpperCase() +
+                        prescription.status?.slice(1)}
+                    </span>
+                    <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-purple-600 transition-colors" />
                   </div>
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
         )}
       </div>

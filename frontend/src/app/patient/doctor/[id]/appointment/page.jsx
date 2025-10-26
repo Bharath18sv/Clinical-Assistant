@@ -317,35 +317,36 @@ export default function AppointmentPage() {
               </div>
             </div>
 
-            <div className="p-6 space-y-6">
-              {/* Doctor Info */}
-              {appointment?.doctorId && (
-                <div className="flex items-center gap-4 p-5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
-                  {appointment.doctorId.profilePic ? (
-                    <img
-                      src={appointment.doctorId.profilePic}
-                      alt={appointment.doctorId.fullname}
-                      className="w-16 h-16 rounded-full object-cover ring-2 ring-blue-200"
-                    />
-                  ) : (
-                    <div className="w-16 h-16 rounded-full bg-blue-200 flex items-center justify-center">
-                      <User className="w-8 h-8 text-blue-600" />
+              <div className="p-6 space-y-6">
+                {/* Doctor Info */}
+                {appointment?.doctorId && (
+                  <div className="flex items-center gap-4 p-5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+                    {appointment.doctorId.profilePic ? (
+                      <img
+                        src={appointment.doctorId.profilePic}
+                        alt={appointment.doctorId.fullname}
+                        className="w-16 h-16 rounded-full object-cover ring-2 ring-blue-200"
+                      />
+                    ) : (
+                      <img
+                        src="/default-doctor.png"
+                        alt="Default Doctor"
+                        className="w-16 h-16 rounded-full object-cover ring-2 ring-blue-200"
+                      />
+                    )}
+                    <div>
+                      <h4 className="font-semibold text-gray-900 text-lg">
+                        {appointment.doctorId.fullname || "Unknown"}
+                      </h4>
+                      <p className="text-sm text-blue-600 font-medium">
+                        {appointment.doctorId.specialization?.[0] || "General Practice"}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {appointment.doctorId.email || "N/A"}
+                      </p>
                     </div>
-                  )}
-                  <div>
-                    <h4 className="font-semibold text-gray-900 text-lg">
-                      Dr. {appointment.doctorId.fullname || "Unknown"}
-                    </h4>
-                    <p className="text-sm text-blue-600 font-medium">
-                      {appointment.doctorId.specialization?.[0] ||
-                        "General Practice"}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      {appointment.doctorId.email || "N/A"}
-                    </p>
                   </div>
-                </div>
-              )}
+                )}
 
               {/* Appointment Details */}
               <div className="grid grid-cols-2 gap-4">

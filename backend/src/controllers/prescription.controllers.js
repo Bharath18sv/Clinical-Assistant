@@ -264,7 +264,7 @@ export const getPrescriptionsByPatient = asyncHandler(async (req, res) => {
   const prescriptions = await Prescription.find({ patientId })
     .sort({ createdAt: -1 })
     .populate("patientId", "fullname email gender profilePic")
-    .populate("doctorId", "fullname email profilePic");
+    .populate("doctorId", "fullname email profilePic specialization");
 
   return res
     .status(200)
@@ -541,7 +541,10 @@ export const getPrescriptionById = asyncHandler(async (req, res) => {
   const { id } = req.params;
   if (!id) throw new ApiError(400, "Prescription ID is required");
 
-  const prescription = await Prescription.findById(id);
+  const prescription = await Prescription.findById(id)
+    .populate("patientId", "fullname email gender profilePic")
+    .populate("doctorId", "fullname email profilePic specialization");
+    
   if (!prescription) throw new ApiError(404, "Prescription not found");
 
   return res
