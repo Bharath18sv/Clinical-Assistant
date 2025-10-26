@@ -316,30 +316,39 @@ export default function PatientDetailPage() {
                 <ArrowLeft className="w-5 h-5 text-gray-600" />
               </button>
               <div className="flex items-center gap-4">
-                <img
-                  src={patient.profilePic || "/default-profile.png"}
-                  alt=""
-                  className="w-20 h-15 rounded-xl"
-                />
+                <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-white shadow-lg">
+                  <img
+                    src={
+                      patient?.profilePic
+                        ? patient.profilePic
+                        : patient?.gender === "female"
+                          ? "/default-female.png"
+                          : "/default-male.png"
+                    }
+                    alt={patient?.fullname || "Patient"}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
                 <div>
                   <h1 className="text-2xl font-bold text-gray-900">
-                    {patient.fullname || "Unknown Patient"}
+                    {patient?.fullname || "Unknown Patient"}
                   </h1>
                   <div className="flex items-center gap-4 mt-1">
                     <p className="text-sm text-gray-500">
-                      ID: {patient._id?.slice(-8) || "Unknown"}
+                      ID: {patient?._id?.slice(-8) || "Unknown"}
                     </p>
                     <div className="flex items-center gap-1 text-sm text-gray-500">
                       <Calendar className="w-4 h-4" />
-                      <span>Age {patient.age || "Unknown"}</span>
+                      <span>Age {patient?.age || "Unknown"}</span>
                     </div>
                     <div className="flex items-center gap-1 text-sm text-gray-500">
                       <UserCheck className="w-4 h-4" />
-                      <span>{patient.gender || "Unknown"}</span>
+                      <span>{patient?.gender || "Unknown"}</span>
                     </div>
                   </div>
                 </div>
               </div>
+
             </div>
             <button
               onClick={() => downloadPatientReportPdfForDoctor(patientId)}
@@ -376,11 +385,10 @@ export default function PatientDetailPage() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                    activeTab === tab.id
+                  className={`flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === tab.id
                       ? "border-blue-500 text-blue-600"
                       : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                  }`}
+                    }`}
                 >
                   <Icon className="w-4 h-4" />
                   {tab.name}
@@ -448,14 +456,12 @@ export default function PatientDetailPage() {
                             <p className="text-gray-900 font-medium">
                               {typeof patient.address === "string"
                                 ? patient.address
-                                : `${patient?.address?.street || ""}, ${
-                                    patient?.address?.city || ""
-                                  }, ${patient?.address?.state || ""} ${
-                                    patient?.address?.zip || ""
+                                : `${patient?.address?.street || ""}, ${patient?.address?.city || ""
+                                  }, ${patient?.address?.state || ""} ${patient?.address?.zip || ""
                                   }, ${patient?.address?.country || ""}`
-                                    .replace(/,\s*,/g, ",")
-                                    .replace(/^,\s*|,\s*$/g, "")
-                                    .trim()}
+                                  .replace(/,\s*,/g, ",")
+                                  .replace(/^,\s*|,\s*$/g, "")
+                                  .trim()}
                             </p>
                           </div>
                         </div>
@@ -541,7 +547,7 @@ export default function PatientDetailPage() {
                   </h3>
                 </div>
                 {patient.chronicConditions &&
-                patient.chronicConditions.length > 0 ? (
+                  patient.chronicConditions.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
                     {patient.chronicConditions.map((condition, index) => (
                       <span
@@ -715,26 +721,24 @@ export default function PatientDetailPage() {
                           <div className="flex justify-between">
                             <span className="text-gray-600">Adherence:</span>
                             <span
-                              className={`font-medium ${
-                                stats.adherenceRate >= 90
+                              className={`font-medium ${stats.adherenceRate >= 90
                                   ? "text-green-600"
                                   : stats.adherenceRate >= 70
-                                  ? "text-yellow-600"
-                                  : "text-red-600"
-                              }`}
+                                    ? "text-yellow-600"
+                                    : "text-red-600"
+                                }`}
                             >
                               {stats.adherenceRate}%
                             </span>
                           </div>
                           <div className="w-full bg-gray-200 rounded-full h-2">
                             <div
-                              className={`h-2 rounded-full ${
-                                stats.adherenceRate >= 90
+                              className={`h-2 rounded-full ${stats.adherenceRate >= 90
                                   ? "bg-green-500"
                                   : stats.adherenceRate >= 70
-                                  ? "bg-yellow-500"
-                                  : "bg-red-500"
-                              }`}
+                                    ? "bg-yellow-500"
+                                    : "bg-red-500"
+                                }`}
                               style={{
                                 width: `${stats.adherenceRate}%`,
                               }}
@@ -810,17 +814,17 @@ export default function PatientDetailPage() {
               {(selectedLogMedication !== "all" ||
                 logStatusFilter !== "all" ||
                 logDateFilter !== "all") && (
-                <button
-                  onClick={() => {
-                    setSelectedLogMedication("all");
-                    setLogStatusFilter("all");
-                    setLogDateFilter("all");
-                  }}
-                  className="mt-4 text-sm text-blue-600 hover:text-blue-700 font-medium"
-                >
-                  Clear All Filters
-                </button>
-              )}
+                  <button
+                    onClick={() => {
+                      setSelectedLogMedication("all");
+                      setLogStatusFilter("all");
+                      setLogDateFilter("all");
+                    }}
+                    className="mt-4 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    Clear All Filters
+                  </button>
+                )}
             </div>
 
             {/* Medication Logs Table */}

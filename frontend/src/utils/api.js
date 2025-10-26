@@ -443,6 +443,17 @@ export const getPrescriptionById = async (id) => {
   }
 };
 
+export const deletePrescription = async (id) => {
+  try {
+    const response = await API.delete(`/prescriptions/${id}`);
+    console.log("Deleted prescription response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error deleting prescription:", error);
+    throw error;
+  }
+};
+
 export const getDoctorPrescriptions = async () => {
   try {
     const response = await API.get(`/prescriptions/`);
