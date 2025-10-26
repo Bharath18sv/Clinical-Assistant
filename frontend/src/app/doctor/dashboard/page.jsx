@@ -18,6 +18,7 @@ import {
   Stethoscope,
   TrendingUp,
   MessageSquare,
+  Pill,
 } from "lucide-react";
 import HealthCard from "@/components/HealthCard";
 import LoadingSpinner from "@/components/LoadingSpinner";
@@ -31,6 +32,7 @@ export default function DoctorDashboardPage() {
   const [doctorData, setDoctorData] = useState(null);
   const [patients, setPatients] = useState([]);
   const [appointments, setAppointments] = useState([]);
+  const [refillRequests, setRefillRequests] = useState([]);
   const [loading, setLoading] = useState({
     profile: false,
     patients: false,
@@ -46,11 +48,61 @@ export default function DoctorDashboardPage() {
     }
   };
 
+  const loadRefillRequests = () => {
+    try {
+      const storedRequests = JSON.parse(localStorage.getItem('refillRequests') || '[]');
+      const doctorId = user?.user?._id;
+      
+      console.log('Loading refill requests for doctor:', doctorId);
+      console.log('All stored requests:', storedRequests);
+      
+      const doctorRequests = storedRequests.filter(request => request.doctorId === doctorId);
+      console.log('Doctor requests:', doctorRequests);
+      
+      // Find patients data
+      const patientMap = {};
+      if (patients && patients.length > 0) {
+        patients.forEach(patient => {
+          // Handle different patient object structures
+          const patientId = patient.patientId || patient._id;
+          if (patientId) {
+            patientMap[patientId] = patient.patientDetails || patient;
+          }
+        });
+      }
+      
+      console.log('Patient map:', patientMap);
+      
+      const enhancedRequests = doctorRequests.map(request => {
+        const patient = patientMap[request.patientId];
+        console.log('Processing request for patient ID:', request.patientId);
+        console.log('Found patient:', patient);
+        
+        return {
+          ...request,
+          patientName: patient ? patient.fullname : `Patient ID: ${request.patientId}`,
+          patientEmail: patient ? patient.email : 'N/A'
+        };
+      });
+      
+      console.log('Enhanced requests:', enhancedRequests);
+      setRefillRequests(enhancedRequests);
+    } catch (error) {
+      console.error('Error loading refill requests:', error);
+    }
+  };
+
   useEffect(() => {
     setDoctorData(user?.user);
     fetchPatients();
     getAppointments();
   }, [doctorData]);
+
+  useEffect(() => {
+    if (patients.length > 0) {
+      loadRefillRequests();
+    }
+  }, [patients]);
 
   const getAppointments = async () => {
     setLoading((prev) => ({ ...prev, appointments: true }));
@@ -158,6 +210,90 @@ export default function DoctorDashboardPage() {
               color="orange"
             />
           </div>
+
+          {/* Refill Requests Section */}
+          {refillRequests.length > 0 && (
+            <div className="mb-8">
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-green-100 rounded-lg">
+                      <Pill className="h-5 w-5 text-green-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">Refill Requests</h3>
+                      <p className="text-sm text-gray-600">Prescription refill requests from your patients</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => loadRefillRequests()}
+                      className="text-sm text-blue-600 hover:text-blue-800 transition-colors"
+                    >
+                      Refresh
+                    </button>
+                    <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                      {refillRequests.length}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  {refillRequests.slice(0, 5).map((request, index) => (
+                    <div key={index} className="border border-gray-100 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                              <User className="h-4 w-4 text-blue-600" />
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900">{request.patientName}</p>
+                              <p className="text-sm text-gray-500">{request.patientEmail}</p>
+                            </div>
+                          </div>
+                          <div className="ml-11">
+                            <p className="text-sm text-gray-600 mb-1">
+                              <span className="font-medium">{request.medications?.length || 0}</span> medication(s) requested
+                            </p>
+                            {request.medications && request.medications.length > 0 && (
+                              <p className="text-xs text-gray-500 mb-2">
+                                Medications: {request.medications.join(", ")}
+                              </p>
+                            )}
+                            {request.message && (
+                              <p className="text-sm text-gray-700 bg-gray-50 p-2 rounded border-l-2 border-blue-200">
+                                "{request.message}"
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-end gap-2">
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            request.urgency === 'urgent' 
+                              ? 'bg-red-100 text-red-800' 
+                              : request.urgency === 'normal'
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-green-100 text-green-800'
+                          }`}>
+                            {request.urgency}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {new Date(request.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {refillRequests.length > 5 && (
+                    <p className="text-sm text-gray-500 text-center pt-2">
+                      +{refillRequests.length - 5} more requests
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Appointments and Patients Side by Side */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
