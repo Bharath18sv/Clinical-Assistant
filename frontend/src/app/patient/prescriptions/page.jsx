@@ -255,6 +255,12 @@ export default function PatientPrescriptions() {
                                 </span>
                               </div>
                               <div className="flex items-center gap-1">
+                                <User className="h-4 w-4" />
+                                <span>
+                                  {prescription.doctorId?.fullname || "Unknown Doctor"}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1">
                                 <Pill className="h-4 w-4" />
                                 <span>
                                   {getMedicationCount(prescription.medications)}{" "}

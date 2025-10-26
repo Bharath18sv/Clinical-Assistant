@@ -42,7 +42,7 @@ export default function PrescriptionDetailPage() {
   const params = useParams();
   const prescriptionId = params.id;
   const { user } = useContext(AuthContext);
-  const patient = user?.data?.user;
+  const patient = user?.user;
   const patientId = patient?._id;
   const router = useRouter();
 
@@ -251,6 +251,11 @@ export default function PrescriptionDetailPage() {
               {prescription?.date
                 ? new Date(prescription.date).toLocaleDateString()
                 : "—"}
+              {prescription?.doctorId?.fullname && (
+                <span className="ml-4">
+                  by {prescription.doctorId.fullname}
+                </span>
+              )}
             </p>
           </div>
         </div>
@@ -438,8 +443,12 @@ export default function PrescriptionDetailPage() {
                   <Stethoscope className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <p className="font-medium text-gray-900">Dr. Sarah Johnson</p>
-                  <p className="text-sm text-gray-600">Endocrinologist</p>
+                  <p className="font-medium text-gray-900">
+                    {prescription?.doctorId?.fullname || "Unknown Doctor"}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    {prescription?.doctorId?.specialization?.join(", ") || "General Medicine"}
+                  </p>
                 </div>
               </div>
             </div>
