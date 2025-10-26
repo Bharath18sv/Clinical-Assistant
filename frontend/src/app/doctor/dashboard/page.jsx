@@ -128,36 +128,6 @@ export default function DoctorDashboardPage() {
   const completedAppointments = appointments.filter(
     (appt) => appt.status?.toLowerCase() === "completed"
   );
-  // const formatAddress = (address) =>
-  //   address
-  //     ? `${address.street}, ${address.city}, ${address.state} ${address.zip}`
-  //     : "Address not available";
-
-  // const getStatusColor = (status) => {
-  //   switch (status?.toLowerCase()) {
-  //     case "confirmed":
-  //       return "status-confirmed";
-  //     case "pending":
-  //       return "status-pending";
-  //     case "cancelled":
-  //       return "status-cancelled";
-  //     default:
-  //       return "status-inactive";
-  //   }
-  // };
-
-  // const formatDateTime = (dateString) => {
-  //   if (!dateString) return "N/A";
-  //   const date = new Date(dateString);
-
-  //   const optionsDate = { year: "numeric", month: "short", day: "numeric" };
-  //   const optionsTime = { hour: "2-digit", minute: "2-digit" };
-
-  //   const apptDate = date.toLocaleDateString("en-US", optionsDate);
-  //   const apptTime = date.toLocaleTimeString("en-US", optionsTime);
-
-  //   return `${apptDate} at ${apptTime}`;
-  // };
 
   if (authLoading || !doctorData) {
     return (
