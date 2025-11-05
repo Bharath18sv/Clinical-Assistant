@@ -396,7 +396,7 @@ function PrescriptionCard({ patient }) {
                                   <h6 className="font-semibold text-gray-900">
                                     Medication {medIndex + 1}
                                   </h6>
-                                  {editForm.medications.length > 1 && (
+                                  {/* {editForm.medications.length > 1 && ( */}
                                     <button
                                       onClick={() =>
                                         handleRemoveMedication(medIndex)
@@ -405,7 +405,7 @@ function PrescriptionCard({ patient }) {
                                     >
                                       <Trash2 className="w-4 h-4" />
                                     </button>
-                                  )}
+                                  {/* )} */}
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

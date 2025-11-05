@@ -56,7 +56,9 @@ const PatientCard = ({ patient, status, onPatientClick }) => {
 
   return (
     <div
-      className={`bg-white rounded-xl shadow-sm border-2 ${getStatusColor(status)} hover:shadow-md transition-all cursor-pointer group`}
+      className={`bg-white rounded-xl shadow-sm border-2 ${getStatusColor(
+        status
+      )} hover:shadow-md transition-all cursor-pointer group`}
       onClick={() => onPatientClick(patient.patientDetails._id)}
     >
       <div className="p-6">
@@ -105,9 +107,13 @@ const PatientCard = ({ patient, status, onPatientClick }) => {
               <div className="flex items-start">
                 <AlertTriangle className="h-4 w-4 text-orange-500 mr-2 mt-0.5" />
                 <div>
-                  <p className="text-xs font-medium text-gray-700">Conditions</p>
+                  <p className="text-xs font-medium text-gray-700">
+                    Conditions
+                  </p>
                   <p className="text-xs text-gray-600">
-                    {patient.patientDetails.chronicConditions.slice(0, 2).join(", ")}
+                    {patient.patientDetails.chronicConditions
+                      .slice(0, 2)
+                      .join(", ")}
                     {patient.patientDetails.chronicConditions.length > 2 &&
                       " +" +
                         (patient.patientDetails.chronicConditions.length - 2)}
@@ -175,7 +181,7 @@ export default function DoctorPatientsPage({ params }) {
 
   // Group patients by appointment status
   const activePatients = filteredPatients.filter((p) =>
-    ["pending", "approved", "active"].includes(p.latestStatus)
+    ["approved", "active"].includes(p.latestStatus)
   );
   const completedPatients = filteredPatients.filter(
     (p) => p.latestStatus === "completed"
@@ -210,8 +216,8 @@ export default function DoctorPatientsPage({ params }) {
                   My Patients
                 </h1>
                 <p className="text-sm text-gray-500 mt-1">
-                  {patients.length} patient{patients.length !== 1 ? "s" : ""}{" "}
-                  under your care
+                  {activePatients.length} patient
+                  {activePatients.length !== 1 ? "s" : ""} under your care
                 </p>
               </div>
             </div>

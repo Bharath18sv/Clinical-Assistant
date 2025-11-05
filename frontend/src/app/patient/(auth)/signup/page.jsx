@@ -158,7 +158,7 @@ export default function PatientSignupPage() {
       const res = await registerPatient(formattedData);
       setMessage("Patient registered successfully!");
       const userData = res.data;
-
+      console.log("userData", userData);
       // Store user data and email for verification
       localStorage.setItem("user", JSON.stringify(userData));
       localStorage.setItem("pendingVerificationEmail", formattedData.email);

@@ -32,6 +32,7 @@ export const createSymptomLog = async (symptomData) => {
 export const getSymptomLogs = async () => {
   try {
     const response = await API.get("/symptoms");
+    console.log("symptom log response : ", response.data);
     return response.data;
   } catch (error) {
     throw error;

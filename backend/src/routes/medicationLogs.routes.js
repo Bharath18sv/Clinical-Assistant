@@ -11,6 +11,7 @@ import {
   getPatientPendingMedicationLogs,
   updateMedicationLogStatus,
   updateMedicationLog,
+  updateMedicationLogFromEmail,
 } from "../controllers/medicationLogs.controllers.js";
 
 const router = Router();
@@ -29,6 +30,9 @@ router
 
 // Admin routes
 router.route("/all").get(verifyJwt, getAllMedicationLogs);
+
+// Public route for updating medication logs from email (must come before general routes)
+router.route("/email-update").get(updateMedicationLogFromEmail);
 
 // General routes
 router

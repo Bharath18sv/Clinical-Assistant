@@ -47,7 +47,7 @@ const PrescriptionSchema = new mongoose.Schema(
         },
         status: {
           type: String,
-          enum: ["active", "completed", "discontinued"],
+          enum: ["active", "completed", "discontinued", "cancelled"],
           default: "active",
         },
         schedule: [

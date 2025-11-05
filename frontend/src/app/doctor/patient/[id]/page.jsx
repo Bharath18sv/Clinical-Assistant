@@ -73,6 +73,7 @@ export default function PatientDetailPage() {
       setError(null);
       try {
         const patientData = await getPatientById(patientId);
+        console.log("patientData: ", patientData);
         setPatient(patientData);
       } catch (error) {
         console.error("Error fetching patient:", error);
@@ -322,8 +323,8 @@ export default function PatientDetailPage() {
                       patient?.profilePic
                         ? patient.profilePic
                         : patient?.gender === "female"
-                          ? "/default-female.png"
-                          : "/default-male.png"
+                        ? "/default-female.png"
+                        : "/default-male.png"
                     }
                     alt={patient?.fullname || "Patient"}
                     className="w-full h-full object-cover"
@@ -348,7 +349,6 @@ export default function PatientDetailPage() {
                   </div>
                 </div>
               </div>
-
             </div>
             <button
               onClick={() => downloadPatientReportPdfForDoctor(patientId)}
@@ -385,10 +385,11 @@ export default function PatientDetailPage() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === tab.id
+                  className={`flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                    activeTab === tab.id
                       ? "border-blue-500 text-blue-600"
                       : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                    }`}
+                  }`}
                 >
                   <Icon className="w-4 h-4" />
                   {tab.name}
@@ -456,12 +457,14 @@ export default function PatientDetailPage() {
                             <p className="text-gray-900 font-medium">
                               {typeof patient.address === "string"
                                 ? patient.address
-                                : `${patient?.address?.street || ""}, ${patient?.address?.city || ""
-                                  }, ${patient?.address?.state || ""} ${patient?.address?.zip || ""
-                                  }, ${patient?.address?.country || ""}`
-                                  .replace(/,\s*,/g, ",")
-                                  .replace(/^,\s*|,\s*$/g, "")
-                                  .trim()}
+                                : `${patient?.address?.street || ""} ${
+                                    patient?.address?.city || ""
+                                  } ${patient?.address?.state || ""} ${
+                                    patient?.address?.zip || ""
+                                  } ${patient?.address?.country || ""}`
+                                    .replace(/,\s*,/g, ",") // remove duplicate commas
+                                    .replace(/^,\s*|,\s*$/g, "") // remove leading/trailing commas
+                                    .trim()}
                             </p>
                           </div>
                         </div>
@@ -547,7 +550,7 @@ export default function PatientDetailPage() {
                   </h3>
                 </div>
                 {patient.chronicConditions &&
-                  patient.chronicConditions.length > 0 ? (
+                patient.chronicConditions.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
                     {patient.chronicConditions.map((condition, index) => (
                       <span
@@ -633,8 +636,8 @@ export default function PatientDetailPage() {
 
         {activeTab === "prescriptions" && (
           <div className="space-y-6">
-            <PrescriptionCard patient={patient} />
             <AddPrescription patient={patient} />
+            <PrescriptionCard patient={patient} />
           </div>
         )}
 
@@ -721,24 +724,26 @@ export default function PatientDetailPage() {
                           <div className="flex justify-between">
                             <span className="text-gray-600">Adherence:</span>
                             <span
-                              className={`font-medium ${stats.adherenceRate >= 90
+                              className={`font-medium ${
+                                stats.adherenceRate >= 90
                                   ? "text-green-600"
                                   : stats.adherenceRate >= 70
-                                    ? "text-yellow-600"
-                                    : "text-red-600"
-                                }`}
+                                  ? "text-yellow-600"
+                                  : "text-red-600"
+                              }`}
                             >
                               {stats.adherenceRate}%
                             </span>
                           </div>
                           <div className="w-full bg-gray-200 rounded-full h-2">
                             <div
-                              className={`h-2 rounded-full ${stats.adherenceRate >= 90
+                              className={`h-2 rounded-full ${
+                                stats.adherenceRate >= 90
                                   ? "bg-green-500"
                                   : stats.adherenceRate >= 70
-                                    ? "bg-yellow-500"
-                                    : "bg-red-500"
-                                }`}
+                                  ? "bg-yellow-500"
+                                  : "bg-red-500"
+                              }`}
                               style={{
                                 width: `${stats.adherenceRate}%`,
                               }}
@@ -814,17 +819,17 @@ export default function PatientDetailPage() {
               {(selectedLogMedication !== "all" ||
                 logStatusFilter !== "all" ||
                 logDateFilter !== "all") && (
-                  <button
-                    onClick={() => {
-                      setSelectedLogMedication("all");
-                      setLogStatusFilter("all");
-                      setLogDateFilter("all");
-                    }}
-                    className="mt-4 text-sm text-blue-600 hover:text-blue-700 font-medium"
-                  >
-                    Clear All Filters
-                  </button>
-                )}
+                <button
+                  onClick={() => {
+                    setSelectedLogMedication("all");
+                    setLogStatusFilter("all");
+                    setLogDateFilter("all");
+                  }}
+                  className="mt-4 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  Clear All Filters
+                </button>
+              )}
             </div>
 
             {/* Medication Logs Table */}

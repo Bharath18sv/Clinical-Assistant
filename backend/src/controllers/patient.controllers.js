@@ -8,10 +8,11 @@ import {
 import { Patient } from "../models/patient.models.js";
 import { Doctor } from "../models/doctor.models.js";
 import { Appointment } from "../models/appointments.models.js";
+import { Prescription } from "../models/prescription.models.js";
+import { Notification } from "../models/notification.model.js";
 import jwt from "jsonwebtoken";
 import PDFDocument from "pdfkit";
 import { SymptomLog } from "../models/symptomLogs.models.js";
-import { Prescription } from "../models/prescription.models.js";
 import { Vitals } from "../models/vitals.models.js";
 import crypto from "crypto";
 import { sendEmail } from "../utils/email.js";
@@ -50,10 +51,14 @@ const registerPatient = asyncHandler(async (req, res) => {
     country: country || "India",
   };
 
-  // Parse arrays (FormData sends arrays as comma-separated strings or individual fields)
+  // Parse arrays (FormData sends arrays as individual fields with same name)
   const parseArrayField = (field) => {
     if (!field) return [];
     if (Array.isArray(field)) return field;
+    // Handle comma-separated strings (fallback)
+    if (typeof field === "string" && field.includes(",")) {
+      return field.split(",").map((item) => item.trim());
+    }
     return [field]; // Single value
   };
 
@@ -212,12 +217,156 @@ const generateAccessRefreshToken = async (PatientId) => {
   }
 };
 
+// Helper function to check for ADRs when patient medical information is updated
+const checkADRForUpdatedMedicalInfo = async (patientId, updatedFields) => {
+  try {
+    // Get patient's active prescriptions
+    const activePrescriptions = await Prescription.find({
+      patientId: patientId,
+      status: "active",
+    });
+
+    if (!activePrescriptions || activePrescriptions.length === 0) {
+      console.log("No active prescriptions found for patient");
+      return [];
+    }
+
+    // Get patient details
+    const patient = await Patient.findById(patientId);
+    if (!patient) {
+      console.log("Patient not found");
+      return [];
+    }
+
+    // For each active prescription, check for potential ADRs
+    const allADRAlerts = [];
+
+    for (const prescription of activePrescriptions) {
+      // Get active medications from the prescription
+      const activeMedications = prescription.medications.filter(
+        (med) => med.status === "active"
+      );
+
+      if (activeMedications.length === 0) {
+        continue;
+      }
+
+      // Check if any medical fields were updated that could cause ADRs
+      const alerts = [];
+
+      // Check for new allergies
+      if (updatedFields.allergies && updatedFields.allergies.length > 0) {
+        // Compare new allergies with medications in the prescription
+        const newAllergies = updatedFields.allergies.filter(
+          (allergy) => !patient.allergies.includes(allergy)
+        );
+
+        if (newAllergies.length > 0) {
+          activeMedications.forEach((med) => {
+            if (newAllergies.includes(med.name)) {
+              alerts.push({
+                type: "allergy",
+                severity: "high",
+                medication: med.name,
+                message: `Patient is now allergic to ${med.name} which is prescribed in this prescription`,
+              });
+            }
+          });
+        }
+      }
+
+      // Check for new chronic conditions
+      if (
+        updatedFields.chronicConditions &&
+        updatedFields.chronicConditions.length > 0
+      ) {
+        // Compare new conditions with medications in the prescription
+        const newConditions = updatedFields.chronicConditions.filter(
+          (condition) => !patient.chronicConditions.includes(condition)
+        );
+
+        if (newConditions.length > 0) {
+          // Check for contraindications (simplified check)
+          activeMedications.forEach((med) => {
+            // This is a simplified check - in a real system, you'd have a comprehensive database
+            if (
+              newConditions.includes("kidney_disease") &&
+              ["ibuprofen", "naproxen"].includes(med.name.toLowerCase())
+            ) {
+              alerts.push({
+                type: "condition",
+                severity: "high",
+                medication: med.name,
+                message: `${med.name} is contraindicated in patients with kidney disease`,
+              });
+            }
+
+            if (
+              newConditions.includes("liver_disease") &&
+              ["acetaminophen"].includes(med.name.toLowerCase())
+            ) {
+              alerts.push({
+                type: "condition",
+                severity: "high",
+                medication: med.name,
+                message: `${med.name} is contraindicated in patients with liver disease`,
+              });
+            }
+          });
+        }
+      }
+
+      // Check for new symptoms
+      if (updatedFields.symptoms && updatedFields.symptoms.length > 0) {
+        // Compare new symptoms with medications in the prescription
+        const newSymptoms = updatedFields.symptoms.filter(
+          (symptom) => !patient.symptoms.includes(symptom)
+        );
+
+        if (newSymptoms.length > 0) {
+          // Check for symptom-medication interactions (simplified check)
+          activeMedications.forEach((med) => {
+            // This is a simplified check - in a real system, you'd have a comprehensive database
+            if (
+              newSymptoms.includes("bleeding") &&
+              ["warfarin", "aspirin", "ibuprofen"].includes(
+                med.name.toLowerCase()
+              )
+            ) {
+              alerts.push({
+                type: "symptom",
+                severity: "moderate",
+                medication: med.name,
+                message: `${med.name} may worsen bleeding symptoms`,
+              });
+            }
+          });
+        }
+      }
+
+      if (alerts.length > 0) {
+        allADRAlerts.push({
+          prescriptionId: prescription._id,
+          prescriptionTitle: prescription.title,
+          alerts: alerts,
+        });
+      }
+    }
+
+    return allADRAlerts;
+  } catch (error) {
+    console.error("Error checking ADRs for updated medical info:", error);
+    return [];
+  }
+};
+
 const loginPatient = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
     throw new ApiError(400, "Email and password are required");
   }
+
   const patient = await Patient.findOne({ email });
 
   if (!patient) {
@@ -237,6 +386,7 @@ const loginPatient = asyncHandler(async (req, res) => {
     console.log("Password doesn't match");
     throw new ApiError(400, "Password doesn't match");
   }
+
   const { refreshToken, accessToken } = await generateAccessRefreshToken(
     patient._id
   );
@@ -392,10 +542,7 @@ const updateInfo = asyncHandler(async (req, res) => {
     !address.city ||
     !address.state ||
     !address.zip ||
-    !address.country ||
-    !allergies ||
-    !chronicConditions ||
-    !symptoms
+    !address.country
   ) {
     throw new ApiError(400, "All fields are required");
   }
@@ -421,18 +568,82 @@ const updateInfo = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Patient not found");
   }
 
+  const updateFields = {
+    fullname,
+    age,
+    phone,
+    address,
+  };
+
+  // Only add medical fields if they are provided
+  if (allergies !== undefined) {
+    updateFields.allergies = Array.isArray(allergies) ? allergies : [];
+  }
+
+  if (chronicConditions !== undefined) {
+    updateFields.chronicConditions = Array.isArray(chronicConditions)
+      ? chronicConditions
+      : [];
+  }
+
+  if (symptoms !== undefined) {
+    updateFields.symptoms = Array.isArray(symptoms) ? symptoms : [];
+  }
+
   const updatedPatient = await Patient.findByIdAndUpdate(
     req.user?._id,
     {
-      $set: {
-        fullname,
-        age,
-        phone,
-        address,
-      },
+      $set: updateFields,
     },
     { new: true }
   ).select("-password -refreshToken");
+
+  // Check for ADRs if medical information was updated
+  const medicalFieldsUpdated =
+    allergies !== undefined ||
+    chronicConditions !== undefined ||
+    symptoms !== undefined;
+
+  if (medicalFieldsUpdated) {
+    try {
+      const adrAlerts = await checkADRForUpdatedMedicalInfo(
+        req.user?._id,
+        updateFields
+      );
+
+      // If ADR alerts were found, create notifications
+      if (adrAlerts.length > 0) {
+        for (const alert of adrAlerts) {
+          // Get prescription details to find the doctor
+          const prescription = await Prescription.findById(
+            alert.prescriptionId
+          );
+          if (prescription) {
+            // Notify the doctor about potential ADR
+            await Notification.create({
+              userId: prescription.doctorId,
+              userType: "Doctor",
+              type: "ADR_ALERT",
+              title: "⚠️ Potential ADR Risk Due to Patient Medical Update",
+              message: `Patient ${updatedPatient.fullname} has updated their medical information which may affect prescription '${prescription.title}'. Please review the medications.`,
+              prescriptionId: prescription._id,
+            });
+
+            // Also notify the patient
+            await Notification.create({
+              userId: req.user?._id,
+              userType: "Patient",
+              type: "ADR_ALERT",
+              title: "⚠️ Potential ADR Risk",
+              message: `Your recent medical information update may affect your current medications. Please consult your doctor.`,
+            });
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error checking ADRs after medical info update:", error);
+    }
+  }
 
   res
     .status(200)

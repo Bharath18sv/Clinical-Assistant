@@ -10,7 +10,7 @@ const API = axios.create({
 API.interceptors.request.use(
   (req) => {
     try {
-      const userData = JSON.parse(localStorage.getItem("user") || '{}');
+      const userData = JSON.parse(localStorage.getItem("user") || "{}");
       const token = userData?.accessToken || userData?.data?.accessToken;
       if (token && !isTokenExpired(token)) {
         req.headers.Authorization = `Bearer ${token}`;
@@ -126,20 +126,28 @@ export const registerPatient = async (data) => {
   formData.append("phone", data.phone);
   formData.append("age", data.age);
   formData.append("gender", data.gender);
-  formData.append("address[street]", data.address.street);
-  formData.append("address[city]", data.address.city);
-  formData.append("address[state]", data.address.state);
-  formData.append("address[zip]", data.address.zip);
-  formData.append("address[country]", data.address.country);
-  formData.append("chronicConditions", data.chronicConditions);
-  formData.append("allergies", data.allergies);
-  formData.append("symptoms", data.symptoms);
 
-  data.chronicConditions?.forEach((c) =>
-    formData.append("chronicConditions[]", c.value || c)
-  );
-  data.allergies?.forEach((a) => formData.append("allergies[]", a.value || a));
-  data.symptoms?.forEach((s) => formData.append("symptoms[]", s.value || s));
+  // Address fields (flattened format expected by backend)
+  formData.append("address.street", data.address.street || "");
+  formData.append("address.city", data.address.city || "");
+  formData.append("address.state", data.address.state || "");
+  formData.append("address.zip", data.address.zip || "");
+  formData.append("address.country", data.address.country || "India");
+
+  // Medical information
+  if (data.chronicConditions && data.chronicConditions.length > 0) {
+    data.chronicConditions.forEach((c) =>
+      formData.append("chronicConditions", c.value || c)
+    );
+  }
+
+  if (data.allergies && data.allergies.length > 0) {
+    data.allergies.forEach((a) => formData.append("allergies", a.value || a));
+  }
+
+  if (data.symptoms && data.symptoms.length > 0) {
+    data.symptoms.forEach((s) => formData.append("symptoms", s.value || s));
+  }
 
   // File
   if (data.profilePic) {
@@ -148,7 +156,7 @@ export const registerPatient = async (data) => {
 
   try {
     const registeredPatient = await API.post("/patients/register", formData);
-    return registerPatient;
+    return registeredPatient.data;
   } catch (error) {
     console.error("❌ Error:", error);
     return null;
@@ -324,7 +332,10 @@ export const addPatient = async (patientData) => {
   } catch (error) {
     console.error("Error creating patient:", error);
     console.error("Error response:", error.response?.data);
-    const errorMessage = error.response?.data?.message || error.message || "Failed to create patient";
+    const errorMessage =
+      error.response?.data?.message ||
+      error.message ||
+      "Failed to create patient";
     throw new Error(errorMessage);
   }
 };

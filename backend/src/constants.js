@@ -1,52 +1,5 @@
-export const SPECIALIZATION = [
-  "Cardiology",
-  "Dermatology",
-  "Neurology",
-  "Pediatrics",
-  "Psychiatry",
-  "General Medicine",
-  "Orthopedics",
-  "Radiology",
-  "Oncology",
-  "ENT",
-  "Endocrinologist", // Diabetes, thyroid disorders
-  "Pulmonologist", // Asthma, COPD
-  "Neurologist", // Epilepsy, Parkinson’s, dementia
-  "Gastroenterologist", // IBS, Crohn’s, Ulcerative Colitis
-  "Psychiatrist", // Depression, anxiety, bipolar disorder
-  "Orthopedic/Rheumatologist", // Arthritis, osteoporosis
-];
+// src/constants.js
 
-export const QUALIFICATIONS = [
-  "MBBS", // Bachelor of Medicine and Bachelor of Surgery
-  "MD", // Doctor of Medicine
-  "DO", // Doctor of Osteopathic Medicine
-  "BDS", // Bachelor of Dental Surgery
-  "BHMS", // Bachelor of Homeopathic Medicine and Surgery
-  "BAMS", // Bachelor of Ayurvedic Medicine and Surgery
-  "BNYS", // Bachelor of Naturopathy and Yogic Sciences
-  "BPT", // Bachelor of Physiotherapy
-];
-
-export const GENDER = ["Male", "Female", "Other"];
-
-export const SYMPTOMS = [
-  "Fever",
-  "Cough",
-  "Shortness of Breath",
-  "Fatigue",
-  "Headache",
-  "Sore Throat",
-  "Chest Pain",
-  "Nausea",
-  "Vomiting",
-  "Diarrhea",
-  "Muscle Pain",
-  "Joint Pain",
-  "Dizziness",
-  "Loss of Taste",
-  "Loss of Smell",
-];
 export const CHRONIC_CONDITIONS = [
   "Diabetes",
   "Hypertension",
@@ -63,6 +16,9 @@ export const CHRONIC_CONDITIONS = [
   "Epilepsy",
   "Tuberculosis (TB)",
   "Migraine",
+  // Additional conditions from ADR service
+  "Kidney Disease",
+  "Liver Disease",
 ];
 
 export const ALLERGIES = [
@@ -81,13 +37,69 @@ export const ALLERGIES = [
   "Mold",
   "Latex",
   "Penicillin",
+  // Additional allergies from ADR service
+  "Sulfa",
+  "Aspirin",
+  "Ibuprofen",
+  "Naproxen",
+  "Ketorolac",
+  "Iodine Contrast",
+  "Iodine Supplements",
 ];
 
+export const SYMPTOMS = [
+  "Fever",
+  "Cough",
+  "Shortness of Breath",
+  "Fatigue",
+  "Headache",
+  "Sore Throat",
+  "Chest Pain",
+  "Nausea",
+  "Vomiting",
+  "Diarrhea",
+  "Muscle Pain",
+  "Joint Pain",
+  "Dizziness",
+  "Loss of Taste",
+  "Loss of Smell",
+  // Additional symptoms from ADR service
+  "Rash",
+  "Difficulty Breathing",
+  "Severe Nausea",
+  "Chest Pain",
+  "Severe Headache",
+  "Bleeding",
+];
 
+export const SPECIALIZATION = [
+  "Cardiology",
+  "Dermatology",
+  "Neurology",
+  "Pediatrics",
+  "Psychiatry",
+  "General Medicine",
+  "Orthopedics",
+  "Radiology",
+  "Oncology",
+  "ENT",
+  "Endocrinologist",
+  "Pulmonologist",
+  "Neurologist",
+  "Gastroenterologist",
+  "Psychiatrist",
+  "Orthopedic/Rheumatologist",
+];
 
+export const QUALIFICATIONS = [
+  "MBBS",
+  "MD",
+  "DO",
+  "BDS",
+  "BHMS",
+  "BAMS",
+  "BNYS",
+  "BPT",
+];
 
-
-
-
-
-
+export const GENDER = ["Male", "Female", "Other"];

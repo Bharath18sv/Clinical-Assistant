@@ -179,9 +179,36 @@ const loginDoctor = asyncHandler(async (req, res) => {
 
   // Block login if email not verified
   if (!doctor.emailVerified) {
+    // Generate and send verification code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const codeHash = crypto.createHash("sha256").update(code).digest("hex");
+    const codeExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    doctor.emailVerificationCodeHash = codeHash;
+    doctor.emailVerificationExpiresAt = codeExpiry;
+    await doctor.save({ validateBeforeSave: false });
+
+    try {
+      const html = verificationCodeTemplate({
+        name: doctor.fullname,
+        code,
+        appUrl: process.env.APP_URL,
+      });
+      await sendEmail({
+        to: doctor.email,
+        subject: "Verify your email",
+        html,
+      });
+    } catch (emailErr) {
+      console.error("Failed to send verification email:", emailErr);
+    }
+
     throw new ApiError(
       401,
-      "Email not verified. Please verify your email to continue."
+      "Email not verified. A new verification code has been sent to your email. Please verify to continue.",
+      [],
+      "",
+      { emailNotVerified: true, email: email }
     );
   }
 
@@ -374,7 +401,10 @@ const addPatient = asyncHandler(async (req, res) => {
   if (profilePicLocalPath) {
     try {
       profilePic = await uploadOnCloudinary(profilePicLocalPath);
-      console.log("Profile pic uploaded:", profilePic?.secure_url || profilePic?.url);
+      console.log(
+        "Profile pic uploaded:",
+        profilePic?.secure_url || profilePic?.url
+      );
     } catch (error) {
       console.log("Profile pic upload failed", error);
       throw new ApiError(500, "Failed to upload Profile picture");
@@ -561,17 +591,17 @@ const getPatientDetailsBundle = asyncHandler(async (req, res) => {
     }
 
     if (allMedications.length > 0) {
-      const response = await fetch('http://localhost:5001/predict-adr', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("http://localhost:5001/predict-adr", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           medications: allMedications,
           patient: {
             age: patient.age,
             allergies: patient.allergies || [],
-            chronicConditions: patient.chronicConditions || []
-          }
-        })
+            chronicConditions: patient.chronicConditions || [],
+          },
+        }),
       });
 
       if (response.ok) {
@@ -580,18 +610,20 @@ const getPatientDetailsBundle = asyncHandler(async (req, res) => {
       }
     }
   } catch (error) {
-    console.error('ML ADR service error:', error);
-    const allergySet = new Set((patient.allergies || []).map(a => a.toLowerCase()));
+    console.error("ML ADR service error:", error);
+    const allergySet = new Set(
+      (patient.allergies || []).map((a) => a.toLowerCase())
+    );
     for (const p of prescriptions) {
       for (const med of p.medications || []) {
-        const name = (med.name || '').toLowerCase();
+        const name = (med.name || "").toLowerCase();
         if (allergySet.has(name)) {
           adrAlerts.push({
-            type: 'allergy',
-            severity: 'high',
+            type: "allergy",
+            severity: "high",
             medications: [med.name],
             message: `Patient allergic to ${med.name}`,
-            recommendation: 'Discontinue immediately'
+            recommendation: "Discontinue immediately",
           });
         }
       }
@@ -1085,7 +1117,18 @@ const resendDoctorVerificationCode = asyncHandler(async (req, res) => {
   if (!email) throw new ApiError(400, "Email is required");
 
   const doctor = await Doctor.findOne({ email });
-  if (!doctor) throw new ApiError(404, "No account found for this email");
+  if (!doctor) {
+    // Instead of throwing an error, we'll send a more user-friendly message
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          {},
+          "If the email exists in our system, a verification code has been sent."
+        )
+      );
+  }
   if (doctor.emailVerified) {
     return res
       .status(200)

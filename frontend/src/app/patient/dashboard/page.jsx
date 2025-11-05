@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useContext, useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   Heart,
   Calendar,
@@ -11,6 +12,8 @@ import {
   Droplets,
   Scale,
   FileText,
+  Bell,
+  ArrowRight,
 } from "lucide-react";
 import HealthCard from "@/components/HealthCard";
 import AppointmentCard from "@/components/AppointmentCard";
@@ -24,11 +27,14 @@ import {
 import API from "@/utils/api";
 import { AuthContext } from "@/context/AuthContext";
 import { downloadMyPatientReportPdf } from "@/utils/api";
+import { getUnreadNotifications } from "@/utils/api/notification.api";
 
 export default function PatientDashboard() {
   const { user, authLoading } = useContext(AuthContext);
+  const router = useRouter(); // Added missing router
   const [appointments, setAppointments] = useState([]);
   const [prescriptions, setPrescriptions] = useState([]);
+  const [unreadNotifications, setUnreadNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [healthStats, setHealthStats] = useState({
     sugar: "",
@@ -105,6 +111,19 @@ export default function PatientDashboard() {
     }
   };
 
+  const fetchUnreadNotifications = async () => {
+    try {
+      const response = await getUnreadNotifications();
+      console.log("Unread notifications fetched:", response);
+      if (response && response.data) {
+        setUnreadNotifications(response.data);
+      }
+    } catch (error) {
+      console.error("Error fetching unread notifications:", error);
+      setUnreadNotifications([]);
+    }
+  };
+
   // Main effect to fetch data when user is loaded
   useEffect(() => {
     const fetchData = async () => {
@@ -127,6 +146,7 @@ export default function PatientDashboard() {
           loadAppointments(),
           fetchPatientPrescriptions(),
           fetchVitals(),
+          fetchUnreadNotifications(),
         ]);
       } catch (error) {
         console.error("Error loading dashboard data:", error);
@@ -136,7 +156,8 @@ export default function PatientDashboard() {
     };
 
     fetchData();
-  }, [authLoading, user, patientId]); // Added patientId to dependencies
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, user, patientId]);
 
   // Convert vitals object to health stats array for display
   const getHealthStatsArray = () => {
@@ -279,6 +300,62 @@ export default function PatientDashboard() {
           overview.
         </p>
       </div>
+
+      {/* Unread Notifications Section - Only show if there are unread notifications */}
+      {unreadNotifications.length > 0 && (
+        <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-2xl shadow-lg border border-orange-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-orange-100 rounded-lg">
+                <Bell className="h-6 w-6 text-orange-600 animate-pulse" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">
+                  Unread Notifications
+                </h3>
+                <p className="text-sm text-gray-600">
+                  You have {unreadNotifications.length} unread notification
+                  {unreadNotifications.length !== 1 ? "s" : ""}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => router.push("/patient/notification")}
+              className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-medium shadow-md hover:shadow-lg"
+            >
+              View All
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            {unreadNotifications.slice(0, 1).map((notification) => (
+              <div
+                key={notification._id}
+                className="border border-orange-200 rounded-lg p-4 transition-all cursor-pointer bg-orange-50 hover:bg-orange-100"
+                onClick={() => router.push("/patient/notification")}
+              >
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg flex-shrink-0 bg-orange-100 text-orange-600">
+                    <Bell className="h-5 w-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-gray-900 mb-1">
+                      {notification.title}
+                    </h4>
+                    <p className="text-sm text-gray-700 line-clamp-2">
+                      {notification.message}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-2">
+                      {new Date(notification.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Health Stats Cards */}
       {healthStatsArray.length > 0 ? (

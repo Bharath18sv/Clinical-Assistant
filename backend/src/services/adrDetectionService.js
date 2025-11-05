@@ -40,7 +40,7 @@ const DRUG_INTERACTIONS = {
 
 // Allergy-based contraindications
 const ALLERGY_CONTRAINDICATIONS = {
-  penicillin: ["amoxicillin", "ampicillin", "piperacillin"],
+  penicillin: ["amoxicillin", "ampicillin", "piperacillin", "ibuprofen"],
   sulfa: ["sulfamethoxazole", "sulfasalazine", "furosemide"],
   aspirin: ["ibuprofen", "naproxen", "ketorolac"],
   shellfish: ["iodine_contrast", "iodine_supplements"],

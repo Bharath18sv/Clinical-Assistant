@@ -2,7 +2,9 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { Appointment } from "../models/appointments.models.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-import app from "../app.js";
+import { Notification } from "../models/notification.model.js";
+import { Doctor } from "../models/doctor.models.js";
+import { Patient } from "../models/patient.models.js";
 
 // Patient self-book or general creation endpoint
 const createAppointment = asyncHandler(async (req, res) => {
@@ -23,16 +25,39 @@ const createAppointment = asyncHandler(async (req, res) => {
     reason: reason || "",
     status: "pending",
   });
-  
+
   // Populate doctor information before returning
   const populatedAppt = await Appointment.findById(appt._id)
-    .populate("doctorId", "fullname email phone address specialization profilePic")
+    .populate(
+      "doctorId",
+      "fullname email phone address specialization profilePic"
+    )
     .populate("patientId", "fullname email phone address profilePic");
-  
+
+  // Notify the doctor about the new appointment
+  try {
+    const doctor = await Doctor.findById(doctorId);
+    if (doctor) {
+      await Notification.create({
+        userId: doctorId,
+        userType: "Doctor",
+        type: "SYSTEM",
+        title: "New Appointment Request",
+        message: `You have a new appointment request from ${
+          populatedAppt.patientId.fullname
+        } scheduled for ${new Date(scheduledAt).toLocaleDateString()}.`,
+      });
+    }
+  } catch (error) {
+    console.error("Failed to send notification to doctor:", error);
+  }
+
   console.log("appointment created successfully: ", populatedAppt);
   return res
     .status(201)
-    .json(new ApiResponse(201, populatedAppt, "Appointment created successfully"));
+    .json(
+      new ApiResponse(201, populatedAppt, "Appointment created successfully")
+    );
 });
 
 //appointment update - reschedule or change reason by patient
@@ -83,8 +108,6 @@ const getUserAppointments = asyncHandler(async (req, res) => {
       )
     );
 });
-
-
 
 const getDPAppointment = asyncHandler(async (req, res) => {
   const userOne = req.user._id; //maybe doctor or patient
@@ -248,43 +271,46 @@ const completeAppointment = asyncHandler(async (req, res) => {
   try {
     const userId = req.user?._id;
     const { id } = req.params;
-    
+
     if (!userId) {
       throw new ApiError(401, "User not authenticated");
     }
-    
+
     if (!id) {
       throw new ApiError(400, "Appointment ID is required");
     }
-    
+
     console.log(`Completing appointment ${id} by user ${userId}`);
-    
+
     const appt = await Appointment.findById(id);
     if (!appt) {
       throw new ApiError(404, "Appointment not found");
     }
-    
-    console.log(`Appointment found:`, { 
-      id: appt._id, 
-      status: appt.status, 
+
+    console.log(`Appointment found:`, {
+      id: appt._id,
+      status: appt.status,
       doctorId: appt.doctorId,
-      userId: userId 
+      userId: userId,
     });
-    
+
     // Only the doctor can complete appointments
     if (String(appt.doctorId) !== String(userId)) {
       console.log(`Auth failed - Doctor: ${appt.doctorId}, User: ${userId}`);
       throw new ApiError(403, "Only the doctor can complete this appointment");
     }
-    
+
     appt.status = "completed";
     appt.notes = req.body?.notes || appt.notes || "";
     appt.completedAt = new Date();
 
     const savedAppt = await appt.save();
-    
-    console.log(`Appointment completed:`, { id: savedAppt._id, status: savedAppt.status });
-    
+
+    console.log(`Appointment completed:`, {
+      id: savedAppt._id,
+      status: savedAppt.status,
+    });
+
     return res
       .status(200)
       .json(new ApiResponse(200, savedAppt, "Appointment completed"));
@@ -306,7 +332,10 @@ const getAppointmentById = asyncHandler(async (req, res) => {
       "doctorId",
       "fullname email phone address specialization profilePic"
     )
-    .populate("patientId", "fullname email phone address profilePic gender age symptoms allergies chronicConditions");
+    .populate(
+      "patientId",
+      "fullname email phone address profilePic gender age symptoms allergies chronicConditions"
+    );
 
   if (!appt) {
     throw new ApiError(501, "Appointment with id is not found");
@@ -349,6 +378,26 @@ const approveAppointment = asyncHandler(async (req, res) => {
   appt.status = "approved";
   appt.notes = req.body.notes || appt.notes || "";
   await appt.save();
+
+  // Notify the patient that their appointment has been approved
+  try {
+    const populatedAppt = await Appointment.findById(id)
+      .populate("doctorId", "fullname")
+      .populate("patientId", "fullname");
+
+    if (populatedAppt.patientId) {
+      await Notification.create({
+        userId: populatedAppt.patientId._id,
+        userType: "Patient",
+        type: "SYSTEM",
+        title: "Appointment Approved",
+        message: `Your appointment with Dr. ${populatedAppt.doctorId.fullname} has been approved.`,
+      });
+    }
+  } catch (error) {
+    console.error("Failed to send notification to patient:", error);
+  }
+
   return res
     .status(200)
     .json(new ApiResponse(200, appt, "Appointment approved"));

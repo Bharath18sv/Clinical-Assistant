@@ -8,7 +8,7 @@ dotenv.config({ path: path.resolve(".env") });
 
 // Connect to your MongoDB (adjust connection string as per your config)
 const MONGODB_URI = process.env.MONGODB_URI;
-console.log("mongodb uri: ", MONGODB_URI);
+// console.log("mongodb uri: ", MONGODB_URI);
 
 async function main() {
   try {

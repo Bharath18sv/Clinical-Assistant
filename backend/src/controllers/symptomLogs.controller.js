@@ -183,7 +183,7 @@ export const createSymptomLog = asyncHandler(async (req, res) => {
 
 // Get all symptom logs of a patient
 export const getSymptomLogs = asyncHandler(async (req, res) => {
-  const { userId } = req.user._id;
+  const userId = req.user._id;
 
   if (!userId) {
     throw new ApiError(400, "userId is required");
@@ -257,10 +257,12 @@ export const getSymptomLogOfDoctorByPatient = asyncHandler(async (req, res) => {
 
 export const getSymptomLogsOfPatientByDoctor = asyncHandler(
   async (req, res) => {
-    const { doctorId } = req.user._id;
+    const doctorId = req.user._id;
     const { patientId } = req.params;
 
     const symptomLogs = await SymptomLog.find({ doctorId, patientId });
+
+    console.log("sympton logs: ", symptomLogs);
 
     if (!symptomLogs) {
       throw new ApiError(404, "Symptom logs not found");
@@ -362,7 +364,14 @@ export const getDoctorListForPatient = asyncHandler(async (req, res) => {
 export const getPatientListForDoctor = asyncHandler(async (req, res) => {
   const doctorId = req.user._id;
 
-  const patients = await SymptomLog.distinct("patientId", { doctorId });
+  // Step 1: get all distinct patient IDs for this doctor
+  const patientIds = await SymptomLog.distinct("patientId", { doctorId });
+
+  // Step 2: fetch full patient data (you can select specific fields if needed)
+  const patients = await Patient.find({ _id: { $in: patientIds } }).select(
+    "fullname email age gender phone address profilePic"
+  );
+  // remove select() if you want full data
 
   return res
     .status(200)

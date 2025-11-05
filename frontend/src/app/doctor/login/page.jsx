@@ -65,9 +65,49 @@ export default function DoctorLoginPage() {
       toast.success("Login successful! Redirecting...");
       router.replace("/doctor/dashboard");
     } catch (err) {
-      setError(err.message || "Login failed. Please check your credentials.");
-      toast.error(err.message || "Login failed. Please try again.");
       console.error("Login error:", err);
+
+      // Check if it's an email verification error
+      if (
+        err.response &&
+        err.response.data &&
+        err.response.data.additionalData &&
+        err.response.data.additionalData.emailNotVerified
+      ) {
+        // Extract email from error response
+        const emailToVerify = err.response.data.additionalData.email || email;
+
+        // Store email for verification page
+        localStorage.setItem("pendingDoctorVerificationEmail", emailToVerify);
+
+        // Show appropriate error message
+        setError(
+          "Email not verified. Please check your email for the verification code."
+        );
+        toast.error(
+          "Email not verified. A new verification code has been sent to your email."
+        );
+
+        // Redirect to verification page after a short delay
+        setTimeout(() => {
+          router.push(
+            `/doctor/verify-email?email=${encodeURIComponent(
+              emailToVerify
+            )}&fromLogin=true`
+          );
+        }, 2000);
+      } else {
+        setError(
+          err.response?.data?.message ||
+            err.message ||
+            "Login failed. Please check your credentials."
+        );
+        toast.error(
+          err.response?.data?.message ||
+            err.message ||
+            "Login failed. Please try again."
+        );
+      }
     } finally {
       setIsLoading(false);
     }

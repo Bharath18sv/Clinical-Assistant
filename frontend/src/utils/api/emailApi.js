@@ -29,7 +29,11 @@ export const resendPatientVerification = async (email) => {
 
 export const verifyDoctorEmail = async (email, code) => {
   try {
+    if (!email || !code) {
+      throw new Error("Email and code are required");
+    }
     const response = await API.post("/doctors/verify-email", { email, code });
+    console.log("response : ", response);
     return response.data;
   } catch (error) {
     console.error("Error verifying doctor email:", error);

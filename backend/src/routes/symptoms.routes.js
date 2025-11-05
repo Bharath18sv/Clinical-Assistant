@@ -4,6 +4,7 @@ import {
   getSymptomLogById,
   getRecentSymptomLogs,
   updateSymptomLog,
+  getSymptomLogsForDoctor,
   getSymptomLogsOfPatientByDoctor,
   getSymptomLogOfDoctorByPatient,
   getDoctorListForPatient,

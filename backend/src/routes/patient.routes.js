@@ -22,7 +22,7 @@ import { verifyJwt } from "../middlewares/auth.middleware.js";
 import { upload } from "../middlewares/multer.middlewares.js";
 
 const router = Router();
-
+// post, get, patch, delete
 //unsecured routes
 router.route("/register").post(upload.single("profilePic"), registerPatient);
 router.route("/login").post(loginPatient);

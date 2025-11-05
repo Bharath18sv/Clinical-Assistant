@@ -7,7 +7,6 @@ const AddPrescription = ({ patient }) => {
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [title, setTitle] = useState("");
-  const [status, setStatus] = useState("active");
 
   const [medications, setMedications] = useState([
     {
@@ -15,7 +14,6 @@ const AddPrescription = ({ patient }) => {
       dosage: "",
       duration: "",
       notes: "",
-      status: "active",
       schedule: [], // array of strings as per your current schema
     },
   ]);
@@ -30,7 +28,6 @@ const AddPrescription = ({ patient }) => {
         dosage: "",
         duration: "",
         notes: "",
-        status: "active",
         schedule: [],
       },
     ]);
@@ -67,7 +64,6 @@ const AddPrescription = ({ patient }) => {
 
   const resetForm = () => {
     setTitle("");
-    setStatus("active");
     setMedications([
       {
         name: "",
@@ -106,7 +102,7 @@ const AddPrescription = ({ patient }) => {
       }
 
       const medErrors = [];
-      
+
       // Validate medication name
       if (!med.name.trim()) {
         medErrors.push("Name is required");
@@ -146,14 +142,20 @@ const AddPrescription = ({ patient }) => {
       }
 
       if (medErrors.length > 0) {
-        errors.push(`Medication ${index + 1} (${med.name || 'Unnamed'}):\n- ${medErrors.join('\n- ')}`);
+        errors.push(
+          `Medication ${index + 1} (${
+            med.name || "Unnamed"
+          }):\n- ${medErrors.join("\n- ")}`
+        );
       } else {
         atLeastOneMedication = true;
       }
     });
 
     if (!atLeastOneMedication) {
-      alert("Please add at least one complete medication with name, dosage, and duration");
+      alert(
+        "Please add at least one complete medication with name, dosage, and duration"
+      );
       return false;
     }
 
@@ -180,22 +182,26 @@ const AddPrescription = ({ patient }) => {
           .map((med) => {
             const dosageNum = Number(med.dosage);
             const durationNum = Number(med.duration);
-            
+
             if (isNaN(dosageNum) || dosageNum <= 0) {
-              throw new Error(`Invalid dosage for ${med.name}: ${med.dosage}. Dosage must be a positive number.`);
+              throw new Error(
+                `Invalid dosage for ${med.name}: ${med.dosage}. Dosage must be a positive number.`
+              );
             }
-            
+
             if (isNaN(durationNum) || durationNum <= 0) {
-              throw new Error(`Invalid duration for ${med.name}: ${med.duration}. Duration must be a positive number.`);
+              throw new Error(
+                `Invalid duration for ${med.name}: ${med.duration}. Duration must be a positive number.`
+              );
             }
-            
+
             return {
               name: med.name.trim(),
               dosage: dosageNum,
               duration: durationNum,
               notes: med.notes?.trim() || "",
               status: med.status || "active",
-              schedule: med.schedule.length > 0 ? med.schedule : ["morning"]
+              schedule: med.schedule.length > 0 ? med.schedule : ["morning"],
             };
           }),
       };
@@ -262,22 +268,6 @@ const AddPrescription = ({ patient }) => {
                   onChange={(e) => setTitle(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 />
-              </div>
-
-              {/* Prescription Status */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Prescription Status
-                </label>
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                >
-                  <option value="active">Active</option>
-                  <option value="completed">Completed</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
               </div>
 
               {/* Medications Section */}
@@ -365,23 +355,7 @@ const AddPrescription = ({ patient }) => {
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                         />
                       </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Status
-                        </label>
-                        <select
-                          value={medication.status}
-                          onChange={(e) =>
-                            updateMedication(index, "status", e.target.value)
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                        >
-                          <option value="active">Active</option>
-                          <option value="completed">Completed</option>
-                          <option value="discontinued">Discontinued</option>
-                        </select>
-                      </div>
+                      {/* removed status option */}
 
                       <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 mb-1">

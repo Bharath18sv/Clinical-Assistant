@@ -10,6 +10,7 @@ import { Notification } from "../models/notification.model.js";
 import { sendSMS } from "../utils/sms.js";
 import { sendWhatsApp } from "../utils/whatsapp.js";
 import { NotificationService } from "../services/notificationService.js";
+import { createMedicationLogsForCurrentPeriod } from "../services/medicationLogScheduler.js";
 
 // Helper function to get notification type based on severity
 const getType = (severity) => {
@@ -26,6 +27,7 @@ const detectADR = async (patientId, medications) => {
     if (!patient) return [];
 
     console.log("medications given : ", medications);
+    console.log("patient details: ", patient);
 
     const response = await axios.post(
       endpoint,
@@ -35,6 +37,7 @@ const detectADR = async (patientId, medications) => {
           age: patient.age,
           allergies: patient.allergies || [],
           chronicConditions: patient.chronicConditions || [],
+          symptoms: patient.symptoms || [],
         },
       },
       { timeout: 5000 }
@@ -42,7 +45,19 @@ const detectADR = async (patientId, medications) => {
 
     console.log("Response from adr service : ", response.data);
     if (response.data.success) {
-      return response.data.interactions || [];
+      // If no interactions found, still check with fallback for cross-reactivity
+      const mlInteractions = response.data.interactions || [];
+      if (mlInteractions.length === 0) {
+        console.log(
+          "No interactions from ML service, checking fallback for cross-reactivity"
+        );
+        const fallbackInteractions = await fallbackADRDetection(
+          patientId,
+          medications
+        );
+        return [...mlInteractions, ...fallbackInteractions];
+      }
+      return mlInteractions;
     }
     return [];
   } catch (error) {
@@ -51,18 +66,28 @@ const detectADR = async (patientId, medications) => {
   }
 };
 
+// Allergy-based contraindications (cross-reactivity data)
+const ALLERGY_CONTRAINDICATIONS = {
+  penicillin: ["amoxicillin", "ampicillin", "piperacillin", "ibuprofen"],
+  sulfa: ["sulfamethoxazole", "sulfasalazine", "furosemide"],
+  aspirin: ["ibuprofen", "naproxen", "ketorolac"],
+  shellfish: ["iodine_contrast", "iodine_supplements"],
+};
+
 const fallbackADRDetection = async (patientId, medications) => {
   const patient = await Patient.findById(patientId);
   if (!patient) return [];
 
   const adrAlerts = [];
-  const allergySet = new Set(
-    (patient.allergies || []).map((a) => a.toLowerCase())
-  );
+
+  // Check for cross-reactivity between patient allergies and prescribed medications
+  const patientAllergies = patient.allergies || [];
 
   for (const med of medications) {
     const medName = (med.name || "").toLowerCase();
-    if (allergySet.has(medName)) {
+
+    // First check for direct allergy
+    if (patientAllergies.some((allergy) => allergy.toLowerCase() === medName)) {
       adrAlerts.push({
         type: "allergy",
         severity: "high",
@@ -70,8 +95,30 @@ const fallbackADRDetection = async (patientId, medications) => {
         message: `Patient is allergic to ${med.name}`,
         recommendation: "Discontinue immediately",
       });
+      continue; // Skip cross-reactivity check if there's a direct allergy
+    }
+
+    // Check for cross-reactivity
+    for (const allergy of patientAllergies) {
+      const allergyLower = allergy.toLowerCase();
+      const contraindicatedMeds = ALLERGY_CONTRAINDICATIONS[allergyLower];
+
+      if (
+        contraindicatedMeds &&
+        contraindicatedMeds.some((m) => m.toLowerCase() === medName)
+      ) {
+        adrAlerts.push({
+          type: "allergy_cross_reactivity",
+          severity: "high",
+          medications: [med.name],
+          message: `Cross-reactivity alert: Patient with ${allergy} allergy may react to ${med.name}`,
+          recommendation: "Use with caution or consider alternative",
+        });
+        break; // Found a cross-reactivity, no need to check other allergies
+      }
     }
   }
+
   return adrAlerts;
 };
 
@@ -129,60 +176,6 @@ const formatADRNotificationData = (doctor, patient, adrAlerts, medications) => {
   };
 };
 
-// Helper function to create scheduled medication logs
-export const createScheduledMedicationLogs = async (prescription) => {
-  const logs = [];
-  const startDate = new Date();
-  const endDate = new Date();
-
-  const maxDuration = Math.max(
-    ...prescription.medications.map((med) => parseInt(med.duration) || 30)
-  );
-  endDate.setDate(startDate.getDate() + maxDuration);
-
-  for (const medication of prescription.medications) {
-    if (medication.status === "active" && medication.schedule?.length > 0) {
-      const duration = parseInt(medication.duration) || 30;
-
-      for (let dayOffset = 0; dayOffset < duration; dayOffset++) {
-        const logDate = new Date(startDate);
-        logDate.setDate(startDate.getDate() + dayOffset);
-
-        for (const timeOfDay of medication.schedule) {
-          const existingLog = await MedicationLog.findOne({
-            prescriptionId: prescription._id,
-            medicationName: medication.name,
-            date: logDate.toISOString().split("T")[0],
-            timeOfDay: timeOfDay,
-          });
-
-          if (!existingLog) {
-            const log = new MedicationLog({
-              prescriptionId: prescription._id,
-              patientId: prescription.patientId,
-              doctorId: prescription.doctorId,
-              medicationName: medication.name,
-              dosage: parseInt(medication.dosage) || 0,
-              date: logDate,
-              timeOfDay: timeOfDay,
-              status: "pending",
-            });
-
-            logs.push(log);
-          }
-        }
-      }
-    }
-  }
-
-  if (logs.length > 0) {
-    await MedicationLog.insertMany(logs);
-    console.log(`Created ${logs.length} scheduled medication logs`);
-  }
-
-  return logs;
-};
-
 // Create Prescription
 export const createPrescription = asyncHandler(async (req, res) => {
   const { title, patientId, medications } = req.body;
@@ -209,6 +202,7 @@ export const createPrescription = asyncHandler(async (req, res) => {
       const hasHighSeverity = adrAlerts.some((a) => a.severity === "high");
 
       // Create notification with severity in title
+      // Notify the patient
       await Notification.create({
         userId: patientId,
         userType: "Patient",
@@ -216,6 +210,21 @@ export const createPrescription = asyncHandler(async (req, res) => {
           ? "🚨 CRITICAL: ADR Alert Detected"
           : "⚠️ ADR Warning",
         message: adrAlerts.map((a) => a.message).join("\n"),
+        type: "ADR_ALERT",
+        prescriptionId: savedPrescription._id,
+        isRead: false,
+      });
+
+      // Also notify the doctor
+      await Notification.create({
+        userId: doctorId,
+        userType: "Doctor",
+        title: hasHighSeverity
+          ? "🚨 CRITICAL ADR Alert - Action Required"
+          : "⚠️ ADR Warning Detected",
+        message: `Patient: ${
+          savedPrescription.patientId.fullname
+        }\n\n${adrAlerts.map((a) => a.message).join("\n")}`,
         type: "ADR_ALERT",
         prescriptionId: savedPrescription._id,
         isRead: false,
@@ -272,7 +281,7 @@ export const createPrescription = asyncHandler(async (req, res) => {
     } else {
       // Only create medication logs if no high-severity ADR is detected
       try {
-        await createScheduledMedicationLogs(savedPrescription);
+        await createMedicationLogsForCurrentPeriod(savedPrescription);
       } catch (error) {
         console.error("Error creating scheduled medication logs:", error);
       }
@@ -503,7 +512,7 @@ export const updatePrescription = asyncHandler(async (req, res) => {
           });
 
           // Create new scheduled logs
-          await createScheduledMedicationLogs(prescription);
+          await createMedicationLogsForCurrentPeriod(prescription);
         } catch (error) {
           console.error("Error updating scheduled medication logs:", error);
         }

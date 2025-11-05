@@ -16,6 +16,9 @@ export const CHRONIC_CONDITIONS = [
   "Epilepsy",
   "Tuberculosis (TB)",
   "Migraine",
+  // Additional conditions from ADR service
+  "Kidney Disease",
+  "Liver Disease",
 ];
 
 export const ALLERGIES = [
@@ -34,6 +37,14 @@ export const ALLERGIES = [
   "Mold",
   "Latex",
   "Penicillin",
+  // Additional allergies from ADR service
+  "Sulfa",
+  "Aspirin",
+  "Ibuprofen",
+  "Naproxen",
+  "Ketorolac",
+  "Iodine Contrast",
+  "Iodine Supplements",
 ];
 
 export const SYMPTOMS = [
@@ -52,6 +63,13 @@ export const SYMPTOMS = [
   "Dizziness",
   "Loss of Taste",
   "Loss of Smell",
+  // Additional symptoms from ADR service
+  "Rash",
+  "Difficulty Breathing",
+  "Severe Nausea",
+  "Chest Pain",
+  "Severe Headache",
+  "Bleeding",
 ];
 
 export const SPECIALIZATION = [

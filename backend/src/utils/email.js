@@ -38,7 +38,7 @@ export async function sendEmail({ to, subject, html }) {
     return { skipped: true, reason: "No recipient email" };
   }
 
-  const from = process.env.EMAIL_FROM || "no-reply@smart-care";
+  const from = "no-reply@smart-care";
   const transporter = getEmailTransporter();
   const info = await transporter.sendMail({ from, to, subject, html });
   return { messageId: info.messageId };

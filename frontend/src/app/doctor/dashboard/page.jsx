@@ -4,6 +4,7 @@ import { useState, useEffect, useContext } from "react";
 import { useRouter } from "next/navigation";
 import { AuthContext } from "@/context/AuthContext";
 import { getDoctorAppointments, viewMyPatients } from "@/utils/api";
+import { getUnreadNotifications } from "@/utils/api/notification.api";
 import Navbar from "@/components/Navbar";
 import {
   Calendar,
@@ -19,6 +20,9 @@ import {
   TrendingUp,
   MessageSquare,
   Pill,
+  Bell,
+  AlertCircle,
+  ArrowRight,
 } from "lucide-react";
 import HealthCard from "@/components/HealthCard";
 import LoadingSpinner from "@/components/LoadingSpinner";
@@ -32,6 +36,7 @@ export default function DoctorDashboardPage() {
   const [patients, setPatients] = useState([]);
   const [appointments, setAppointments] = useState([]);
   const [refillRequests, setRefillRequests] = useState([]);
+  const [unreadNotifications, setUnreadNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Get doctor data directly from context
@@ -56,6 +61,19 @@ export default function DoctorDashboardPage() {
     } catch (error) {
       console.error("Error fetching appointments:", error);
       setAppointments([]);
+    }
+  };
+
+  const fetchUnreadNotifications = async () => {
+    try {
+      const response = await getUnreadNotifications();
+      console.log("Unread notifications fetched:", response);
+      if (response && response.data) {
+        setUnreadNotifications(response.data);
+      }
+    } catch (error) {
+      console.error("Error fetching unread notifications:", error);
+      setUnreadNotifications([]);
     }
   };
 
@@ -109,6 +127,45 @@ export default function DoctorDashboardPage() {
     }
   };
 
+  const getNotificationIcon = (type) => {
+    switch (type) {
+      case "ADR_ALERT":
+        return <AlertCircle className="h-5 w-5" />;
+      case "APPOINTMENT":
+        return <Calendar className="h-5 w-5" />;
+      case "PRESCRIPTION":
+        return <Pill className="h-5 w-5" />;
+      default:
+        return <Bell className="h-5 w-5" />;
+    }
+  };
+
+  const getNotificationColor = (type) => {
+    switch (type) {
+      case "ADR_ALERT":
+        return "bg-red-50 border-red-200 hover:bg-red-100";
+      case "APPOINTMENT":
+        return "bg-blue-50 border-blue-200 hover:bg-blue-100";
+      case "PRESCRIPTION":
+        return "bg-green-50 border-green-200 hover:bg-green-100";
+      default:
+        return "bg-gray-50 border-gray-200 hover:bg-gray-100";
+    }
+  };
+
+  const getNotificationIconColor = (type) => {
+    switch (type) {
+      case "ADR_ALERT":
+        return "bg-red-100 text-red-600";
+      case "APPOINTMENT":
+        return "bg-blue-100 text-blue-600";
+      case "PRESCRIPTION":
+        return "bg-green-100 text-green-600";
+      default:
+        return "bg-gray-100 text-gray-600";
+    }
+  };
+
   // Single useEffect to fetch all data
   useEffect(() => {
     const fetchAllData = async () => {
@@ -127,7 +184,11 @@ export default function DoctorDashboardPage() {
       setLoading(true);
 
       try {
-        await Promise.all([fetchPatients(), getAppointments()]);
+        await Promise.all([
+          fetchPatients(),
+          getAppointments(),
+          fetchUnreadNotifications(),
+        ]);
       } catch (error) {
         console.error("Error loading dashboard data:", error);
       } finally {
@@ -191,6 +252,87 @@ export default function DoctorDashboardPage() {
           </p>
         </div>
 
+        {/* Unread Notifications Section - Only show if there are unread notifications */}
+        {unreadNotifications.length > 0 && (
+          <div className="mb-8">
+            <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-2xl shadow-lg border border-orange-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-orange-100 rounded-lg">
+                    <Bell className="h-6 w-6 text-orange-600 animate-pulse" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900">
+                      Unread Notifications
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      You have {unreadNotifications.length} unread notification
+                      {unreadNotifications.length !== 1 ? "s" : ""}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => router.push("/doctor/notifications")}
+                  className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-medium shadow-md hover:shadow-lg"
+                >
+                  View All
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {unreadNotifications.slice(0, 3).map((notification) => (
+                  <div
+                    key={notification._id}
+                    className={`border rounded-lg p-4 transition-all cursor-pointer ${getNotificationColor(
+                      notification.type
+                    )}`}
+                    onClick={() => router.push("/doctor/notifications")}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div
+                        className={`p-2 rounded-lg flex-shrink-0 ${getNotificationIconColor(
+                          notification.type
+                        )}`}
+                      >
+                        {getNotificationIcon(notification.type)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-gray-900 mb-1">
+                          {notification.title}
+                        </h4>
+                        <p className="text-sm text-gray-700 line-clamp-2">
+                          {notification.message}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-2">
+                          {new Date(notification.createdAt).toLocaleString()}
+                        </p>
+                      </div>
+                      {notification.type === "ADR_ALERT" && (
+                        <div className="flex-shrink-0">
+                          <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-bold rounded-full animate-pulse">
+                            URGENT
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                {unreadNotifications.length > 3 && (
+                  <button
+                    onClick={() => router.push("/doctor/notifications")}
+                    className="w-full text-center text-sm text-orange-700 hover:text-orange-800 font-medium py-2 hover:bg-orange-100 rounded-lg transition-colors"
+                  >
+                    View {unreadNotifications.length - 3} more notification
+                    {unreadNotifications.length - 3 !== 1 ? "s" : ""}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Overview Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
           <HealthCard
@@ -215,9 +357,9 @@ export default function DoctorDashboardPage() {
             subtitle="Ongoing"
           />
           <HealthCard
-            icon={MessageSquare}
-            title="Pending Messages"
-            value="3"
+            icon={Bell}
+            title="Notifications"
+            value={unreadNotifications.length}
             color="orange"
             subtitle="Unread"
           />

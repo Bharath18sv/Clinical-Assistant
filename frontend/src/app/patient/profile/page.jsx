@@ -42,7 +42,6 @@ const selectValueToArray = (selectValue) => {
 
 export default function PatientProfile() {
   const { user, authLoading, setUser } = useContext(AuthContext);
-  // console.log("user : ", user);
   const [profile, setProfile] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -75,7 +74,7 @@ export default function PatientProfile() {
   useEffect(() => {
     if (user?.user) {
       const userData = user.user;
-      console.log("profile set to : ", userData);
+      console.log("Setting profile to:", userData);
       setProfile(userData);
 
       // Reset form with user data
@@ -123,26 +122,44 @@ export default function PatientProfile() {
         chronicConditions: selectValueToArray(data.chronicConditions),
         symptoms: selectValueToArray(data.symptoms),
       };
+
       console.log("Data to update:", dataToUpdate);
       const response = await updatePatientProfile(dataToUpdate);
       console.log("Profile update response:", response);
 
-      if (response.data.message) {
-        const updatedUser = response.data?.user || {
+      if (response?.data) {
+        // Get the updated user data from response or merge with existing
+        const updatedUser = response.data.user || {
           ...profile,
           ...dataToUpdate,
         };
+
+        console.log("Updated user data:", updatedUser);
+
+        // Update local profile state
         setProfile(updatedUser);
 
-        // Update the auth context with new user data
-        if (setUser) {
-          setUser({
-            ...user,
-            data: {
-              ...user.data,
-              user: updatedUser,
-            },
-          });
+        // CRITICAL FIX: Update auth context correctly
+        // The user object structure is: { user: userData, accessToken: token }
+        const newUserContext = {
+          ...user,
+          user: updatedUser, // Update the user object directly, not user.data.user
+        };
+
+        console.log("Setting new user context:", newUserContext);
+        setUser(newUserContext);
+
+        // Also update localStorage to persist the changes
+        try {
+          const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+          const updatedStoredUser = {
+            ...storedUser,
+            user: updatedUser,
+          };
+          localStorage.setItem("user", JSON.stringify(updatedStoredUser));
+          console.log("Updated localStorage with new user data");
+        } catch (error) {
+          console.error("Error updating localStorage:", error);
         }
 
         // Reset form with updated data
@@ -168,7 +185,7 @@ export default function PatientProfile() {
         setIsEditing(false);
         toast.success("Profile updated successfully!");
       } else {
-        toast.error(response.data.message || "Failed to update profile");
+        toast.error(response?.message || "Failed to update profile");
       }
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -229,7 +246,7 @@ export default function PatientProfile() {
   }
 
   // Use profile if available, otherwise use user data directly
-  const displayData = profile || user.data.user;
+  const displayData = profile || user?.user;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-8 px-4">

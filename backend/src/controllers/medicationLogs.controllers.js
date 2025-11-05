@@ -922,3 +922,312 @@ export const getMedicationLogById = async (logId) => {
     throw error;
   }
 };
+
+/**
+ * Update medication log status directly from email (public endpoint)
+ * GET /api/medication-logs/email-update
+ * No auth required - secured with unique token
+ */
+export const updateMedicationLogFromEmail = async (req, res) => {
+  try {
+    const { prescriptionId, medicationName, timeOfDay, date, status, token } =
+      req.query;
+
+    // Decode the medication name in case it was URL encoded
+    const decodedMedicationName = medicationName
+      ? decodeURIComponent(medicationName)
+      : medicationName;
+
+    // Log the received parameters for debugging
+    console.log("Received parameters:", {
+      prescriptionId,
+      medicationName: decodedMedicationName,
+      timeOfDay,
+      date,
+      status,
+      token,
+    });
+
+    // Validate required parameters
+    if (
+      !prescriptionId ||
+      !decodedMedicationName ||
+      !timeOfDay ||
+      !date ||
+      !status ||
+      !token
+    ) {
+      console.log("Missing required parameters");
+      return res.status(400).send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Invalid Request</title>
+          <style>
+            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background-color: #f5f5f5; }
+            .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+            .error { color: #f44336; }
+            .button { display: inline-block; padding: 12px 24px; background-color: #2196F3; color: white; text-decoration: none; border-radius: 5px; margin: 10px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1 class="error">⚠ Invalid Request</h1>
+            <p>Missing required parameters. Please make sure you clicked a valid medication log button.</p>
+            <a href="${
+              process.env.FRONTEND_URL ||
+              process.env.APP_URL ||
+              "http://localhost:3000"
+            }" class="button">Return to Dashboard</a>
+          </div>
+        </body>
+        </html>
+      `);
+    }
+
+    // Validate status
+    if (!["taken", "missed", "skipped"].includes(status)) {
+      console.log("Invalid status:", status);
+      return res.status(400).send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Invalid Status</title>
+          <style>
+            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background-color: #f5f5f5; }
+            .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+            .error { color: #f44336; }
+            .button { display: inline-block; padding: 12px 24px; background-color: #2196F3; color: white; text-decoration: none; border-radius: 5px; margin: 10px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1 class="error">⚠ Invalid Status</h1>
+            <p>Invalid status value. Must be 'taken', 'missed', or 'skipped'.</p>
+            <a href="${
+              process.env.FRONTEND_URL ||
+              process.env.APP_URL ||
+              "http://localhost:3000"
+            }" class="button">Return to Dashboard</a>
+          </div>
+        </body>
+        </html>
+      `);
+    }
+
+    // Parse the date - handle different formats and use consistent format
+    let logDate;
+    try {
+      logDate = new Date(date);
+      if (isNaN(logDate.getTime())) {
+        throw new Error("Invalid date");
+      }
+    } catch (dateError) {
+      console.error("Date parsing error:", dateError);
+      return res.status(400).send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Invalid Date</title>
+          <style>
+            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background-color: #f5f5f5; }
+            .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+            .error { color: #f44336; }
+            .button { display: inline-block; padding: 12px 24px; background-color: #2196F3; color: white; text-decoration: none; border-radius: 5px; margin: 10px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1 class="error">⚠ Invalid Date Format</h1>
+            <p>The date format in the link is invalid. Please try updating your medication status from your dashboard.</p>
+            <a href="${
+              process.env.FRONTEND_URL ||
+              process.env.APP_URL ||
+              "http://localhost:3000"
+            }" class="button">Return to Dashboard</a>
+          </div>
+        </body>
+        </html>
+      `);
+    }
+
+    // Create a date range for the query to handle timezone differences
+    const targetDate = new Date(logDate);
+    targetDate.setHours(0, 0, 0, 0);
+
+    const startOfDay = new Date(targetDate);
+    const endOfDay = new Date(targetDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    // Query for the medication log using a date range to handle timezone differences
+    const log = await MedicationLog.findOne({
+      prescriptionId,
+      medicationName: decodedMedicationName,
+      timeOfDay,
+      date: { $gte: startOfDay, $lte: endOfDay },
+    });
+
+    if (!log) {
+      // Let's also try a more general query to see what logs exist
+      const allLogs = await MedicationLog.find({
+        prescriptionId,
+        medicationName: decodedMedicationName,
+      }).select("prescriptionId medicationName timeOfDay date status");
+
+      console.log("All logs for this prescription and medication:", allLogs);
+
+      // Also try querying without the date to see if we can find any logs at all
+      const allLogsAnyDate = await MedicationLog.find({
+        prescriptionId,
+        medicationName: decodedMedicationName,
+        timeOfDay,
+      }).select("prescriptionId medicationName timeOfDay date status");
+
+      console.log(
+        "All logs for this prescription, medication, and timeOfDay:",
+        allLogsAnyDate
+      );
+
+      return res.status(404).send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Log Not Found</title>
+          <style>
+            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background-color: #f5f5f5; }
+            .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+            .error { color: #f44336; }
+            .button { display: inline-block; padding: 12px 24px; background-color: #2196F3; color: white; text-decoration: none; border-radius: 5px; margin: 10px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1 class="error">⚠ Medication Log Not Found</h1>
+            <p>We couldn't find the medication log you're trying to update. It may have already been updated or the link may be expired.</p>
+            <p><small>Debug info: Looking for ${decodedMedicationName} at ${timeOfDay} on ${logDate.toDateString()}</small></p>
+            <a href="${
+              process.env.FRONTEND_URL ||
+              process.env.APP_URL ||
+              "http://localhost:3000"
+            }" class="button">Return to Dashboard</a>
+          </div>
+        </body>
+        </html>
+      `);
+    }
+
+    // Generate a token based on the same parameters used in the email template and verify it matches
+    // Use the same date format as in the email template
+    const dateForToken = targetDate.toISOString().split("T")[0]; // YYYY-MM-DD format
+    const crypto = await import("crypto");
+    const baseString = `${prescriptionId}${decodedMedicationName}${timeOfDay}${dateForToken}`;
+    const expectedToken = crypto
+      .createHash("sha256")
+      .update(`${baseString}${status}${process.env.JWT_SECRET}`)
+      .digest("hex");
+
+    if (token !== expectedToken) {
+      console.log(
+        "Token mismatch. Expected:",
+        expectedToken,
+        "Received:",
+        token
+      );
+      console.log("Parameters used for token generation:", {
+        prescriptionId,
+        medicationName: decodedMedicationName,
+        timeOfDay,
+        dateForToken,
+        status,
+      });
+      return res.status(403).send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Invalid Token</title>
+          <style>
+            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background-color: #f5f5f5; }
+            .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+            .error { color: #f44336; }
+            .button { display: inline-block; padding: 12px 24px; background-color: #2196F3; color: white; text-decoration: none; border-radius: 5px; margin: 10px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1 class="error">⚠ Invalid Token</h1>
+            <p>This link is invalid or has expired. Please try updating your medication status from your dashboard.</p>
+            <a href="${
+              process.env.FRONTEND_URL ||
+              process.env.APP_URL ||
+              "http://localhost:3000"
+            }" class="button">Return to Dashboard</a>
+          </div>
+        </body>
+        </html>
+      `);
+    }
+
+    // Update the log
+    log.status = status;
+    log.takenAt = status === "taken" ? new Date() : null;
+
+    await log.save();
+
+    // Return HTML response
+    res.set("Content-Type", "text/html");
+    res.status(200).send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Medication Status Updated</title>
+        <style>
+          body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background-color: #f5f5f5; }
+          .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+          .success { color: #4CAF50; }
+          .button { display: inline-block; padding: 12px 24px; background-color: #2196F3; color: white; text-decoration: none; border-radius: 5px; margin: 10px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h1 class="success">✓ Medication Status Updated</h1>
+          <p>Your medication "<strong>${decodedMedicationName}</strong>" for <strong>${timeOfDay}</strong> on <strong>${logDate.toLocaleDateString()}</strong> has been marked as <strong>${status}</strong>.</p>
+          <p>Thank you for keeping your medication log up to date!</p>
+          <a href="${
+            process.env.FRONTEND_URL ||
+            process.env.APP_URL ||
+            "http://localhost:3000"
+          }" class="button">Return to Dashboard</a>
+        </div>
+      </body>
+      </html>
+    `);
+  } catch (error) {
+    console.error("Update medication log from email error:", error);
+    res.status(500).send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Error</title>
+        <style>
+          body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background-color: #f5f5f5; }
+          .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+          .error { color: #f44336; }
+          .button { display: inline-block; padding: 12px 24px; background-color: #2196F3; color: white; text-decoration: none; border-radius: 5px; margin: 10px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h1 class="error">⚠ System Error</h1>
+          <p>An error occurred while updating your medication status. Please try again later or update from your dashboard.</p>
+          <p><small>Error: ${error.message}</small></p>
+          <a href="${
+            process.env.FRONTEND_URL ||
+            process.env.APP_URL ||
+            "http://localhost:3000"
+          }" class="button">Return to Dashboard</a>
+        </div>
+      </body>
+      </html>
+    `);
+  }
+};

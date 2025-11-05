@@ -20,6 +20,7 @@ import {
   Activity,
   AlertCircle,
   Pill,
+  Bell,
 } from "lucide-react";
 import { AuthContext } from "@/context/AuthContext";
 import toast from "react-hot-toast";
@@ -64,6 +65,11 @@ export default function DoctorSidebar() {
       name: "Home",
       href: "/doctor/dashboard",
       icon: LayoutDashboard,
+    },
+    {
+      name: "Notifications",
+      href: "/doctor/notifications",
+      icon: Bell,
     },
   ];
 
@@ -119,7 +125,7 @@ export default function DoctorSidebar() {
         },
         {
           name: "Symptom Logs",
-          href: "/doctor/logs/symptom",
+          href: "/doctor/logs/symptoms",
           icon: AlertCircle,
         },
       ],

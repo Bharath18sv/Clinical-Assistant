@@ -514,7 +514,7 @@ export default function PatientAllDoctors() {
                   <button
                     onClick={() => {
                       setSelectedDoctor(null);
-                      router.push(`/patient/appointments`);
+                      router.push(`/patient/appointment`);
                     }}
                     className="flex-1 bg-gradient-to-r from-green-600 to-green-700 text-white py-4 px-6 rounded-xl font-semibold hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-md"
                   >

@@ -31,7 +31,9 @@
     "src/app/doctor/patient/add/page.jsx",
     "src/app/patient/prescriptions/[id]/page.jsx",
     "src/app/doctor/logs/medications/page.jsx",
-    "src/app/patient/notification/page.jsx"
+    "src/app/patient/notification/page.jsx",
+    "src/app/doctor/logs/symptoms/page.jsx",
+    "src/app/doctor/notifications/page.jsx"
   ],
   "exclude": ["node_modules"]
 }

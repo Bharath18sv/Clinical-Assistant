@@ -82,17 +82,19 @@ export default function PrescriptionDetailPage() {
 
   const loadSavedReminders = () => {
     try {
-      const storedReminders = JSON.parse(localStorage.getItem('medicationReminders') || '[]');
-      const prescriptionReminders = storedReminders.find(
-        r => r.prescriptionId === prescriptionId
+      const storedReminders = JSON.parse(
+        localStorage.getItem("medicationReminders") || "[]"
       );
-      
+      const prescriptionReminders = storedReminders.find(
+        (r) => r.prescriptionId === prescriptionId
+      );
+
       if (prescriptionReminders) {
         setSavedReminders(prescriptionReminders.reminders || []);
-        console.log('Loaded saved reminders:', prescriptionReminders.reminders);
+        console.log("Loaded saved reminders:", prescriptionReminders.reminders);
       }
     } catch (error) {
-      console.error('Error loading saved reminders:', error);
+      console.error("Error loading saved reminders:", error);
     }
   };
 
@@ -121,6 +123,11 @@ export default function PrescriptionDetailPage() {
     } catch (err) {
       console.error("Failed to fetch medication logs", err);
     }
+  };
+
+  const handleLogMedicationClick = (medication) => {
+    setSelectedMedication(medication);
+    setShowLogModal(true);
   };
 
   const handleAddLog = async (e) => {
@@ -154,16 +161,16 @@ export default function PrescriptionDetailPage() {
 
   const handleSaveReminders = async (reminders) => {
     try {
-      console.log('Saving reminders:', reminders);
-      console.log('Prescription ID:', prescriptionId);
-      console.log('Patient ID:', patientId);
-      
+      console.log("Saving reminders:", reminders);
+      console.log("Prescription ID:", prescriptionId);
+      console.log("Patient ID:", patientId);
+
       // Validate reminders data
       if (!reminders || reminders.length === 0) {
-        alert('Please add at least one reminder before saving.');
+        alert("Please add at least one reminder before saving.");
         return;
       }
-      
+
       // Store reminders in localStorage
       // Format: medicationReminders = [{ prescriptionId, patientId, reminders, createdAt }]
       const reminderData = {
@@ -172,26 +179,35 @@ export default function PrescriptionDetailPage() {
         reminders,
         createdAt: new Date().toISOString(),
       };
-      
+
       // Get existing reminders
-      const existingReminders = JSON.parse(localStorage.getItem('medicationReminders') || '[]');
-      
+      const existingReminders = JSON.parse(
+        localStorage.getItem("medicationReminders") || "[]"
+      );
+
       // Remove existing reminders for this prescription (update if exists)
-      const updatedReminders = existingReminders.filter(r => r.prescriptionId !== prescriptionId);
-      
+      const updatedReminders = existingReminders.filter(
+        (r) => r.prescriptionId !== prescriptionId
+      );
+
       // Add new reminders
       updatedReminders.push(reminderData);
-      
+
       // Save to localStorage
-      localStorage.setItem('medicationReminders', JSON.stringify(updatedReminders));
-      
-      console.log('Reminders saved to localStorage:', updatedReminders);
-      alert('Reminders saved successfully! You will receive notifications at the scheduled times.');
-      
+      localStorage.setItem(
+        "medicationReminders",
+        JSON.stringify(updatedReminders)
+      );
+
+      console.log("Reminders saved to localStorage:", updatedReminders);
+      alert(
+        "Reminders saved successfully! You will receive notifications at the scheduled times."
+      );
+
       // Reload saved reminders to display them
       loadSavedReminders();
     } catch (error) {
-      console.error('Error saving reminders:', error);
+      console.error("Error saving reminders:", error);
       alert(`Failed to save reminders: ${error.message}`);
     }
   };
@@ -359,8 +375,12 @@ export default function PrescriptionDetailPage() {
                 <Bell className="h-5 w-5 text-purple-600" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">Your Medication Reminders</h3>
-                <p className="text-sm text-gray-600">{savedReminders.length} reminder(s) set</p>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Your Medication Reminders
+                </h3>
+                <p className="text-sm text-gray-600">
+                  {savedReminders.length} reminder(s) set
+                </p>
               </div>
             </div>
             <button
@@ -370,7 +390,7 @@ export default function PrescriptionDetailPage() {
               Edit Reminders
             </button>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {savedReminders.map((reminder, index) => (
               <div
@@ -383,12 +403,18 @@ export default function PrescriptionDetailPage() {
               >
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <Clock className={`h-4 w-4 ${reminder.isEnabled ? "text-purple-600" : "text-gray-400"}`} />
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                      reminder.isEnabled
-                        ? "bg-purple-100 text-purple-800"
-                        : "bg-gray-100 text-gray-600"
-                    }`}>
+                    <Clock
+                      className={`h-4 w-4 ${
+                        reminder.isEnabled ? "text-purple-600" : "text-gray-400"
+                      }`}
+                    />
+                    <span
+                      className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                        reminder.isEnabled
+                          ? "bg-purple-100 text-purple-800"
+                          : "bg-gray-100 text-gray-600"
+                      }`}
+                    >
                       {reminder.isEnabled ? "Active" : "Disabled"}
                     </span>
                   </div>
@@ -397,7 +423,8 @@ export default function PrescriptionDetailPage() {
                   {reminder.medicationName}
                 </h4>
                 <p className="text-sm text-gray-600 mb-2">
-                  {reminder.timeOfDay.charAt(0).toUpperCase() + reminder.timeOfDay.slice(1)}
+                  {reminder.timeOfDay.charAt(0).toUpperCase() +
+                    reminder.timeOfDay.slice(1)}
                 </p>
                 {reminder.days && reminder.days.length > 0 && (
                   <div className="flex flex-wrap gap-1">
@@ -608,7 +635,8 @@ export default function PrescriptionDetailPage() {
                     {prescription?.doctorId?.fullname || "Unknown Doctor"}
                   </p>
                   <p className="text-sm text-gray-600">
-                    {prescription?.doctorId?.specialization?.join(", ") || "General Medicine"}
+                    {prescription?.doctorId?.specialization?.join(", ") ||
+                      "General Medicine"}
                   </p>
                 </div>
               </div>
@@ -628,13 +656,17 @@ export default function PrescriptionDetailPage() {
                   <Plus className="h-4 w-4" />
                   Log Medication
                 </button>
-                <button 
+                <button
                   onClick={() => setShowReminderModal(true)}
-                  className="w-full bg-blue-100 text-blue-700 py-2 px-4 rounded-lg hover:bg-blue-200 transition-colors"
+                  disabled={!hasActiveMedications}
+                  className="w-full bg-blue-100 text-blue-700 py-2 px-4 rounded-lg hover:bg-blue-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Set Reminder
                 </button>
-                <button className="w-full bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors">
+                <button
+                  disabled={!hasActiveMedications}
+                  className="w-full bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   Request Refill
                 </button>
               </div>
