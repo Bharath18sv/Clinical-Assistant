@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { getAllPatientsForAdmin } from "@/utils/api";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
+import LoadingSpinner from "@/components/LoadingSpinner";
+
 
 const AdminPatientsPage = () => {
   const [patients, setPatients] = useState([]);

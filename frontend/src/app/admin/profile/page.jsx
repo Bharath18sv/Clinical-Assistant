@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useContext } from "react";
 import { AuthContext } from "@/context/AuthContext";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 const AdminProfilePage = () => {
   const { user, authLoading } = useContext(AuthContext);

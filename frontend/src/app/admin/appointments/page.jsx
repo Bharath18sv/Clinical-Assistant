@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { getAllAppointments } from "@/utils/api/appointments.api";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 const AdminAppointmentsPage = () => {
   const [appointments, setAppointments] = useState([]);
