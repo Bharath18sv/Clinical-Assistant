@@ -12,7 +12,7 @@ export const createMedicationLogsForCurrentPeriod = async (
 ) => {
   // Get current time of day (morning, afternoon, evening, night)
   const TIME_WINDOWS = {
-    morning: { startHour: 6, endHour: 10 },
+    morning: { startHour: 6, endHour: 11 },
     afternoon: { startHour: 12, endHour: 16 },
     evening: { startHour: 17, endHour: 20 },
     night: { startHour: 21, endHour: 23 },

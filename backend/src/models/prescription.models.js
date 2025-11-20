@@ -9,12 +9,12 @@ const PrescriptionSchema = new mongoose.Schema(
       trim: true,
     },
     patientId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "Patient",
       required: true,
     },
     doctorId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "Doctor",
       required: true,
     },

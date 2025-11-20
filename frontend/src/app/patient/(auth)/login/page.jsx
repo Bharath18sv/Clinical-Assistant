@@ -28,7 +28,7 @@ export default function LoginPage() {
     }
   }, [router]);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
@@ -52,7 +52,7 @@ export default function LoginPage() {
       toast.success("Login successful! Redirecting...");
       router.push("/patient/dashboard");
       console.log("User logged in");
-    } catch (err: any) {
+    } catch (err) {
       console.log(err.message);
       setError(err.message || "Login failed. Please check your credentials.");
     } finally {
@@ -67,7 +67,7 @@ export default function LoginPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Link href="/" className="flex items-center">
-              <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              <h1 className="text-xl font-bold bg-linear-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                 Smart Care Assistant
               </h1>
             </Link>
@@ -88,7 +88,7 @@ export default function LoginPage() {
           <div className="bg-white border border-gray-200 rounded-2xl shadow-xl p-8">
             {/* Header */}
             <div className="text-center mb-8">
-              <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-linear-to-r from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <svg
                   className="w-8 h-8 text-white"
                   fill="none"
@@ -234,7 +234,7 @@ export default function LoginPage() {
               {error && (
                 <div className="bg-red-50 border border-red-200 rounded-xl p-4">
                   <div className="flex">
-                    <div className="flex-shrink-0">
+                    <div className="shrink-0">
                       <svg
                         className="h-5 w-5 text-red-400"
                         fill="none"
@@ -260,7 +260,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
+                className="w-full bg-linear-to-r from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
               >
                 {isLoading ? (
                   <div className="flex items-center justify-center">
