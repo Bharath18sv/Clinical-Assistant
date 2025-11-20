@@ -1,0 +1,47 @@
+version: "3.9"
+
+services:
+  backend:
+    build: ./backend
+    container_name: smartcare-backend
+    ports:
+      - "5001:5001"
+    environment:
+      - NODE_ENV=production
+      - MONGO_URI=mongodb://mongodb:27017/SCA
+      - PORT=5001
+    depends_on:
+      - mongodb
+    restart: always
+    networks:
+      - smartcare-network
+
+  mongodb:
+    image: mongo:6
+    container_name: smartcare-mongodb
+    volumes:
+      - mongodb_data:/data/db
+    ports:
+      - "27017:27017"
+    restart: always
+    networks:
+      - smartcare-network
+
+  ml-adr-service:
+    build: ./ml-adr-service
+    container_name: smartcare-ml-adr
+    ports:
+      - "6001:6001"
+    environment:
+      - FLASK_ENV=production
+      - PORT=6001
+    restart: always
+    networks:
+      - smartcare-network
+
+networks:
+  smartcare-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
