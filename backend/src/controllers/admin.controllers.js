@@ -453,6 +453,67 @@ const getDashboardStats = asyncHandler(async (req, res) => {
     );
 });
 
+// Get all patients with filtering and pagination
+const getAllPatients = asyncHandler(async (req, res) => {
+  try {
+    const { page = 1, limit = 10, status, search } = req.query;
+
+    // Build filter object
+    let filter = {};
+
+    // Status filter (active/inactive)
+    if (status) {
+      if (status === "active") {
+        filter.isActive = true;
+      } else if (status === "inactive") {
+        filter.isActive = false;
+      }
+    }
+
+    // Search filter (by name or email)
+    if (search) {
+      filter.$or = [
+        { fullname: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    // Calculate pagination
+    const skip = (page - 1) * limit;
+
+    // Get patients with filter and pagination
+    const patients = await Patient.find(filter)
+      .select("-password -refreshToken -emailVerificationCodeHash")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    // Get total count for pagination
+    const totalPatients = await Patient.countDocuments(filter);
+    const totalPages = Math.ceil(totalPatients / limit);
+
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          patients,
+          pagination: {
+            currentPage: parseInt(page),
+            totalPages,
+            totalPatients,
+            hasNextPage: page < totalPages,
+            hasPrevPage: page > 1,
+          },
+        },
+        "Patients fetched successfully"
+      )
+    );
+  } catch (error) {
+    console.error("Error fetching patients:", error);
+    throw new ApiError(500, "Failed to fetch patients");
+  }
+});
+
 export {
   registerAdmin,
   loginAdmin,
@@ -466,4 +527,5 @@ export {
   deleteDoctor,
   getDashboardStats,
   getAllAppointments,
+  getAllPatients,
 };

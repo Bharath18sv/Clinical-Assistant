@@ -61,6 +61,11 @@ export default function AdminSidebar() {
       href: "/admin/dashboard",
       icon: LayoutDashboard,
     },
+    {
+      name: "Profile",
+      href: "/admin/profile",
+      icon: User,
+    },
   ];
 
   const expandableMenus = [
@@ -83,6 +88,7 @@ export default function AdminSidebar() {
       name: "Patients",
       icon: UserCheck,
       subLinks: [
+        { name: "All Patients", href: "/admin/patients", icon: UserCheck },
         { name: "Active", href: "/admin/patients/active", icon: CheckCircle },
         { name: "Inactive", href: "/admin/patients/inactive", icon: XCircle },
       ],
@@ -92,11 +98,28 @@ export default function AdminSidebar() {
       name: "Appointments",
       icon: Calendar,
       subLinks: [
+        {
+          name: "All Appointments",
+          href: "/admin/appointments",
+          icon: Calendar,
+        },
         { name: "Active", href: "/admin/appointments/active", icon: Clock },
         {
           name: "Completed",
           href: "/admin/appointments/completed",
           icon: CheckCircle,
+        },
+      ],
+    },
+    {
+      id: "reports",
+      name: "Reports",
+      icon: LayoutDashboard,
+      subLinks: [
+        {
+          name: "Export Reports",
+          href: "/admin/reports",
+          icon: LayoutDashboard,
         },
       ],
     },

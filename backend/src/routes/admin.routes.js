@@ -12,6 +12,7 @@ import {
   deleteDoctor,
   getDashboardStats,
   getAllAppointments,
+  getAllPatients,
 } from "../controllers/admin.controllers.js";
 import {
   verifyAdminJWT,
@@ -76,5 +77,8 @@ router.get(
   checkPermission("manageAppointments"),
   getAllAppointments
 );
+
+// Patients
+router.get("/patients", checkPermission("managePatients"), getAllPatients);
 
 export default router;

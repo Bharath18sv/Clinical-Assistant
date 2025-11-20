@@ -274,7 +274,7 @@ export default function AdminLoginPage() {
           </div>
 
           {/* Demo Credentials */}
-          <div className="mt-8 bg-blue-50 border border-blue-200 rounded-xl p-4">
+          {/* <div className="mt-8 bg-blue-50 border border-blue-200 rounded-xl p-4">
             <h3 className="text-sm font-semibold text-blue-900 mb-2">
               Demo Credentials:
             </h3>
@@ -286,7 +286,7 @@ export default function AdminLoginPage() {
                 <strong>Password:</strong> admin123
               </p>
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

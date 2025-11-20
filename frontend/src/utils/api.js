@@ -400,6 +400,28 @@ export const addDoctor = async (doctorData) => {
   }
 };
 
+// Get current admin profile
+export const getCurrentAdmin = async () => {
+  try {
+    const response = await API.get("/admin/me");
+    return response.data.data;
+  } catch (error) {
+    console.error("Error fetching admin profile:", error);
+    throw error;
+  }
+};
+
+// Get all patients for admin with filtering and pagination
+export const getAllPatientsForAdmin = async (params = {}) => {
+  try {
+    const response = await API.get("/admin/patients", { params });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching patients:", error);
+    throw error;
+  }
+};
+
 //presecription apis
 export const updatePrescription = async (prescriptionId, prescriptionData) => {
   try {
