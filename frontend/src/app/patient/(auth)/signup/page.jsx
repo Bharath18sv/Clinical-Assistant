@@ -154,23 +154,24 @@ export default function PatientSignupPage() {
     console.log("formatted data: ", formattedData);
     setLoading(true);
     try {
-      // const res = await API.post("/patients/register", formattedData);
       const res = await registerPatient(formattedData);
       setMessage("Patient registered successfully!");
-      const userData = res.data;
+      const userData = res.data.data;
       console.log("userData", userData);
       // Store user data and email for verification
       localStorage.setItem("user", JSON.stringify(userData));
       localStorage.setItem("pendingVerificationEmail", formattedData.email);
-      login(userData); // Update context
+      login(userData);
       reset();
       toast.success("Registration successful! Please verify your email.");
       router.push(
         `/patient/verify-email?email=${encodeURIComponent(formattedData.email)}`
       );
     } catch (error) {
-      console.error(error);
-      setMessage(error.message || "Registration failed. Please try again.");
+      console.error("Registration error:", error);
+      const errorMsg = error.response?.data?.message || error.message || "Registration failed. Please try again.";
+      setMessage(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }

@@ -196,16 +196,19 @@ export default function DoctorAppointments() {
                       src={
                         appointment.patientId?.profilePic
                           ? appointment.patientId.profilePic
-                          : appointment.patientId?.gender === "female"
+                          : appointment.patientId?.gender === "Female"
                           ? "/default-female.png"
                           : "/default-male.png"
                       }
                       alt={appointment.patientId?.fullname || "Patient"}
                       className="h-10 w-10 rounded-full object-cover border border-gray-200"
+                      onError={(e) => {
+                        e.target.src = "/default-male.png";
+                      }}
                     />
                     <div>
                       <div className="font-medium text-gray-900">{appointment.patientId?.fullname || "Unknown Patient"}</div>
-                      <div className="text-xs text-gray-500">{appointment.patientId?.email || ""}</div>
+                      <div className="text-xs text-gray-500">{appointment.patientId?.email || "No email"}</div>
                     </div>
                   </div>
 

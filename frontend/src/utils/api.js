@@ -156,10 +156,11 @@ export const registerPatient = async (data) => {
 
   try {
     const registeredPatient = await API.post("/patients/register", formData);
-    return registeredPatient.data;
+    return registeredPatient;
   } catch (error) {
-    console.error("❌ Error:", error);
-    return null;
+    console.error("❌ Registration Error:", error);
+    console.error("❌ Error Response:", error.response?.data);
+    throw error;
   }
 };
 
