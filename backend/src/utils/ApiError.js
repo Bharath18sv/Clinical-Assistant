@@ -10,7 +10,7 @@ class ApiError extends Error {
     this.statusCode = statusCode;
     this.data = null;
     this.message = message;
-    this.success = false;
+    this.success = statusCode < 400 ? true : false; // Explicitly set success based on status code
     this.errors = errors;
     this.additionalData = additionalData;
 

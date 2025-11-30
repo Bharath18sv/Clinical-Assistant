@@ -4,7 +4,7 @@ import { useState, useEffect, useContext } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import API from "@/utils/api";
-import toast from "react-hot-toast";
+import { handleApiError } from "@/utils/errorHandler";
 import { AuthContext } from "@/context/AuthContext";
 
 export default function AdminLoginPage() {
@@ -24,8 +24,8 @@ export default function AdminLoginPage() {
       const user = JSON.parse(userExist);
       if (user?.data?.role === "admin" || user?.data?.role === "super_admin") {
         console.log("Admin already logged in, redirecting to dashboard...");
+        handleApiError(null, "Welcome back, Admin!");
         router.replace("/admin/dashboard");
-        toast.success("Welcome back, Admin!");
       }
     } catch (error) {
       console.error("Error loading auth data:", error);
@@ -46,11 +46,14 @@ export default function AdminLoginPage() {
 
       localStorage.setItem("user", JSON.stringify(data.data));
       login(data.data);
-      toast.success("Login successful! Redirecting...");
+      handleApiError(null, "Login successful! Redirecting...");
       router.replace("/admin/dashboard");
     } catch (err) {
       console.error("Admin login error:", err);
-      const errorMessage = err.response?.data?.message || err.message || "Login failed. Please check your credentials.";
+      const errorMessage = handleApiError(
+        err,
+        "Login failed. Please check your credentials."
+      );
       setError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -205,27 +208,8 @@ export default function AdminLoginPage() {
 
               {/* Error Message */}
               {error && (
-                <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-                  <div className="flex">
-                    <div className="flex-shrink-0">
-                      <svg
-                        className="h-5 w-5 text-red-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
-                    </div>
-                    <div className="ml-3">
-                      <p className="text-sm text-red-700">{error}</p>
-                    </div>
-                  </div>
+                <div className="text-red-500 text-sm text-center py-2">
+                  {error}
                 </div>
               )}
 
@@ -233,7 +217,7 @@ export default function AdminLoginPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-gradient-to-r from-red-600 to-pink-600 text-white py-3 px-4 rounded-xl font-semibold hover:from-red-700 hover:to-pink-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
+                className="w-full bg-gradient-to-r from-red-600 to-pink-600 text-white py-3 px-4 rounded-xl font-semibold hover:from-red-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
                   <div className="flex items-center justify-center">
@@ -260,33 +244,34 @@ export default function AdminLoginPage() {
                     Signing in...
                   </div>
                 ) : (
-                  "Access Admin Panel"
+                  "Sign In"
                 )}
               </button>
             </form>
 
-            {/* Footer */}
-            <div className="mt-8 text-center">
-              <p className="text-sm text-gray-500">
-                Secure admin access only. Unauthorized access is prohibited.
-              </p>
+            {/* Footer Links */}
+            <div className="mt-6 text-center">
+              <Link
+                href="/admin/forgot-password"
+                className="text-sm text-red-600 hover:text-red-700 font-medium transition-colors duration-200"
+              >
+                Forgot your password?
+              </Link>
             </div>
           </div>
 
-          {/* Demo Credentials */}
-          {/* <div className="mt-8 bg-blue-50 border border-blue-200 rounded-xl p-4">
-            <h3 className="text-sm font-semibold text-blue-900 mb-2">
-              Demo Credentials:
-            </h3>
-            <div className="text-xs text-blue-700 space-y-1">
-              <p>
-                <strong>Email:</strong> admin@sca.com
-              </p>
-              <p>
-                <strong>Password:</strong> admin123
-              </p>
-            </div>
-          </div> */}
+          {/* Contact Info */}
+          <div className="mt-6 text-center">
+            <p className="text-gray-600 text-sm">
+              Need help?{" "}
+              <Link
+                href="/admin/contact"
+                className="text-red-600 hover:text-red-700 font-medium transition-colors duration-200"
+              >
+                Contact Support
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>

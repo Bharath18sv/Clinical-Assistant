@@ -3,6 +3,7 @@
 import { useState, useContext } from "react";
 import { AuthContext } from "@/context/AuthContext";
 import API from "@/utils/api";
+import { handleApiError, handleApiSuccess } from "@/utils/errorHandler";
 // import { doctorApi } from "@/utils/api";
 import {
   X,
@@ -16,7 +17,7 @@ import {
 } from "lucide-react";
 
 export default function AddPatientForm({ isOpen, onClose, onSuccess }) {
-  const { user } = useContext(AuthContext);
+  const { user: authUser } = useContext(AuthContext);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     fullname: "",
@@ -83,6 +84,7 @@ export default function AddPatientForm({ isOpen, onClose, onSuccess }) {
       const response = await API.post("/patients", patientData);
 
       if (response.success) {
+        handleApiSuccess("Patient added successfully!");
         onSuccess();
         onClose();
         // Reset form
@@ -107,7 +109,7 @@ export default function AddPatientForm({ isOpen, onClose, onSuccess }) {
       }
     } catch (error) {
       console.error("Error adding patient:", error);
-      alert("Failed to add patient. Please try again.");
+      handleApiError(error, "Failed to add patient. Please try again.");
     } finally {
       setLoading(false);
     }
