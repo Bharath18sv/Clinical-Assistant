@@ -1,4 +1,4 @@
-#!/Users/akash/Desktop/Clinical-Assistant/ml-adr-service/venv/bin/python3
+#!/Users/bharathsv/Documents/Projects/smart-care-assistant_VC/ml-adr-service/venv/bin/python3.11
 # -*- coding: utf-8 -*-
 import re
 import sys

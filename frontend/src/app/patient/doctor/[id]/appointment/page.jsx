@@ -394,7 +394,7 @@ export default function AppointmentPage() {
               {/* Action Buttons */}
               <div className="flex gap-3 pt-2">
                 <button
-                  onClick={() => router.push("/patient/appointments")}
+                  onClick={() => router.push("/patient/appointment")}
                   className="flex-1 bg-blue-600 text-white font-medium py-3 px-4 rounded-xl hover:bg-blue-700 transition-colors"
                 >
                   View All Appointments
