@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AuthContext } from "@/context/AuthContext";
 import API from "@/utils/api";
-import { handleApiError } from "@/utils/errorHandler";
+import { handleApiError, handleApiSuccess } from "@/utils/errorHandler";
 
 // Doctor Login Page
 // - Handles doctor authentication via AuthContext
@@ -29,8 +29,7 @@ export default function DoctorLoginPage() {
         const user = JSON.parse(storedUser);
         if (user && user.role === "doctor") {
           console.log("Doctor already logged in, redirecting to dashboard...");
-          handleApiError(
-            null,
+          handleApiSuccess(
             "Doctor already logged in, redirecting to dashboard..."
           );
           router.replace("/doctor/dashboard");
@@ -66,7 +65,7 @@ export default function DoctorLoginPage() {
       localStorage.setItem("user", JSON.stringify(data.data));
       login(data.data); // Update context
       // Success toast
-      handleApiError(null, "Login successful! Redirecting...");
+      handleApiSuccess("Login successful! Redirecting...");
       router.replace("/doctor/dashboard");
     } catch (err) {
       console.error("Login error:", err);
@@ -88,8 +87,7 @@ export default function DoctorLoginPage() {
         setError(
           "Email not verified. Please check your email for the verification code."
         );
-        handleApiError(
-          null,
+        handleApiSuccess(
           "Email not verified. A new verification code has been sent to your email."
         );
 

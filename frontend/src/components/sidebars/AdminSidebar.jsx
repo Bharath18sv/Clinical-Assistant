@@ -66,6 +66,11 @@ export default function AdminSidebar() {
       href: "/admin/profile",
       icon: User,
     },
+    {
+      name: "Patients",
+      href: "/admin/patients",
+      icon: User,
+    },
   ];
 
   const expandableMenus = [
@@ -83,16 +88,16 @@ export default function AdminSidebar() {
         },
       ],
     },
-    {
-      id: "patients",
-      name: "Patients",
-      icon: UserCheck,
-      subLinks: [
-        { name: "All Patients", href: "/admin/patients", icon: UserCheck },
-        { name: "Active", href: "/admin/patients/active", icon: CheckCircle },
-        { name: "Inactive", href: "/admin/patients/inactive", icon: XCircle },
-      ],
-    },
+    // {
+    //   id: "patients",
+    //   name: "Patients",
+    //   icon: UserCheck,
+    //   subLinks: [
+    //     { name: "All Patients", href: "/admin/patients", icon: UserCheck },
+    //     { name: "Active", href: "/admin/patients/active", icon: CheckCircle },
+    //     { name: "Inactive", href: "/admin/patients/inactive", icon: XCircle },
+    //   ],
+    // },
     {
       id: "appointments",
       name: "Appointments",

@@ -3,18 +3,13 @@ import mongoose from "mongoose";
 import { createMedicationLogsForCurrentPeriod } from "../services/medicationLogScheduler.js";
 import dotenv from "dotenv";
 import path from "path";
+import connectDB from "../db/index.js";
 
-dotenv.config({ path: path.resolve(".env") });
-
-// Connect to your MongoDB (adjust connection string as per your config)
-const MONGODB_URI = process.env.MONGODB_URI;
-// console.log("mongodb uri: ", MONGODB_URI);
+dotenv.config({ path: path.resolve(".env") });  
+connectDB();
 
 async function main() {
   try {
-    await mongoose.connect(`${process.env.MONGODB_URI}`);
-    console.log("MongoDB connected for cron job.");
-
     // Schedule job to run every hour at minute 0
     cron.schedule("0 * * * *", async () => {
       console.log("Cron job running: createMedicationLogsForCurrentPeriod");

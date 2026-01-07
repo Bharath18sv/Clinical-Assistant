@@ -1,199 +1,409 @@
 "use client";
 
-import React, { useState } from "react";
-import LoadingSpinner from "@/components/LoadingSpinner";
+import { useState, useEffect } from "react";
+import API from "@/utils/api";
+import { handleApiError, handleApiSuccess } from "@/utils/errorHandler";
+import {
+  FileText,
+  Download,
+  Users,
+  UserCheck,
+  Calendar,
+  Activity,
+  TrendingUp,
+  BarChart3,
+} from "lucide-react";
 
-const AdminReportsPage = () => {
-  const [loading, setLoading] = useState(false);
+export default function AdminReportsPage() {
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState(null);
+  const [exporting, setExporting] = useState(false);
   const [selectedReport, setSelectedReport] = useState("");
 
-  const reportTypes = [
-    {
-      id: "adr-alerts",
-      name: "ADR Alerts Report",
-      description:
-        "Export all Adverse Drug Reaction alerts across the platform",
-    },
-    {
-      id: "medication-logs",
-      name: "Patient Medication Logs",
-      description: "Export comprehensive medication logs for all patients",
-    },
-    {
-      id: "doctor-performance",
-      name: "Doctor Performance Report",
-      description:
-        "Export doctor performance metrics including patient count and activity",
-    },
-  ];
+  useEffect(() => {
+    fetchDashboardStats();
+  }, []);
 
-  const handleExport = async (format) => {
-    setLoading(true);
+  const fetchDashboardStats = async () => {
     try {
-      // In a real implementation, this would call the backend API to generate and download the report
-      // For now, we'll simulate the process
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      // Show success message
-      alert(`Report exported as ${format.toUpperCase()} successfully!`);
+      setLoading(true);
+      const response = await API.get("/admin/dashboard/stats");
+      if (response.data?.data) {
+        setStats(response.data.data);
+      }
     } catch (error) {
-      console.error("Export error:", error);
-      alert("Failed to export report. Please try again.");
+      handleApiError(error, "Failed to fetch statistics");
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Reports & Exports</h1>
-        <p className="text-gray-600">
-          Generate and export comprehensive reports for administrative purposes
-        </p>
-      </div>
+  const exportToCSV = (data, filename) => {
+    const headers = Object.keys(data[0] || {});
+    const csvContent = [
+      headers.join(","),
+      ...data.map((row) =>
+        headers.map((header) => JSON.stringify(row[header] || "")).join(",")
+      ),
+    ].join("\n");
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
-          <h3 className="text-lg leading-6 font-medium text-gray-900">
-            Available Reports
-          </h3>
-          <p className="mt-1 max-w-2xl text-sm text-gray-500">
-            Select a report type and export format to generate your report
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `${filename}_${new Date().toISOString().split("T")[0]}.csv`;
+    link.click();
+  };
+
+  const handleExportReport = async (reportType) => {
+    setExporting(true);
+    try {
+      let data = [];
+      let filename = "";
+
+      switch (reportType) {
+        case "doctors":
+          const doctorsRes = await API.get("/admin/doctors");
+          data = doctorsRes.data?.data?.map((doc) => ({
+            Name: doc.fullname,
+            Email: doc.email,
+            Specialization: doc.specialization,
+            Status: doc.status,
+            Experience: doc.experience,
+            "Created At": new Date(doc.createdAt).toLocaleDateString(),
+          })) || [];
+          filename = "doctors_report";
+          break;
+
+        case "patients":
+          const patientsRes = await API.get("/admin/patients?limit=1000");
+          data = patientsRes.data?.data?.patients?.map((pat) => ({
+            Name: pat.fullname,
+            Email: pat.email,
+            Age: pat.age,
+            Gender: pat.gender,
+            Phone: pat.phone,
+            "Created At": new Date(pat.createdAt).toLocaleDateString(),
+          })) || [];
+          filename = "patients_report";
+          break;
+
+        case "appointments":
+          const apptRes = await API.get("/admin/appointments?limit=1000");
+          data = apptRes.data?.data?.docs?.map((apt) => ({
+            "Patient Name": apt.patientId?.fullname || "N/A",
+            "Doctor Name": apt.doctorId?.fullname || "N/A",
+            Status: apt.status,
+            Reason: apt.reason || "N/A",
+            "Scheduled At": new Date(apt.scheduledAt).toLocaleString(),
+          })) || [];
+          filename = "appointments_report";
+          break;
+
+        case "system-overview":
+          data = [
+            {
+              Metric: "Total Doctors",
+              Value: stats?.totalDoctors || 0,
+            },
+            {
+              Metric: "Approved Doctors",
+              Value: stats?.approvedDoctors || 0,
+            },
+            {
+              Metric: "Pending Doctors",
+              Value: stats?.pendingDoctors || 0,
+            },
+            {
+              Metric: "Total Patients",
+              Value: stats?.totalPatients || 0,
+            },
+            {
+              Metric: "Total Admins",
+              Value: stats?.totalAdmins || 0,
+            },
+          ];
+          filename = "system_overview";
+          break;
+
+        default:
+          throw new Error("Invalid report type");
+      }
+
+      if (data.length === 0) {
+        handleApiError(null, "No data available for export");
+        return;
+      }
+
+      exportToCSV(data, filename);
+      handleApiSuccess(`${filename.replace(/_/g, " ")} exported successfully!`);
+    } catch (error) {
+      handleApiError(error, "Failed to export report");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const reportTypes = [
+    {
+      id: "system-overview",
+      name: "System Overview Report",
+      description: "Export comprehensive system statistics and metrics",
+      icon: BarChart3,
+      color: "blue",
+    },
+    {
+      id: "doctors",
+      name: "Doctors Report",
+      description: "Export complete list of all doctors with details",
+      icon: UserCheck,
+      color: "green",
+    },
+    {
+      id: "patients",
+      name: "Patients Report",
+      description: "Export complete list of all patients with details",
+      icon: Users,
+      color: "purple",
+    },
+    {
+      id: "appointments",
+      name: "Appointments Report",
+      description: "Export all appointments with status and details",
+      icon: Calendar,
+      color: "orange",
+    },
+  ];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Reports & Analytics</h1>
+          <p className="text-gray-600 mt-2">
+            Generate and export comprehensive reports for administrative purposes
           </p>
         </div>
-        <div className="px-4 py-5 sm:p-6">
-          <div className="space-y-6">
-            {reportTypes.map((report) => (
-              <div
-                key={report.id}
-                className={`border rounded-lg p-4 ${
-                  selectedReport === report.id
-                    ? "border-blue-500 bg-blue-50"
-                    : "border-gray-200 hover:border-gray-300"
-                }`}
-                onClick={() => setSelectedReport(report.id)}
-              >
-                <div className="flex items-start">
-                  <div className="flex items-center h-5">
-                    <input
-                      id={report.id}
-                      name="report-type"
-                      type="radio"
-                      checked={selectedReport === report.id}
-                      onChange={() => setSelectedReport(report.id)}
-                      className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300"
-                    />
-                  </div>
-                  <div className="ml-3 text-sm">
-                    <label
-                      htmlFor={report.id}
-                      className="font-medium text-gray-700 cursor-pointer"
-                    >
-                      {report.name}
-                    </label>
-                    <p className="text-gray-500">{report.description}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
 
-            {selectedReport && (
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <h4 className="text-md font-medium text-gray-900 mb-3">
-                  Export Options
-                </h4>
-                <div className="flex flex-wrap gap-3">
-                  <button
-                    onClick={() => handleExport("pdf")}
-                    disabled={loading}
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
-                  >
-                    {loading ? (
-                      <>
-                        <LoadingSpinner size="sm" />
-                        <span className="ml-2">Exporting...</span>
-                      </>
-                    ) : (
-                      "Export as PDF"
-                    )}
-                  </button>
-                  <button
-                    onClick={() => handleExport("csv")}
-                    disabled={loading}
-                    className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-                  >
-                    {loading ? (
-                      <>
-                        <LoadingSpinner size="sm" />
-                        <span className="ml-2">Exporting...</span>
-                      </>
-                    ) : (
-                      "Export as CSV"
-                    )}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {!selectedReport && (
-              <div className="text-center py-8">
-                <svg
-                  className="mx-auto h-12 w-12 text-gray-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
-                <h3 className="mt-2 text-sm font-medium text-gray-900">
-                  No report selected
-                </h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  Select a report type from above to get started.
+        {/* Statistics Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Total Doctors</p>
+                <p className="text-3xl font-bold text-gray-900">
+                  {stats?.totalDoctors || 0}
                 </p>
               </div>
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <UserCheck size={24} className="text-blue-600" />
+              </div>
+            </div>
+            <div className="mt-4 text-sm">
+              <span className="text-green-600 font-medium">
+                {stats?.approvedDoctors || 0} approved
+              </span>
+              <span className="text-gray-500"> • </span>
+              <span className="text-orange-600 font-medium">
+                {stats?.pendingDoctors || 0} pending
+              </span>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Total Patients</p>
+                <p className="text-3xl font-bold text-gray-900">
+                  {stats?.totalPatients || 0}
+                </p>
+              </div>
+              <div className="p-3 bg-purple-100 rounded-lg">
+                <Users size={24} className="text-purple-600" />
+              </div>
+            </div>
+            <div className="mt-4 text-sm text-gray-500">
+              Registered patients in the system
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Total Admins</p>
+                <p className="text-3xl font-bold text-gray-900">
+                  {stats?.totalAdmins || 0}
+                </p>
+              </div>
+              <div className="p-3 bg-green-100 rounded-lg">
+                <Activity size={24} className="text-green-600" />
+              </div>
+            </div>
+            <div className="mt-4 text-sm text-gray-500">
+              Active administrators
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">System Health</p>
+                <p className="text-3xl font-bold text-green-600">Good</p>
+              </div>
+              <div className="p-3 bg-green-100 rounded-lg">
+                <TrendingUp size={24} className="text-green-600" />
+              </div>
+            </div>
+            <div className="mt-4 text-sm text-gray-500">
+              All systems operational
+            </div>
+          </div>
+        </div>
+
+        {/* Export Reports Section */}
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              Available Reports
+            </h2>
+            <p className="text-gray-600">
+              Select a report type to export data in CSV format
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {reportTypes.map((report) => {
+              const Icon = report.icon;
+              return (
+                <div
+                  key={report.id}
+                  className={`border-2 rounded-lg p-6 transition-all cursor-pointer ${
+                    selectedReport === report.id
+                      ? `border-${report.color}-500 bg-${report.color}-50`
+                      : "border-gray-200 hover:border-gray-300"
+                  }`}
+                  onClick={() => setSelectedReport(report.id)}
+                >
+                  <div className="flex items-start gap-4">
+                    <div className={`p-3 bg-${report.color}-100 rounded-lg`}>
+                      <Icon size={24} className={`text-${report.color}-600`} />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900 mb-1">
+                        {report.name}
+                      </h3>
+                      <p className="text-sm text-gray-600">{report.description}</p>
+                      {selectedReport === report.id && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleExportReport(report.id);
+                          }}
+                          disabled={exporting}
+                          className={`mt-4 flex items-center gap-2 px-4 py-2 bg-${report.color}-600 text-white rounded-lg hover:bg-${report.color}-700 transition-colors disabled:opacity-50`}
+                        >
+                          <Download size={18} />
+                          {exporting ? "Exporting..." : "Export as CSV"}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Recent Activity */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Recent Doctors */}
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Recent Doctors
+            </h3>
+            {stats?.recentDoctors && stats.recentDoctors.length > 0 ? (
+              <div className="space-y-3">
+                {stats.recentDoctors.map((doctor) => (
+                  <div
+                    key={doctor._id}
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                  >
+                    <div>
+                      <p className="font-medium text-gray-900">{doctor.fullname}</p>
+                      <p className="text-sm text-gray-600">{doctor.email}</p>
+                    </div>
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        doctor.status === "approved"
+                          ? "bg-green-100 text-green-800"
+                          : doctor.status === "pending"
+                          ? "bg-orange-100 text-orange-800"
+                          : "bg-red-100 text-red-800"
+                      }`}
+                    >
+                      {doctor.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500 text-center py-4">No recent doctors</p>
+            )}
+          </div>
+
+          {/* Recent Patients */}
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Recent Patients
+            </h3>
+            {stats?.recentPatients && stats.recentPatients.length > 0 ? (
+              <div className="space-y-3">
+                {stats.recentPatients.map((patient) => (
+                  <div
+                    key={patient._id}
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                  >
+                    <div>
+                      <p className="font-medium text-gray-900">{patient.fullname}</p>
+                      <p className="text-sm text-gray-600">{patient.email}</p>
+                    </div>
+                    <span className="text-xs text-gray-500">
+                      {new Date(patient.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500 text-center py-4">No recent patients</p>
             )}
           </div>
         </div>
-      </div>
 
-      <div className="mt-6 bg-white rounded-lg shadow overflow-hidden">
-        <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
-          <h3 className="text-lg leading-6 font-medium text-gray-900">
-            Report Generation Guide
-          </h3>
-        </div>
-        <div className="px-4 py-5 sm:p-6">
-          <div className="prose max-w-none">
-            <h4 className="text-md font-medium text-gray-900">
-              How to generate reports:
-            </h4>
-            <ol className="list-decimal pl-5 space-y-2 text-sm text-gray-600">
-              <li>
-                Select the type of report you want to generate from the options
-                above
-              </li>
-              <li>Choose your preferred export format (PDF or CSV)</li>
-              <li>
-                Click the export button to generate and download your report
-              </li>
-              <li>
-                Reports will be generated in the background and downloaded
-                automatically
-              </li>
-            </ol>
-            <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-              <p className="text-sm text-blue-700">
-                <strong>Note:</strong> Large reports may take a few moments to
-                generate. Please be patient and do not close the browser window
-                during export.
+        {/* Help Section */}
+        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-6">
+          <div className="flex items-start gap-3">
+            <FileText size={24} className="text-blue-600 flex-shrink-0 mt-1" />
+            <div>
+              <h4 className="font-semibold text-blue-900 mb-2">
+                How to Generate Reports
+              </h4>
+              <ol className="list-decimal list-inside space-y-1 text-sm text-blue-800">
+                <li>Select the type of report you want to generate</li>
+                <li>Click the "Export as CSV" button</li>
+                <li>The report will be downloaded to your device automatically</li>
+                <li>Open the CSV file in Excel, Google Sheets, or any spreadsheet application</li>
+              </ol>
+              <p className="mt-3 text-sm text-blue-700">
+                <strong>Note:</strong> Large reports may take a few moments to generate.
+                All data is current as of the time of export.
               </p>
             </div>
           </div>
@@ -201,6 +411,4 @@ const AdminReportsPage = () => {
       </div>
     </div>
   );
-};
-
-export default AdminReportsPage;
+}

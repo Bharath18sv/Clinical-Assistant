@@ -7,12 +7,12 @@ import toast from "react-hot-toast";
  */
 export const getErrorMessage = (error) => {
   // Check if it's an API error response
-  if (error.response?.data?.message) {
+  if (error?.response?.data?.message) {
     return error.response.data.message;
   }
 
   // Check if it's a network error
-  if (error.message) {
+  if (error?.message) {
     return error.message;
   }
 
@@ -26,6 +26,11 @@ export const getErrorMessage = (error) => {
  * @param {string} defaultMessage - Default message to show if no specific error message is found
  */
 export const handleApiError = (error, defaultMessage = "An error occurred") => {
+  if (!error && defaultMessage) {
+    toast.error(defaultMessage);
+    return defaultMessage;
+  }
+
   const errorMessage = getErrorMessage(error);
   toast.error(errorMessage);
   return errorMessage;

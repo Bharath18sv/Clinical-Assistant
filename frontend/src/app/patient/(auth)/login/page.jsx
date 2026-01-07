@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AuthContext } from "@/context/AuthContext";
 import API from "@/utils/api";
-import { handleApiError } from "@/utils/errorHandler";
+import { handleApiError, handleApiSuccess } from "@/utils/errorHandler";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -22,7 +22,7 @@ export default function LoginPage() {
       const parsed = JSON.parse(storedUser);
       const role = parsed?.role ?? parsed?.data?.role;
       if (role === "patient") {
-        handleApiError(null, "Already logged in. Redirecting to dashboard...");
+        handleApiSuccess("Already logged in. Redirecting to dashboard...");
         router.replace("/patient/dashboard");
       }
     }
@@ -49,7 +49,7 @@ export default function LoginPage() {
       login(session); // Update context
       console.log("Login function called, user should be set now");
       // Success toast
-      handleApiError(null, "Login successful! Redirecting...");
+      handleApiSuccess("Login successful! Redirecting...");
       router.push("/patient/dashboard");
       console.log("User logged in");
     } catch (err) {

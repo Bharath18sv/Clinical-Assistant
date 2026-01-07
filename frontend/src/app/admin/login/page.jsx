@@ -4,7 +4,7 @@ import { useState, useEffect, useContext } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import API from "@/utils/api";
-import { handleApiError } from "@/utils/errorHandler";
+import { handleApiError, handleApiSuccess } from "@/utils/errorHandler";
 import { AuthContext } from "@/context/AuthContext";
 
 export default function AdminLoginPage() {
@@ -24,7 +24,6 @@ export default function AdminLoginPage() {
       const user = JSON.parse(userExist);
       if (user?.data?.role === "admin" || user?.data?.role === "super_admin") {
         console.log("Admin already logged in, redirecting to dashboard...");
-        handleApiError(null, "Welcome back, Admin!");
         router.replace("/admin/dashboard");
       }
     } catch (error) {
@@ -46,7 +45,7 @@ export default function AdminLoginPage() {
 
       localStorage.setItem("user", JSON.stringify(data.data));
       login(data.data);
-      handleApiError(null, "Login successful! Redirecting...");
+      handleApiSuccess("Login successful! Redirecting...");
       router.replace("/admin/dashboard");
     } catch (err) {
       console.error("Admin login error:", err);

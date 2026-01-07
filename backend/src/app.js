@@ -44,6 +44,7 @@ import medicationLogsRouter from "./routes/medicationLogs.routes.js";
 import symptomsRouter from "./routes/symptoms.routes.js";
 import adrRouter from "./routes/adr.routes.js";
 import notificationRouter from "./routes/notification.routes.js";
+import summaryRouter from "./routes/summary.routes.js";
 
 //routes
 app.use("/api/patients", patientRouter); //routes should always start with /
@@ -57,5 +58,6 @@ app.use("/api/vitals", vitalsRouter);
 app.use("/api/medicationLogs", medicationLogsRouter);
 app.use("/api/symptoms", symptomsRouter);
 app.use("/api/adr", adrRouter);
+app.use("/api/summaries", summaryRouter);
 
 export default app;
