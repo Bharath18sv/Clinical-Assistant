@@ -13,6 +13,7 @@ import {
   getDashboardStats,
   getAllAppointments,
   getAllPatients,
+  getPendingDoctors,
 } from "../controllers/admin.controllers.js";
 import {
   verifyAdminJWT,
@@ -50,6 +51,11 @@ router.post(
   addDoctor
 );
 router.get("/doctors", checkPermission("manageDoctors"), getAllDoctors);
+router.get(
+  "/doctors/approve",
+  checkPermission("manageDoctors"),
+  getPendingDoctors
+);
 router.get(
   "/doctors/:doctorId",
   checkPermission("manageDoctors"),

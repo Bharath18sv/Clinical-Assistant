@@ -149,6 +149,11 @@ const addDoctor = asyncHandler(async (req, res) => {
     experience,
     about,
     phone,
+    "address.street": street,
+    "address.city": city,
+    "address.state": state,
+    "address.zip": zip,
+    "address.country": country,
   } = req.body;
 
   if (
@@ -157,7 +162,6 @@ const addDoctor = asyncHandler(async (req, res) => {
     !fullname ||
     !gender ||
     !age ||
-    !experience ||
     !phone ||
     !specialization ||
     !qualifications ||
@@ -171,6 +175,16 @@ const addDoctor = asyncHandler(async (req, res) => {
   if (existingDoctor) {
     throw new ApiError(409, "Doctor with this email already exists");
   }
+
+  // Build address object
+  const address = {
+    street: street || "",
+    city: city || "",
+    state: state || "Karnataka",
+    zip: zip || "",
+    country: country || "India",
+  };
+
   //upload image to cloudinary
   let profilePic;
   if (req.file) {
@@ -189,12 +203,13 @@ const addDoctor = asyncHandler(async (req, res) => {
     password,
     fullname,
     gender,
-    age,
+    age: parseInt(age),
     specialization,
     qualifications,
-    experience: experience || 0,
+    experience: parseInt(experience) || 0,
     about,
     phone,
+    address,
     addedBy: req.admin._id,
     profilePic: profilePic ? profilePic.url : null,
   });
@@ -357,6 +372,23 @@ const approveDoctor = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(new ApiResponse(200, updatedDoctor, `Doctor ${status} successfully`));
+});
+
+const getPendingDoctors = asyncHandler(async (req, res) => {
+  const pendingDoctors = await Doctor.find({ status: "pending" })
+    .select("-password")
+    .populate("addedBy", "fullname email")
+    .sort({ createdAt: -1 });
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        pendingDoctors,
+        "Pending doctors fetched successfully"
+      )
+    );
 });
 
 // const rejectDoctor = asyncHandler(async (req, res) => {
@@ -528,4 +560,5 @@ export {
   getDashboardStats,
   getAllAppointments,
   getAllPatients,
+  getPendingDoctors,
 };
