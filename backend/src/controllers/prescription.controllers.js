@@ -199,6 +199,9 @@ export const createPrescription = asyncHandler(async (req, res) => {
     adrAlerts = await detectADR(patientId, medications);
 
     if (adrAlerts.length > 0) {
+      // Fetch patient data for notifications
+      const patient = await Patient.findById(patientId);
+      
       const hasHighSeverity = adrAlerts.some((a) => a.severity === "high");
 
       // Create notification with severity in title
@@ -223,7 +226,7 @@ export const createPrescription = asyncHandler(async (req, res) => {
           ? "🚨 CRITICAL ADR Alert - Action Required"
           : "⚠️ ADR Warning Detected",
         message: `Patient: ${
-          savedPrescription.patientId.fullname
+          patient?.fullname || "Unknown"
         }\n\n${adrAlerts.map((a) => a.message).join("\n")}`,
         type: "ADR_ALERT",
         prescriptionId: savedPrescription._id,

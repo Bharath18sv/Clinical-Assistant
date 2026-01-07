@@ -67,7 +67,6 @@ export const SYMPTOMS = [
   "Rash",
   "Difficulty Breathing",
   "Severe Nausea",
-  "Chest Pain",
   "Severe Headache",
   "Bleeding",
 ];

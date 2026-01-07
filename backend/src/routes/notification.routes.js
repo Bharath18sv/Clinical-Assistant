@@ -5,6 +5,7 @@ import {
   getUnreadNotifications,
   markAllNotificationsAsRead,
   markNotificationAsRead,
+  getUnreadCount,
 } from "./../controllers/notification.controllers.js";
 
 const router = Router();
@@ -12,6 +13,8 @@ const router = Router();
 router.get("/", verifyJwt, getNotifications);
 
 router.get("/unread", verifyJwt, getUnreadNotifications);
+
+router.get("/unread-count", verifyJwt, getUnreadCount);
 
 router.patch("/read/:notificationId", verifyJwt, markNotificationAsRead);
 

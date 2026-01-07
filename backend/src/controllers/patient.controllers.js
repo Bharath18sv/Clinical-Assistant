@@ -374,17 +374,51 @@ const loginPatient = asyncHandler(async (req, res) => {
     throw new ApiError(401, `User with email: ${email} doesn't exist`);
   }
 
-  // Block login if email not verified
-  if (!patient.emailVerified) {
-    throw new ApiError(
-      401,
-      "Email not verified. Please verify your email to continue."
-    );
-  }
-
+  // Validate password first (before sending OTP)
   if (!(await patient.isPasswordCorrect(password))) {
     console.log("Password doesn't match");
     throw new ApiError(400, "Password doesn't match");
+  }
+
+  // Check if email is verified
+  if (!patient.emailVerified) {
+    // Generate and send verification code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const codeHash = crypto.createHash("sha256").update(code).digest("hex");
+    const codeExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    patient.emailVerificationCodeHash = codeHash;
+    patient.emailVerificationExpiresAt = codeExpiry;
+    await patient.save({ validateBeforeSave: false });
+
+    // Send verification email
+    try {
+      const html = verificationCodeTemplate({
+        name: patient.fullname,
+        code,
+        appUrl: process.env.APP_URL,
+      });
+      await sendEmail({
+        to: patient.email,
+        subject: "Verify your email",
+        html,
+      });
+      console.log(`Verification OTP sent to ${patient.email}`);
+    } catch (emailErr) {
+      console.error("Failed to send verification email:", emailErr);
+    }
+
+    // Return success response with verification flag
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          requiresVerification: true,
+          email: patient.email,
+        },
+        "Verification pending. OTP sent to your email."
+      )
+    );
   }
 
   const { refreshToken, accessToken } = await generateAccessRefreshToken(

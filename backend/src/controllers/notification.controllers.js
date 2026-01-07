@@ -112,3 +112,23 @@ export const markAllNotificationsAsRead = asyncHandler(async (req, res) => {
       )
     );
 });
+
+// get unread notification count (efficient - only returns count)
+export const getUnreadCount = asyncHandler(async (req, res) => {
+  const userId = req.user?._id;
+
+  if (!userId) {
+    throw new ApiError(400, "User not authenticated");
+  }
+
+  const count = await Notification.countDocuments({
+    userId,
+    isRead: false,
+  });
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, { count }, "Unread count fetched successfully")
+    );
+});

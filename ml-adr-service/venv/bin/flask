@@ -1,4 +1,4 @@
-#!/Users/bharathsv/Documents/Projects/smart-care-assistant_VC/ml-adr-service/venv/bin/python3.11
+#!/Users/bharathsv/Documents/Projects/smart-care-assistant_VC/ml-adr-service/venv/bin/python3.9
 import sys
 from flask.cli import main
 if __name__ == '__main__':

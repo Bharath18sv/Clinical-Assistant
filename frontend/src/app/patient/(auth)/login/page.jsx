@@ -44,6 +44,15 @@ export default function LoginPage() {
       const session = apiResponse?.data;
       console.log("API Response:", apiResponse);
       console.log("Session data:", session);
+
+      // Check if email verification is required
+      if (session?.requiresVerification) {
+        handleApiSuccess("Account not verified. Sending OTP to your email...");
+        // Redirect to verification page with email parameter
+        router.push(`/patient/verify-email?email=${encodeURIComponent(session.email)}`);
+        return;
+      }
+
       // Persist only the session object that includes role/tokens/user
       localStorage.setItem("user", JSON.stringify(session));
       login(session); // Update context

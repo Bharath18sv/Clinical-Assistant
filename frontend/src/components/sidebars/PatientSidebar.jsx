@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { AuthContext } from "@/context/AuthContext";
+import API from "@/utils/api";
 
 export default function PatientSidebar() {
   const { user, authLoading, logout: contextLogout } = useContext(AuthContext);
@@ -28,6 +29,7 @@ export default function PatientSidebar() {
   const [patientData, setPatientData] = useState(null);
   const [isOpen, setIsOpen] = useState(true);
   const [expandedMenus, setExpandedMenus] = useState({ doctors: false });
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const pathname = usePathname();
 
@@ -48,6 +50,27 @@ export default function PatientSidebar() {
       setPatientData(null);
     }
   }, [user, authLoading]);
+
+  // Fetch unread notification count
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      try {
+        const response = await API.get("/notifications/unread-count");
+        if (response.data?.data?.count !== undefined) {
+          setUnreadCount(response.data.data.count);
+        }
+      } catch (error) {
+        console.error("Error fetching unread count:", error);
+      }
+    };
+
+    if (user) {
+      fetchUnreadCount();
+      // Refresh count every 30 seconds
+      const interval = setInterval(fetchUnreadCount, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [user]);
 
   if (authLoading) {
     return (
@@ -126,6 +149,9 @@ export default function PatientSidebar() {
           {mainLinks.map((link) => {
             const Icon = link.icon;
             const isActive = isPathActive(link.href);
+            const isNotifications = link.name === "Notifications";
+            const showBadge = isNotifications && unreadCount > 0;
+
             return (
               <li key={link.href}>
                 <Link
@@ -135,8 +161,26 @@ export default function PatientSidebar() {
                   }`}
                   title={!isOpen ? link.name : ""}
                 >
-                  <Icon size={20} className="flex-shrink-0" />
-                  {isOpen && <span className="ml-3">{link.name}</span>}
+                  <div className="relative flex-shrink-0">
+                    <Icon size={20} />
+                    {/* Badge for collapsed sidebar */}
+                    {!isOpen && showBadge && (
+                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-bold">
+                        {unreadCount > 9 ? "9+" : unreadCount}
+                      </span>
+                    )}
+                  </div>
+                  {isOpen && (
+                    <>
+                      <span className="ml-3 flex-1">{link.name}</span>
+                      {/* Badge for expanded sidebar */}
+                      {showBadge && (
+                        <span className="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                          {unreadCount}
+                        </span>
+                      )}
+                    </>
+                  )}
                 </Link>
               </li>
             );
