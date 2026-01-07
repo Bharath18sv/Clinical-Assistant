@@ -259,17 +259,12 @@ export default function DoctorAppointments() {
                       }}
                     />
                     <div>
-<<<<<<< HEAD
-                      <div className="font-medium text-gray-900">{appointment.patientId?.fullname || "Unknown Patient"}</div>
-                      <div className="text-xs text-gray-500">{appointment.patientId?.email || "No email"}</div>
-=======
                       <div className="font-medium text-gray-900">
                         {appointment.patientId?.fullname || "Unknown Patient"}
                       </div>
                       <div className="text-xs text-gray-500">
                         {appointment.patientId?.email || ""}
                       </div>
->>>>>>> upstream/main
                     </div>
                   </div>
 

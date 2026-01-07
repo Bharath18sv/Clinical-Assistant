@@ -89,7 +89,7 @@ const AdminPatientsPage = () => {
               onChange={(e) => handleFilterChange("status", e.target.value)}
               className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             >
-              <option value="">All Statuses</option>
+              <option value="">All</option>
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
             </select>
