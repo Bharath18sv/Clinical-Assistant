@@ -457,6 +457,8 @@ const getDashboardStats = asyncHandler(async (req, res) => {
   const pendingDoctors = await Doctor.countDocuments({ status: "pending" });
   const totalPatients = await Patient.countDocuments();
   const totalAdmins = await Admin.countDocuments();
+  const totalAppointments = await Appointment.countDocuments();
+  const activeUsers = await Doctor.countDocuments({ isActive: true }) + await Patient.countDocuments({ isActive: true });
 
   const recentDoctors = await Doctor.find()
     .sort({ createdAt: -1 })
@@ -474,6 +476,8 @@ const getDashboardStats = asyncHandler(async (req, res) => {
     pendingDoctors,
     totalPatients,
     totalAdmins,
+    totalAppointments,
+    activeUsers,
     recentDoctors,
     recentPatients,
   };

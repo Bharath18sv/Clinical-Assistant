@@ -9,6 +9,7 @@ const AdminPatientsPage = () => {
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchInput, setSearchInput] = useState("");
   const [filters, setFilters] = useState({
     status: "",
     search: "",
@@ -36,6 +37,13 @@ const AdminPatientsPage = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setFilters(prev => ({ ...prev, search: searchInput, page: 1 }));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   useEffect(() => {
     fetchPatients();
@@ -100,10 +108,10 @@ const AdminPatientsPage = () => {
             </label>
             <input
               type="text"
-              value={filters.search}
-              onChange={(e) => handleFilterChange("search", e.target.value)}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               placeholder="Search by name or email"
-              className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 outline-none"
             />
           </div>
         </div>
@@ -118,7 +126,11 @@ const AdminPatientsPage = () => {
 
       {/* Patients Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        {patients && patients.length > 0 ? (
+        {loading ? (
+          <div className="flex justify-center items-center py-12">
+            <LoadingSpinner />
+          </div>
+        ) : patients && patients.length > 0 ? (
           <>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
