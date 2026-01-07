@@ -177,7 +177,7 @@ const loginDoctor = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Password doesn't match");
   }
 
-  // Block login if email not verified
+  // Check if email is verified
   if (!doctor.emailVerified) {
     // Generate and send verification code
     const code = Math.floor(100000 + Math.random() * 900000).toString();
@@ -188,6 +188,7 @@ const loginDoctor = asyncHandler(async (req, res) => {
     doctor.emailVerificationExpiresAt = codeExpiry;
     await doctor.save({ validateBeforeSave: false });
 
+    let emailSent = false;
     try {
       const html = verificationCodeTemplate({
         name: doctor.fullname,
@@ -199,16 +200,25 @@ const loginDoctor = asyncHandler(async (req, res) => {
         subject: "Verify your email",
         html,
       });
+      emailSent = true;
+      console.log("✅ Verification email sent successfully to:", doctor.email);
     } catch (emailErr) {
-      console.error("Failed to send verification email:", emailErr);
+      console.error("❌ Failed to send verification email:", emailErr);
     }
 
-    throw new ApiError(
-      401,
-      "Email not verified. A new verification code has been sent to your email. Please verify to continue.",
-      [],
-      "",
-      { emailNotVerified: true, email: email }
+    // Return 200 with requiresVerification flag instead of 401 error
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          requiresVerification: true,
+          email: doctor.email,
+          emailSent,
+        },
+        emailSent
+          ? "Email not verified. Verification code sent to your email."
+          : "Email not verified. Please contact support for verification code."
+      )
     );
   }
 
