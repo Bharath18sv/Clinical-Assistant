@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AuthContext } from "@/context/AuthContext";
 import API from "@/utils/api";
-import toast from "react-hot-toast";
+import { handleApiError, handleApiSuccess } from "@/utils/errorHandler";
 
 // Doctor Login Page
 // - Handles doctor authentication via AuthContext
@@ -29,6 +29,9 @@ export default function DoctorLoginPage() {
         const user = JSON.parse(storedUser);
         if (user && user.role === "doctor") {
           console.log("Doctor already logged in, redirecting to dashboard...");
+          handleApiSuccess(
+            "Doctor already logged in, redirecting to dashboard..."
+          );
           router.replace("/doctor/dashboard");
         }
       }
@@ -62,7 +65,7 @@ export default function DoctorLoginPage() {
       localStorage.setItem("user", JSON.stringify(data.data));
       login(data.data); // Update context
       // Success toast
-      toast.success("Login successful! Redirecting...");
+      handleApiSuccess("Login successful! Redirecting...");
       router.replace("/doctor/dashboard");
     } catch (err) {
       console.error("Login error:", err);
@@ -84,7 +87,7 @@ export default function DoctorLoginPage() {
         setError(
           "Email not verified. Please check your email for the verification code."
         );
-        toast.error(
+        handleApiSuccess(
           "Email not verified. A new verification code has been sent to your email."
         );
 
@@ -97,16 +100,11 @@ export default function DoctorLoginPage() {
           );
         }, 2000);
       } else {
-        setError(
-          err.response?.data?.message ||
-            err.message ||
-            "Login failed. Please check your credentials."
+        const errorMessage = handleApiError(
+          err,
+          "Login failed. Please check your credentials."
         );
-        toast.error(
-          err.response?.data?.message ||
-            err.message ||
-            "Login failed. Please try again."
-        );
+        setError(errorMessage);
       }
     } finally {
       setIsLoading(false);
@@ -246,8 +244,8 @@ export default function DoctorLoginPage() {
 
               {/* Error Message */}
               {error && (
-                <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-                  <p className="text-sm text-red-700">{error}</p>
+                <div className="text-red-500 text-sm text-center py-2">
+                  {error}
                 </div>
               )}
 
@@ -255,22 +253,59 @@ export default function DoctorLoginPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 px-4 rounded-xl font-semibold hover:from-green-700 hover:to-emerald-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
+                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 px-4 rounded-xl font-semibold hover:from-green-700 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isLoading ? "Signing in..." : "Access Doctor Panel"}
+                {isLoading ? (
+                  <div className="flex items-center justify-center">
+                    <svg
+                      className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    Signing in...
+                  </div>
+                ) : (
+                  "Sign In"
+                )}
               </button>
             </form>
-          </div>
-          <div className="mt-8 text-center text-sm text-gray-500">
-            <p>
-              If your Email is not verified{" "}
+
+            {/* Footer Links */}
+            <div className="mt-6 text-center">
               <Link
-                href="/doctor/verify-email"
-                className="text-blue-600 hover:text-blue-700"
+                href="/doctor/forgot-password"
+                className="text-sm text-green-600 hover:text-green-700 font-medium transition-colors duration-200"
               >
-                click here
-              </Link>{" "}
-              to verify your email.
+                Forgot your password?
+              </Link>
+            </div>
+          </div>
+
+          {/* Sign Up Link */}
+          <div className="mt-6 text-center">
+            <p className="text-gray-600 text-sm">
+              Don't have an account?{" "}
+              <Link
+                href="/admin/contact"
+                className="text-green-600 hover:text-green-700 font-medium transition-colors duration-200"
+              >
+                Contact Admin
+              </Link>
             </p>
           </div>
         </div>

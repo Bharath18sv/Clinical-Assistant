@@ -1,0 +1,72 @@
+services:
+  # Backend Service
+  - type: web
+    name: smartcare-backend
+    runtime: docker
+    plan: standard
+    region: oregon
+    dockerfilePath: ./backend/Dockerfile
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5001
+      - key: CORS_ORIGIN
+        value: https://clinical-assistant-theta.vercel.app
+      - key: MONGODB_URI
+        sync: false
+      - key: ACCESS_TOKEN_SECRET
+        sync: false
+      - key: REFRESH_TOKEN_SECRET
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_PHONE_NUMBER
+        sync: false
+      - key: WHATSAPP_API_URL
+        sync: false
+      - key: WHATSAPP_ACCESS_TOKEN
+        sync: false
+      - key: WHATSAPP_PHONE_NUMBER_ID
+        sync: false
+      - key: ADR_SERVICE_URL
+        value: http://smartcare-ml-adr-service:6001/predict-adr
+    healthCheckPath: /
+    autoDeploy: false
+
+  # ML ADR Service
+  - type: web
+    name: smartcare-ml-adr-service
+    runtime: docker
+    plan: standard
+    region: oregon
+    dockerfilePath: ./ml-adr-service/Dockerfile
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: PORT
+        value: 6001
+    healthCheckPath: /health
+    autoDeploy: false
+
+databases:
+  - name: smartcare-mongodb
+    region: oregon
+    plan: standard
+    databaseName: smartcare

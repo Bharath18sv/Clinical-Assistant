@@ -1,10 +1,11 @@
 import axios from "axios";
 import { isTokenExpired } from "@/utils/auth";
 import { getGlobalClearUser } from "@/context/AuthContext";
+import { handleApiError } from "@/utils/errorHandler";
 
 const API = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
-  withCredentials: true, // if you’re also using cookies
+  withCredentials: true, // if you're also using cookies
 });
 
 API.interceptors.request.use(
@@ -69,6 +70,7 @@ export const updateDoctorProfile = async (data) => {
     return response?.data;
   } catch (error) {
     console.error("❌ Error:", error);
+    handleApiError(error, "Failed to update doctor profile");
     return null;
   }
 };
@@ -80,18 +82,29 @@ export const getDoctorById = async (doctorId) => {
     return res.data.data;
   } catch (error) {
     console.log(error);
+    handleApiError(error, "Failed to fetch doctor information");
     return null;
   }
 };
 
 export const fetchDoctorActiveAppointments = async () => {
-  const { data } = await API.get(`/appointments/active`);
-  return data?.data || [];
+  try {
+    const { data } = await API.get(`/appointments/active`);
+    return data?.data || [];
+  } catch (error) {
+    handleApiError(error, "Failed to fetch active appointments");
+    return [];
+  }
 };
 
 export const fetchDoctorCompletedAppointments = async () => {
-  const { data } = await API.get(`/appointments/completed`);
-  return data?.data || [];
+  try {
+    const { data } = await API.get(`/appointments/completed`);
+    return data?.data || [];
+  } catch (error) {
+    handleApiError(error, "Failed to fetch completed appointments");
+    return [];
+  }
 };
 
 export const fetchAllDoctors = async () => {
@@ -101,6 +114,7 @@ export const fetchAllDoctors = async () => {
     return data?.data || [];
   } catch (error) {
     console.error("Error fetching doctors:", error);
+    handleApiError(error, "Failed to fetch doctors");
     return [];
   }
 };
@@ -113,6 +127,7 @@ export const getMyDoctors = async () => {
     return doctors.data.data || [];
   } catch (error) {
     console.error("Error fetching my doctors:", error);
+    handleApiError(error, "Failed to fetch your doctors");
     return [];
   }
 };
@@ -149,18 +164,13 @@ export const registerPatient = async (data) => {
     data.symptoms.forEach((s) => formData.append("symptoms", s.value || s));
   }
 
-  // File
-  if (data.profilePic) {
-    formData.append("profilePic", data.profilePic);
-  }
-
   try {
     const registeredPatient = await API.post("/patients/register", formData);
     return registeredPatient;
   } catch (error) {
-    console.error("❌ Registration Error:", error);
-    console.error("❌ Error Response:", error.response?.data);
-    throw error;
+    console.error("❌ Error:", error);
+    handleApiError(error, "Failed to register patient");
+    return null;
   }
 };
 
@@ -182,23 +192,40 @@ export const updatePatientProfile = async (data) => {
     return updatedPatient;
   } catch (error) {
     console.error("❌ Error:", error);
+    handleApiError(error, "Failed to update patient profile");
     return null;
   }
 };
 
 //appointments api:
 export const fetchMyAppointments = async () => {
-  const { data } = await API.get(`/appointments`);
-  return data?.data || [];
+  try {
+    const { data } = await API.get(`/appointments`);
+    return data?.data || [];
+  } catch (error) {
+    handleApiError(error, "Failed to fetch appointments");
+    return [];
+  }
 };
 
 export const fetchPatientAppointments = async () => {
-  const { data } = await API.get(``);
+  try {
+    const { data } = await API.get(``);
+    return data?.data || [];
+  } catch (error) {
+    handleApiError(error, "Failed to fetch patient appointments");
+    return [];
+  }
 };
 
 export const fetchAppointmentById = async (id) => {
-  const { data } = await API.get(`/appointments/${id}`);
-  return data?.data;
+  try {
+    const { data } = await API.get(`/appointments/${id}`);
+    return data?.data;
+  } catch (error) {
+    handleApiError(error, "Failed to fetch appointment details");
+    return null;
+  }
 };
 
 export const createAppointment = async ({
@@ -207,13 +234,18 @@ export const createAppointment = async ({
   scheduledAt,
   reason,
 }) => {
-  const { data } = await API.post(`/appointments`, {
-    doctorId,
-    patientId,
-    scheduledAt,
-    reason,
-  });
-  return data?.data;
+  try {
+    const { data } = await API.post(`/appointments`, {
+      doctorId,
+      patientId,
+      scheduledAt,
+      reason,
+    });
+    return data?.data;
+  } catch (error) {
+    handleApiError(error, "Failed to create appointment");
+    return null;
+  }
 };
 
 export const updateAppointment = async (id, updateData) => {
@@ -232,61 +264,90 @@ export const updateAppointment = async (id, updateData) => {
     backendPayload.reason = updateData.reason;
   }
 
-  switch (updateData.status) {
-    case "approved":
-      console.log("Calling approve endpoint");
-      data = await API.put(`/appointments/${id}/approve`, backendPayload);
-      break;
-    case "cancelled":
-      console.log("Calling cancel endpoint");
-      data = await API.put(`/appointments/${id}/cancel`, backendPayload);
-      break;
-    case "in-progress":
-      console.log("Calling start endpoint");
-      data = await API.put(`/appointments/${id}/start`, backendPayload);
-      break;
-    case "completed":
-      console.log("Calling complete endpoint");
-      data = await API.put(`/appointments/${id}/complete`, backendPayload);
-      break;
-    default:
-      console.log(
-        "Using default update endpoint for status:",
-        updateData.status
-      );
-      data = await API.put(`/appointments/${id}`, updateData);
-  }
+  try {
+    switch (updateData.status) {
+      case "approved":
+        console.log("Calling approve endpoint");
+        data = await API.put(`/appointments/${id}/approve`, backendPayload);
+        break;
+      case "cancelled":
+        console.log("Calling cancel endpoint");
+        data = await API.put(`/appointments/${id}/cancel`, backendPayload);
+        break;
+      case "in-progress":
+        console.log("Calling start endpoint");
+        data = await API.put(`/appointments/${id}/start`, backendPayload);
+        break;
+      case "completed":
+        console.log("Calling complete endpoint");
+        data = await API.put(`/appointments/${id}/complete`, backendPayload);
+        break;
+      default:
+        console.log(
+          "Using default update endpoint for status:",
+          updateData.status
+        );
+        data = await API.put(`/appointments/${id}`, updateData);
+    }
 
-  console.log("API response:", data);
-  return data?.data;
+    console.log("API response:", data);
+    return data?.data;
+  } catch (error) {
+    handleApiError(error, "Failed to update appointment");
+    return null;
+  }
 };
 
 export const startAppointment = async (id) => {
-  const { data } = await API.put(`/appointments/${id}/start`);
-  return data?.data;
+  try {
+    const { data } = await API.put(`/appointments/${id}/start`);
+    return data?.data;
+  } catch (error) {
+    handleApiError(error, "Failed to start appointment");
+    return null;
+  }
 };
 
 //this doesn't return anything
 export const deleteAppointmentById = async (id) => {
-  await API.delete(`/appointments/${id}`);
+  try {
+    await API.delete(`/appointments/${id}`);
+  } catch (error) {
+    handleApiError(error, "Failed to delete appointment");
+  }
 };
 
 export const completeAppointment = async (id) => {
-  const { data } = await API.put(`/appointments/${id}/complete`);
-  return data?.data;
+  try {
+    const { data } = await API.put(`/appointments/${id}/complete`);
+    return data?.data;
+  } catch (error) {
+    handleApiError(error, "Failed to complete appointment");
+    return null;
+  }
 };
 
 export const fetchDPAppointment = async (id) => {
-  const appt = await API.get(`/appointments/dp/${id}`);
-  // console.log("appointment complete response:", appt);
-  return appt.data.data;
+  try {
+    const appt = await API.get(`/appointments/dp/${id}`);
+    // console.log("appointment complete response:", appt);
+    return appt.data.data;
+  } catch (error) {
+    handleApiError(error, "Failed to fetch appointment");
+    return null;
+  }
 };
 
 //doctor apis
 export const getDoctorAppointments = async () => {
-  const appts = await API.get("/appointments");
-  // console.log("/api appointments.data:", appts.data.data);
-  return appts.data.data;
+  try {
+    const appts = await API.get("/appointments");
+    // console.log("/api appointments.data:", appts.data.data);
+    return appts.data.data;
+  } catch (error) {
+    handleApiError(error, "Failed to fetch doctor appointments");
+    return [];
+  }
 };
 
 export const addPatient = async (patientData) => {
@@ -337,19 +398,30 @@ export const addPatient = async (patientData) => {
       error.response?.data?.message ||
       error.message ||
       "Failed to create patient";
+    handleApiError(error, errorMessage);
     throw new Error(errorMessage);
   }
 };
 export const viewMyPatients = async () => {
-  const patients = await API.get("/doctors/");
-  console.log("view my patients res: ", patients);
-  return patients.data.data.patients || [];
+  try {
+    const patients = await API.get("/doctors/");
+    console.log("view my patients res: ", patients);
+    return patients.data.data.patients || [];
+  } catch (error) {
+    handleApiError(error, "Failed to fetch patients");
+    return [];
+  }
 };
 
 export const getPatientById = async (id) => {
-  const patient = await API.get(`/doctors/patients/${id}`);
-  console.log("get patient by id res: ", patient);
-  return patient.data.data;
+  try {
+    const patient = await API.get(`/doctors/patients/${id}`);
+    console.log("get patient by id res: ", patient);
+    return patient.data.data;
+  } catch (error) {
+    handleApiError(error, "Failed to fetch patient details");
+    return null;
+  }
 };
 
 //admin apis
@@ -397,6 +469,7 @@ export const addDoctor = async (doctorData) => {
     return response.data;
   } catch (error) {
     console.error("Error creating doctor:", error);
+    handleApiError(error, "Failed to create doctor");
     throw error;
   }
 };
@@ -408,6 +481,7 @@ export const getCurrentAdmin = async () => {
     return response.data.data;
   } catch (error) {
     console.error("Error fetching admin profile:", error);
+    handleApiError(error, "Failed to fetch admin profile");
     throw error;
   }
 };
@@ -419,6 +493,7 @@ export const getAllPatientsForAdmin = async (params = {}) => {
     return response.data;
   } catch (error) {
     console.error("Error fetching patients:", error);
+    handleApiError(error, "Failed to fetch patients");
     throw error;
   }
 };
@@ -434,6 +509,7 @@ export const updatePrescription = async (prescriptionId, prescriptionData) => {
     return response.data;
   } catch (error) {
     console.error("Error updating prescription:", error);
+    handleApiError(error, "Failed to update prescription");
     throw error;
   }
 };
@@ -445,6 +521,7 @@ export const addPrescription = async (prescriptionData) => {
     return response.data;
   } catch (error) {
     console.error("Error adding prescription:", error);
+    handleApiError(error, "Failed to add prescription");
     throw error;
   }
 };
@@ -462,6 +539,7 @@ export const getPatientPrescriptions = async (patientId) => {
     return response.data;
   } catch (error) {
     console.error("Error fetching prescriptions:", error);
+    handleApiError(error, "Failed to fetch prescriptions");
     throw error;
   }
 };
@@ -473,6 +551,7 @@ export const getPrescriptionById = async (id) => {
     return response.data;
   } catch (error) {
     console.error("Error fetching prescription by ID:", error);
+    handleApiError(error, "Failed to fetch prescription");
     throw error;
   }
 };
@@ -484,6 +563,7 @@ export const deletePrescription = async (id) => {
     return response.data;
   } catch (error) {
     console.error("Error deleting prescription:", error);
+    handleApiError(error, "Failed to delete prescription");
     throw error;
   }
 };
@@ -495,6 +575,7 @@ export const getDoctorPrescriptions = async () => {
     return response.data;
   } catch (error) {
     console.error("Error fetching doctor prescriptions:", error);
+    handleApiError(error, "Failed to fetch prescriptions");
     throw error;
   }
 };
@@ -508,6 +589,7 @@ export const getLatestPrescription = async (patientId) => {
     return response.data;
   } catch (error) {
     console.error("Error fetching latest prescription:", error);
+    handleApiError(error, "Failed to fetch latest prescription");
     throw error;
   }
 };
@@ -520,6 +602,7 @@ export const getMedicationLogs = async (prescriptionId) => {
     return response.data;
   } catch (error) {
     console.error("Error fetching medication logs:", error);
+    handleApiError(error, "Failed to fetch medication logs");
     throw error;
   }
 };
@@ -534,6 +617,7 @@ export const addMedicationLog = async (logData, prescriptionId) => {
     return response.data;
   } catch (error) {
     console.error("Error adding medication log:", error);
+    handleApiError(error, "Failed to add medication log");
     throw error;
   }
 };
@@ -545,6 +629,7 @@ export const getAllMedicationLogs = async () => {
     return response.data;
   } catch (error) {
     console.error("Error fetching all medication logs:", error);
+    handleApiError(error, "Failed to fetch medication logs");
     throw error;
   }
 };
@@ -559,6 +644,7 @@ export const getPatientPendingMedicationLogs = async () => {
     return response.data;
   } catch (error) {
     console.error("Error fetching patient pending medication logs:", error);
+    handleApiError(error, "Failed to fetch pending medication logs");
     throw error;
   }
 };
@@ -573,6 +659,7 @@ export const updateMedicationLogStatus = async (logId, statusData) => {
     return response.data;
   } catch (error) {
     console.error("Error updating medication log status:", error);
+    handleApiError(error, "Failed to update medication log status");
     throw error;
   }
 };
@@ -602,6 +689,7 @@ export const getPatientMedicationLogs = async ({
     return response.data;
   } catch (error) {
     console.error("❌ Error fetching medication logs:", error);
+    handleApiError(error, "Failed to fetch medication logs");
     return null;
   }
 };
@@ -616,6 +704,7 @@ export const addVitals = async (vitalsData) => {
     return response.data;
   } catch (error) {
     console.error("Error adding vitals:", error);
+    handleApiError(error, "Failed to add vitals");
     throw error;
   }
 };
@@ -627,6 +716,7 @@ export const getVitalsById = async (id) => {
     return response.data;
   } catch (error) {
     console.error("Error fetching vitals:", error);
+    handleApiError(error, "Failed to fetch vitals");
     throw error;
   }
 };
@@ -638,6 +728,7 @@ export const getAllVitals = async () => {
     return response.data;
   } catch (error) {
     console.error("Error fetching all vitals:", error);
+    handleApiError(error, "Failed to fetch vitals");
     throw error;
   }
 };
@@ -651,6 +742,7 @@ export const getLatestVitals = async (patientId) => {
     return res.data;
   } catch (error) {
     console.error("Error fetching latest vitals : ", error);
+    handleApiError(error, "Failed to fetch latest vitals");
     throw error;
   }
 };

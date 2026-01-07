@@ -52,7 +52,6 @@ export default function PatientEmailVerificationContent() {
 
     setLoading(true);
     try {
-      // change this
       const response = await verifyPatientEmail({ email, code });
       console.log("response: ", response);
       const data = await response?.data;

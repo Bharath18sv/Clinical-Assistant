@@ -72,6 +72,10 @@ class ADRPredictor:
             ("paracetamol ibuprofen", "low", "Minimal interaction"),
             ("metformin lisinopril", "low", "Generally safe"),
             ("paracetamol metformin", "safe", "No interaction"),
+            # Add more interactions here
+            ("ibuprofen naproxen", "high", "Increased GI bleeding risk"),
+            ("acetaminophen alcohol", "high", "Liver damage risk"),
+            ("penicillin milk", "high", "Allergic reaction risk"),
         ]
         
         X = [item[0] for item in training_data]

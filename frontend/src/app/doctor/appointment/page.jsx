@@ -54,12 +54,17 @@ export default function DoctorAppointments() {
 
       await updateAppointment(appointmentId, payload);
 
-      let updatedStatus = payload.status === "in-progress" ? "active" : payload.status;
+      let updatedStatus =
+        payload.status === "in-progress" ? "active" : payload.status;
 
       setAppointments((prev) =>
         prev.map((apt) =>
           apt._id === appointmentId
-            ? { ...apt, status: updatedStatus, doctorNotes: payload.doctorNotes }
+            ? {
+                ...apt,
+                status: updatedStatus,
+                doctorNotes: payload.doctorNotes,
+              }
             : apt
         )
       );
@@ -92,44 +97,77 @@ export default function DoctorAppointments() {
   const getModalIcon = (action) => {
     switch (action) {
       case "approve":
-        return <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center"><Check className="h-5 w-5 text-green-600" /></div>;
+        return (
+          <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+            <Check className="h-5 w-5 text-green-600" />
+          </div>
+        );
       case "cancel":
-        return <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center"><X className="h-5 w-5 text-red-600" /></div>;
+        return (
+          <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+            <X className="h-5 w-5 text-red-600" />
+          </div>
+        );
       case "start":
-        return <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center"><Clock className="h-5 w-5 text-blue-600" /></div>;
+        return (
+          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+            <Clock className="h-5 w-5 text-blue-600" />
+          </div>
+        );
       case "end":
-        return <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center"><Check className="h-5 w-5 text-purple-600" /></div>;
+        return (
+          <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+            <Check className="h-5 w-5 text-purple-600" />
+          </div>
+        );
       default:
-        return <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center"><FileText className="h-5 w-5 text-gray-600" /></div>;
+        return (
+          <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+            <FileText className="h-5 w-5 text-gray-600" />
+          </div>
+        );
     }
   };
 
   const getModalPlaceholder = (action) => {
     switch (action) {
-      case "approve": return "Add any instructions or notes for the patient...";
-      case "cancel": return "Provide a reason for cancellation...";
-      case "start": return "Add notes before starting the appointment...";
-      case "end": return "Add completion notes and any follow-up instructions...";
-      default: return "Add your notes here...";
+      case "approve":
+        return "Add any instructions or notes for the patient...";
+      case "cancel":
+        return "Provide a reason for cancellation...";
+      case "start":
+        return "Add notes before starting the appointment...";
+      case "end":
+        return "Add completion notes and any follow-up instructions...";
+      default:
+        return "Add your notes here...";
     }
   };
 
   const getButtonColor = (action) => {
     switch (action) {
-      case "approve": return "bg-green-600 hover:bg-green-700";
-      case "cancel": return "bg-red-600 hover:bg-red-700";
-      case "start": return "bg-blue-600 hover:bg-blue-700";
-      case "end": return "bg-purple-600 hover:bg-purple-700";
-      default: return "bg-gray-600 hover:bg-gray-700";
+      case "approve":
+        return "bg-green-600 hover:bg-green-700";
+      case "cancel":
+        return "bg-red-600 hover:bg-red-700";
+      case "start":
+        return "bg-blue-600 hover:bg-blue-700";
+      case "end":
+        return "bg-purple-600 hover:bg-purple-700";
+      default:
+        return "bg-gray-600 hover:bg-gray-700";
     }
   };
 
   const filteredAppointments = appointments.filter((apt) => {
     const matchesSearch = searchTerm
-      ? (apt.patientId?.fullname || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      ? (apt.patientId?.fullname || "")
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
         (apt.reason || "").toLowerCase().includes(searchTerm.toLowerCase())
       : true;
-    const matchesStatus = filterStatus === "all" ? true : apt.status === filterStatus;
+    const matchesStatus =
+      filterStatus === "all" ? true : apt.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
 
@@ -138,8 +176,12 @@ export default function DoctorAppointments() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex items-start justify-between gap-6 mb-6">
           <div>
-            <h1 className="text-2xl font-semibold text-gray-900">All Appointments</h1>
-            <p className="text-sm text-gray-600 mt-1">Manage and track all appointments. {appointments.length} total</p>
+            <h1 className="text-2xl font-semibold text-gray-900">
+              All Appointments
+            </h1>
+            <p className="text-sm text-gray-600 mt-1">
+              Manage and track all appointments. {appointments.length} total
+            </p>
           </div>
 
           <div className="flex items-center gap-3">
@@ -176,20 +218,30 @@ export default function DoctorAppointments() {
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              <span className="ml-2 text-gray-600">Loading appointments...</span>
+              <span className="ml-2 text-gray-600">
+                Loading appointments...
+              </span>
             </div>
           ) : filteredAppointments.length === 0 ? (
             <div className="text-center py-12">
               <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <FileText className="h-8 w-8 text-gray-400" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No appointments</h3>
-              <p className="text-gray-600">No appointments match your filters.</p>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                No appointments
+              </h3>
+              <p className="text-gray-600">
+                No appointments match your filters.
+              </p>
             </div>
           ) : (
             <div className="divide-y">
               {filteredAppointments.map((appointment) => (
-                <div key={appointment._id} className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center px-6 py-4 hover:bg-gray-50 transition-colors">
+                <Link
+                  key={appointment._id}
+                  href={`/doctor/appointment/${appointment._id}`}
+                  className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center px-6 py-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                >
                   {/* Patient */}
                   <div className="md:col-span-4 flex items-center gap-3">
                     <img
@@ -207,52 +259,114 @@ export default function DoctorAppointments() {
                       }}
                     />
                     <div>
+<<<<<<< HEAD
                       <div className="font-medium text-gray-900">{appointment.patientId?.fullname || "Unknown Patient"}</div>
                       <div className="text-xs text-gray-500">{appointment.patientId?.email || "No email"}</div>
+=======
+                      <div className="font-medium text-gray-900">
+                        {appointment.patientId?.fullname || "Unknown Patient"}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {appointment.patientId?.email || ""}
+                      </div>
+>>>>>>> upstream/main
                     </div>
                   </div>
 
                   {/* Date & Time */}
                   <div className="md:col-span-3 text-sm text-gray-700">
-                    {appointment.scheduledAt ? new Date(appointment.scheduledAt).toLocaleString() : "-"}
+                    {appointment.scheduledAt
+                      ? new Date(appointment.scheduledAt).toLocaleString()
+                      : "-"}
                   </div>
 
                   {/* Reason */}
-                  <div className="md:col-span-3 text-sm text-gray-700">{appointment.reason || "Consultation"}</div>
+                  <div className="md:col-span-3 text-sm text-gray-700">
+                    {appointment.reason || "Consultation"}
+                  </div>
 
                   {/* Status */}
                   <div className="md:col-span-1">
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
-                      appointment.status === "pending" ? "bg-yellow-100 text-yellow-800" :
-                      appointment.status === "approved" ? "bg-blue-100 text-blue-800" :
-                      appointment.status === "active" ? "bg-green-100 text-green-800" :
-                      appointment.status === "completed" ? "bg-purple-100 text-purple-800" :
-                      "bg-red-100 text-red-800"
-                    }`}>
+                    <span
+                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                        appointment.status === "pending"
+                          ? "bg-yellow-100 text-yellow-800"
+                          : appointment.status === "approved"
+                          ? "bg-blue-100 text-blue-800"
+                          : appointment.status === "active"
+                          ? "bg-green-100 text-green-800"
+                          : appointment.status === "completed"
+                          ? "bg-purple-100 text-purple-800"
+                          : "bg-red-100 text-red-800"
+                      }`}
+                    >
                       {appointment.status || "-"}
                     </span>
                   </div>
 
                   {/* Actions */}
-                  <div className="md:col-span-1 text-right flex items-center justify-end gap-2">
-                    <Link href={`/doctor/appointment/${appointment._id}`}>
-                      <button className="px-3 py-1 bg-white border border-gray-200 rounded-md text-sm text-gray-700 hover:bg-gray-50">View</button>
-                    </Link>
+                  <div
+                    className="md:col-span-1 text-right flex items-center justify-end gap-2"
+                    onClick={(e) => e.preventDefault()}
+                  >
+                    {appointment.status === "pending" && (
+                      <>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleActionClick(appointment._id, "approve");
+                          }}
+                          disabled={actionLoading[appointment._id]}
+                          className="px-3 py-1 bg-green-600 text-white rounded-md text-sm hover:bg-green-700 disabled:opacity-50"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleActionClick(appointment._id, "cancel");
+                          }}
+                          disabled={actionLoading[appointment._id]}
+                          className="px-3 py-1 bg-red-600 text-white rounded-md text-sm hover:bg-red-700 disabled:opacity-50"
+                        >
+                          Cancel
+                        </button>
+                      </>
+                    )}
 
-                    {appointment.status === "pending" && <>
-                      <button onClick={() => handleActionClick(appointment._id, "approve")} disabled={actionLoading[appointment._id]} className="px-3 py-1 bg-green-600 text-white rounded-md text-sm hover:bg-green-700 disabled:opacity-50">Approve</button>
-                      <button onClick={() => handleActionClick(appointment._id, "cancel")} disabled={actionLoading[appointment._id]} className="px-3 py-1 bg-red-600 text-white rounded-md text-sm hover:bg-red-700 disabled:opacity-50">Cancel</button>
-                    </>}
-
-                    {appointment.status === "approved" && <button onClick={() => handleActionClick(appointment._id, "start")} disabled={actionLoading[appointment._id]} className="px-3 py-1 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 disabled:opacity-50">Start</button>}
-                    {appointment.status === "active" && <button onClick={() => handleActionClick(appointment._id, "end")} disabled={actionLoading[appointment._id]} className="px-3 py-1 bg-purple-600 text-white rounded-md text-sm hover:bg-purple-700 disabled:opacity-50">End</button>}
+                    {appointment.status === "approved" && (
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleActionClick(appointment._id, "start");
+                        }}
+                        disabled={actionLoading[appointment._id]}
+                        className="px-3 py-1 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 disabled:opacity-50"
+                      >
+                        Start
+                      </button>
+                    )}
+                    {appointment.status === "active" && (
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleActionClick(appointment._id, "end");
+                        }}
+                        disabled={actionLoading[appointment._id]}
+                        className="px-3 py-1 bg-purple-600 text-white rounded-md text-sm hover:bg-purple-700 disabled:opacity-50"
+                      >
+                        End
+                      </button>
+                    )}
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           )}
         </div>
-        <div className="mt-4 text-xs text-gray-500">Tip: Use the search and filters to find appointments quickly.</div>
+        <div className="mt-4 text-xs text-gray-500">
+          Tip: Use the search and filters to find appointments quickly.
+        </div>
       </div>
 
       {/* Doctor Notes Modal */}
@@ -262,10 +376,14 @@ export default function DoctorAppointments() {
             <div className="p-6">
               <div className="flex items-center gap-3 mb-4">
                 {getModalIcon(pendingAction.action)}
-                <h3 className="text-lg font-semibold text-gray-900">{getModalTitle(pendingAction.action)}</h3>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {getModalTitle(pendingAction.action)}
+                </h3>
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Doctor's Notes *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Doctor's Notes *
+                </label>
                 <textarea
                   value={doctorNotes}
                   onChange={(e) => setDoctorNotes(e.target.value)}
@@ -273,12 +391,38 @@ export default function DoctorAppointments() {
                   className="w-full px-3 py-3 border outline-none border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                   rows={4}
                 />
-                <p className="text-xs text-gray-500 mt-1">This note will be visible to the patient.</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  This note will be visible to the patient.
+                </p>
               </div>
               <div className="flex gap-3">
-                <button onClick={() => {setShowNotesModal(null); setPendingAction(null); setDoctorNotes("");}} className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium">Cancel</button>
-                <button onClick={handleActionConfirm} disabled={!doctorNotes.trim() || actionLoading[showNotesModal]} className={`flex-1 px-4 py-3 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${getButtonColor(pendingAction.action)}`}>
-                  {actionLoading[showNotesModal] ? <div className="flex items-center justify-center gap-2"><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>Processing...</div> : getModalTitle(pendingAction.action)}
+                <button
+                  onClick={() => {
+                    setShowNotesModal(null);
+                    setPendingAction(null);
+                    setDoctorNotes("");
+                  }}
+                  className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleActionConfirm}
+                  disabled={
+                    !doctorNotes.trim() || actionLoading[showNotesModal]
+                  }
+                  className={`flex-1 px-4 py-3 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${getButtonColor(
+                    pendingAction.action
+                  )}`}
+                >
+                  {actionLoading[showNotesModal] ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Processing...
+                    </div>
+                  ) : (
+                    getModalTitle(pendingAction.action)
+                  )}
                 </button>
               </div>
             </div>

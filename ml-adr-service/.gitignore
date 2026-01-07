@@ -1,0 +1,8 @@
+venv/
+.env
+__pycache__/
+*.pyc
+
+# Model files - DO NOT IGNORE as they are required for the service to function
+# adr_model.pkl
+# vectorizer.pkl
