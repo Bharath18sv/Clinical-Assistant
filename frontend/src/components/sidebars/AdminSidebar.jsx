@@ -62,14 +62,24 @@ export default function AdminSidebar() {
       icon: LayoutDashboard,
     },
     {
+      name: "Patients",
+      href: "/admin/patients",
+      icon: User,
+    },
+    {
+      name: "Reports",
+      href: "/admin/reports",
+      icon: LayoutDashboard,
+    },
+    {
       name: "Profile",
       href: "/admin/profile",
       icon: User,
     },
     {
-      name: "Patients",
-      href: "/admin/patients",
-      icon: User,
+      name: "Appointments",
+      href: "/admin/appointments",
+      icon: Calendar,
     },
   ];
 
@@ -98,36 +108,36 @@ export default function AdminSidebar() {
     //     { name: "Inactive", href: "/admin/patients/inactive", icon: XCircle },
     //   ],
     // },
-    {
-      id: "appointments",
-      name: "Appointments",
-      icon: Calendar,
-      subLinks: [
-        {
-          name: "All Appointments",
-          href: "/admin/appointments",
-          icon: Calendar,
-        },
-        { name: "Active", href: "/admin/appointments/active", icon: Clock },
-        {
-          name: "Completed",
-          href: "/admin/appointments/completed",
-          icon: CheckCircle,
-        },
-      ],
-    },
-    {
-      id: "reports",
-      name: "Reports",
-      icon: LayoutDashboard,
-      subLinks: [
-        {
-          name: "Export Reports",
-          href: "/admin/reports",
-          icon: LayoutDashboard,
-        },
-      ],
-    },
+    // {
+    //   id: "appointments",
+    //   name: "Appointments",
+    //   icon: Calendar,
+    //   subLinks: [
+    //     {
+    //       name: "All Appointments",
+    //       href: "/admin/appointments",
+    //       icon: Calendar,
+    //     },
+    //     { name: "Active", href: "/admin/appointments/active", icon: Clock },
+    //     {
+    //       name: "Completed",
+    //       href: "/admin/appointments/completed",
+    //       icon: CheckCircle,
+    //     },
+    //   ],
+    // },
+    // {
+    //   id: "reports",
+    //   name: "Reports",
+    //   icon: LayoutDashboard,
+    //   subLinks: [
+    //     {
+    //       name: "Export Reports",
+    //       href: "/admin/reports",
+    //       icon: LayoutDashboard,
+    //     },
+    //   ],
+    // },
   ];
 
   useEffect(() => {
@@ -150,7 +160,7 @@ export default function AdminSidebar() {
   return (
     <aside
       className={`${
-        isOpen ? "w-64" : "w-16"
+        isOpen ? "w-85" : "w-16"
       } h-screen bg-slate-800 text-white transition-all duration-300 ease-in-out flex flex-col`}
     >
       {/* Header */}

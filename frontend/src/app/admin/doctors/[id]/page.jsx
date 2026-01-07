@@ -86,13 +86,13 @@ export default function DoctorDetailsPage() {
               {doctor.profilePic ? (
                 <img
                   src={doctor.profilePic}
-                  alt={doctor.fullname}
+                  alt={doctor.fullname || "Doctor"}
                   className="w-24 h-24 rounded-full object-cover"
                 />
               ) : (
                 <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center">
                   <span className="text-2xl font-bold text-blue-600">
-                    {doctor.fullname.charAt(0)}
+                    {doctor.fullname?.charAt(0) || "?"}
                   </span>
                 </div>
               )}
@@ -101,7 +101,7 @@ export default function DoctorDetailsPage() {
             {/* Doctor Info */}
             <div className="flex-1">
               <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                {doctor.fullname}
+                {doctor.fullname || "Unknown Doctor"}
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex items-center text-gray-600">

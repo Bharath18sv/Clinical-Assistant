@@ -71,6 +71,11 @@ export default function DoctorSidebar() {
       href: "/doctor/notifications",
       icon: Bell,
     },
+    {
+      name: "Prescriptions",
+      href: "/doctor/prescriptions",
+      icon: Calendar,
+    },
   ];
 
   const expandableMenus = [
@@ -101,18 +106,18 @@ export default function DoctorSidebar() {
         },
       ],
     },
-    {
-      id: "prescriptions",
-      name: "Prescriptions",
-      icon: FileText,
-      subLinks: [
-        {
-          name: "All Prescriptions",
-          href: "/doctor/prescriptions/all",
-          icon: FileText,
-        },
-      ],
-    },
+    // {
+    //   id: "prescriptions",
+    //   name: "Prescriptions",
+    //   icon: FileText,
+    //   subLinks: [
+    //     {
+    //       name: "All Prescriptions",
+    //       href: "/doctor/prescriptions/all",
+    //       icon: FileText,
+    //     },
+    //   ],
+    // },
     {
       id: "logs",
       name: "Logs",
@@ -174,7 +179,7 @@ export default function DoctorSidebar() {
   return (
     <aside
       className={`${
-        isOpen ? "w-64" : "w-16"
+        isOpen ? "w-85" : "w-20"
       } h-screen bg-slate-800 text-white transition-all duration-300 ease-in-out flex flex-col`}
     >
       {/* Header */}
