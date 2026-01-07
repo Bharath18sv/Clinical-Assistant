@@ -105,7 +105,7 @@ export default function PatientSidebar() {
   return (
     <aside
       className={`${
-        isOpen ? "w-64" : "w-16"
+        isOpen ? "w-85" : "w-16"
       } h-screen bg-slate-800 text-white transition-all duration-300 ease-in-out flex flex-col relative`}
     >
       {/* Header */}

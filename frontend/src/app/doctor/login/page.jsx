@@ -59,37 +59,27 @@ export default function DoctorLoginPage() {
         password,
       });
       const data = res.data;
-      //this data has user : id, mail, fulname; role and tokens
       console.log("Login response data:", data);
       console.log("User data inside data object", data.data);
-      localStorage.setItem("user", JSON.stringify(data.data));
-      login(data.data); // Update context
-      // Success toast
-      handleApiSuccess("Login successful! Redirecting...");
-      router.replace("/doctor/dashboard");
-    } catch (err) {
-      console.error("Login error:", err);
 
-      // Check if it's an email verification error
-      if (
-        err.response &&
-        err.response.data &&
-        err.response.data.additionalData &&
-        err.response.data.additionalData.emailNotVerified
-      ) {
-        // Extract email from error response
-        const emailToVerify = err.response.data.additionalData.email || email;
+      // Check if verification is required (200 response with flag)
+      if (data.data && data.data.requiresVerification) {
+        const emailToVerify = data.data.email || email;
+        const emailSent = data.data.emailSent;
 
         // Store email for verification page
         localStorage.setItem("pendingDoctorVerificationEmail", emailToVerify);
 
-        // Show appropriate error message
-        setError(
-          "Email not verified. Please check your email for the verification code."
-        );
-        handleApiSuccess(
-          "Email not verified. A new verification code has been sent to your email."
-        );
+        // Show appropriate message based on email sending status
+        if (emailSent) {
+          handleApiSuccess(
+            "Verification code sent to your email. Redirecting..."
+          );
+        } else {
+          handleApiSuccess(
+            "Email verification required. Please contact support if you didn't receive the code."
+          );
+        }
 
         // Redirect to verification page after a short delay
         setTimeout(() => {
@@ -98,14 +88,24 @@ export default function DoctorLoginPage() {
               emailToVerify
             )}&fromLogin=true`
           );
-        }, 2000);
-      } else {
-        const errorMessage = handleApiError(
-          err,
-          "Login failed. Please check your credentials."
-        );
-        setError(errorMessage);
+        }, 1500);
+        return;
       }
+
+      // Normal login flow - email is verified
+      localStorage.setItem("user", JSON.stringify(data.data));
+      login(data.data); // Update context
+      handleApiSuccess("Login successful! Redirecting...");
+      router.replace("/doctor/dashboard");
+    } catch (err) {
+      console.error("Login error:", err);
+      
+      // Handle actual errors (wrong password, user not found, etc.)
+      const errorMessage = handleApiError(
+        err,
+        "Login failed. Please check your credentials."
+      );
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

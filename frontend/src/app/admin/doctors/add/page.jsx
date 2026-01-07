@@ -299,9 +299,6 @@ export default function AddDoctorPage() {
       toast.success("Doctor added successfully! Please verify their email.");
       console.log("Add doctor response:", response.data);
 
-      // Store email for verification
-      localStorage.setItem("pendingDoctorVerificationEmail", formData.email);
-
       // Reset form
       setFormData({
         email: "",
@@ -325,11 +322,9 @@ export default function AddDoctorPage() {
       setProfilePicture(null);
       setProfilePicturePreview("");
 
-      // Redirect to verification page
+      // Redirect to doctors list
       setTimeout(() => {
-        router.push(
-          `/doctor/verify-email?email=${encodeURIComponent(formData.email)}`
-        );
+        router.push("/admin/doctors");
       }, 2000);
     } catch (err) {
       console.error("Error adding doctor:", err);
